@@ -1,0 +1,25 @@
+id = "gemini"
+aliases = ["gemini-cli"]
+resume = "gemini --resume"
+detect_title = '(?i)gemini'
+
+[[rules]]
+id = "confirm"
+state = "blocked"
+priority = 1200
+region = "bottom(18)"
+regex = ['Allow execution', 'Apply this change\?', 'Do you want to proceed', '●\s*1\.\s*Yes']
+
+[[rules]]
+id = "esc_to_cancel"
+state = "working"
+priority = 970
+region = "bottom(12)"
+regex = ['esc to cancel', 'esc to interrupt']
+
+[[rules]]
+id = "input_box"
+state = "idle"
+priority = 100
+region = "bottom(6)"
+regex = ['Type your message', '^\s*>\s']

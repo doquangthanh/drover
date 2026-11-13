@@ -1,0 +1,50 @@
+# Claude Code. Higher priority wins. Regions: title | bottom(N) | screen
+id = "claude"
+aliases = ["claude-code"]
+resume = "claude --continue"
+detect_title = '(?i)claude'
+
+[[rules]]
+id = "permission_prompt"
+state = "blocked"
+priority = 1200
+region = "bottom(18)"
+regex = [
+  'Do you want to (proceed|make this edit|create|run)',
+  '❯\s*1\.\s*Yes',
+  'Would you like to proceed',
+]
+
+[[rules]]
+id = "selection_menu"
+state = "blocked"
+priority = 1150
+region = "bottom(22)"
+regex = [
+  'Do you trust the files in this folder',
+  'Choose the text style',
+  'Enter to (select|confirm|continue)',
+  'Press Enter to continue',
+  'Select login method',
+]
+
+[[rules]]
+id = "spinner_title"
+state = "working"
+priority = 1100
+region = "title"
+regex = ['^[⠀-⣿◐-◓✻✶✳✢·*] ']
+
+[[rules]]
+id = "esc_to_interrupt"
+state = "working"
+priority = 970
+region = "bottom(12)"
+regex = ['esc to interrupt', 'Waiting for [1-9]\d* background agents?']
+
+[[rules]]
+id = "prompt_ready"
+state = "idle"
+priority = 100
+region = "bottom(8)"
+regex = ['^\s*[>❯]\s', '\? for shortcuts', 'accept edits on', 'bypass permissions on']

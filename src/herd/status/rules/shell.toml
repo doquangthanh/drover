@@ -1,0 +1,4 @@
+# Plain shells: no rules -> activity based (output in last 1.5s = working, else idle).
+id = "shell"
+aliases = ["bash", "zsh", "fish", "sh", "pwsh", "powershell", "cmd"]
+resume = ""

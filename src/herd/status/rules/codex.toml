@@ -1,0 +1,31 @@
+id = "codex"
+aliases = ["codex-cli"]
+resume = "codex resume --last"
+detect_title = '(?i)codex'
+
+[[rules]]
+id = "approval"
+state = "blocked"
+priority = 1200
+region = "bottom(18)"
+regex = [
+  'Allow command\?',
+  'Would you like to (run|make|apply)',
+  'Approve\?',
+  '\[y/N\]',
+  '›\s*1\.\s*Yes',
+]
+
+[[rules]]
+id = "working_line"
+state = "working"
+priority = 970
+region = "bottom(12)"
+regex = ['Working \(', 'esc to interrupt', 'Thinking']
+
+[[rules]]
+id = "composer"
+state = "idle"
+priority = 100
+region = "bottom(6)"
+regex = ['^\s*›\s', 'Ask Codex to do anything', 'Context \d+% (used|left)']

@@ -1,0 +1,18 @@
+id = "opencode"
+aliases = ["oc"]
+resume = "opencode --continue"
+detect_title = '(?i)opencode'
+
+[[rules]]
+id = "permission"
+state = "blocked"
+priority = 1200
+region = "bottom(18)"
+regex = ['Permission required', 'Allow (once|always)', '\[y/n\]']
+
+[[rules]]
+id = "working"
+state = "working"
+priority = 970
+region = "bottom(12)"
+regex = ['esc (to )?interrupt', 'Generating', 'Working']

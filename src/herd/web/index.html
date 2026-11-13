@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>herd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="/static/vendor/xterm.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/sidebar.css">
+<link rel="stylesheet" href="/static/css/workspace.css">
+<link rel="stylesheet" href="/static/css/overlays.css">
+<link rel="stylesheet" href="/static/css/views.css">
+<link rel="stylesheet" href="/static/css/mobile.css">
+<script src="/static/vendor/xterm.js"></script>
+<script src="/static/vendor/addon-fit.js"></script>
+<script src="/static/vendor/addon-web-links.js"></script>
+<script src="/static/vendor/addon-webgl.js"></script>
+</head>
+<body>
+<div id="app" class="win">
+  <aside id="sidebar" aria-label="Spaces and agents"></aside>
+  <main id="main">
+    <header id="topbar" class="tabs"></header>
+    <div id="workspace" class="body"></div>
+    <div id="altview" class="altview" hidden></div>
+    <footer id="statusbar" class="status"></footer>
+  </main>
+</div>
+<div id="overlay-root"></div>
+<div id="toasts" aria-live="polite"></div>
+<div id="conn-banner" hidden>Reconnecting to herd-server…</div>
+<script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
