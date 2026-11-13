@@ -39,6 +39,10 @@ class DaemonContext:
         state = self.manager.snapshot()
         state["machines"] = self.remotes.public_state() if self.remotes else []
         state["prefix"] = self.settings.get("prefix", "C-b")
+        state["theme"] = self.settings.get("theme", "dark")
+        state["file_icons"] = self.settings.get("file_icons", "material")
+        state["notify"] = self.settings.get("notify", {})
+        state["orchestration"] = self.settings.get("orchestration", {})
         state["policy_pending"] = [
             {"id": k, "target": v[0], "text": v[1].strip(), "source": v[2]} for k, v in self.pending_answers.items()
         ]

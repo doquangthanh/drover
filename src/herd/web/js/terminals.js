@@ -1,17 +1,10 @@
 // One xterm.js instance per pane, kept alive across re-renders (the element is moved, not rebuilt).
 import { conn } from "./connection.js";
 import { handleKey } from "./keys.js";
-
-const THEME = {
-  background: "#17191d", foreground: "#d2d4d9", cursor: "#d2d4d9", cursorAccent: "#17191d",
-  selectionBackground: "rgba(150,178,215,.32)",
-  black: "#2c2e31", red: "#dc8c95", green: "#a6bd91", yellow: "#d8be87", blue: "#96b2d7",
-  magenta: "#b5a2ce", cyan: "#8cbdc3", white: "#d2d4d9",
-  brightBlack: "#818793", brightRed: "#e8a1a9", brightGreen: "#b9cfa5", brightYellow: "#e6cf9c",
-  brightBlue: "#aec5e4", brightMagenta: "#c8b7de", brightCyan: "#a3cfd4", brightWhite: "#f0f0f2",
-};
+import { onThemeChange, termOptions, termTheme } from "./theme.js";
 
 const terms = new Map();
+onThemeChange(() => { for (const { term } of terms.values()) term.options.theme = termTheme(); });
 
 export function getTerminal(paneId) {
   let entry = terms.get(paneId);
@@ -19,14 +12,16 @@ export function getTerminal(paneId) {
   const el = document.createElement("div");
   el.className = "term";
   const term = new Terminal({
-    fontFamily: '"JetBrains Mono", ui-monospace, Consolas, monospace', fontSize: 13, lineHeight: 1.15,
-    theme: THEME, cursorBlink: true, scrollback: 5000, allowProposedApi: true, macOptionIsMeta: true,
+    fontFamily: '"JetBrains Mono", ui-monospace, Consolas, monospace', fontSize: matchMedia("(max-width: 760px)").matches ? 12 : 13, lineHeight: 1.15,
+    ...termOptions(), scrollback: 5000, allowProposedApi: true, macOptionIsMeta: true,
   });
   const fit = new FitAddon.FitAddon();
   term.loadAddon(fit);
   try { term.loadAddon(new WebLinksAddon.WebLinksAddon()); } catch { /* optional */ }
   entry = { paneId, el, term, fit, opened: false, lastSize: "", resizeTimer: null };
-  term.onData((data) => conn.input(paneId, data));
+  // xterm answers the shell's "who are you" query (Device Attributes) and ConPTY hands that answer to PowerShell as
+  // typed text ("[?1;2c" on the prompt). The shell never needs it, so it is dropped.
+  term.onData((data) => { if (!/^\x1b\[[?>][\d;]*c$/.test(data)) conn.input(paneId, data); });
   term.attachCustomKeyEventHandler((ev) => handleKey(ev, paneId));
   conn.attach(paneId, (data, isReplay) => {
     if (isReplay) term.reset();

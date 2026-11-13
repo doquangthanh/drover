@@ -14,6 +14,7 @@ from herd.core.orchestration_policy import OrchestrationPolicy, PolicyError
 from herd.core.pane_session import PaneMeta, PaneSession
 from herd.core.workspace_models import Space, Tab, new_id
 from herd.pty.pty_backend_factory import default_shell, resolve_argv, split_command
+from herd.self_command import pane_path
 from herd.status.detection_rule_loader import AgentRuleSet, match_agent_kind
 
 
@@ -26,6 +27,7 @@ class SessionManager:
         self.tabs: dict[str, Tab] = {}
         self.panes: dict[str, PaneSession] = {}
         self.stopped: list[dict] = []  # panes from a previous run, offered for resume
+        self.git: dict[str, dict] = {}  # space id -> {branch, dirty, ahead}, refreshed by GitWatcher
         self.messages = AgentMessagesLog()
         self.on_structure_change = lambda: None
         self.notify_state = lambda name, kind, state: None  # wired to desktop notifications by the daemon
@@ -85,7 +87,7 @@ class SessionManager:
         pane = PaneSession(meta, cols, rows, int(self.settings.get("scrollback", 5000)))
         pane.on_exit_hook = self._on_pane_exit
         env = {**os.environ, "TERM": "xterm-256color", "COLORTERM": "truecolor",
-               "HD_PANE_ID": pane_id, "HERD": "1"}
+               "HD_PANE_ID": pane_id, "HERD": "1", "PATH": pane_path(os.environ.get("PATH", ""))}
         pane.start(resolve_argv(argv), env)  # may raise: create no space/tab before this succeeds
         if tab_id and tab_id in self.tabs:
             tab = self.tabs[tab_id]
@@ -157,7 +159,7 @@ class SessionManager:
     # -- snapshot ----------------------------------------------------------------------
     def snapshot(self) -> dict[str, Any]:
         return {
-            "spaces": [s.to_dict() for s in self.spaces.values()],
+            "spaces": [{**s.to_dict(), **self.git.get(s.id, {})} for s in self.spaces.values()],
             "tabs": [t.to_dict() for t in self.tabs.values()],
             "panes": [p.to_dict() for p in self.panes.values()],
             "stopped": self.stopped,
@@ -168,4 +170,4 @@ class SessionManager:
         self.on_structure_change()
 
 
-__all__ = ["SessionManager", "PolicyError"]
+__all__ = ["PolicyError", "SessionManager"]

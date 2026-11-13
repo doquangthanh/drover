@@ -21,11 +21,18 @@ function machineHeader(label, iconName, status, actions) {
 }
 
 function spaceRow(space, actions) {
-  return h("button", {
+  // The close control is a span, not a button: buttons cannot nest inside the row button.
+  const close = h("span", { class: "sclose", role: "button", tabindex: "0", title: "Close space", "aria-label": `Close ${space.name}`,
+    onclick: (e) => { e.stopPropagation(); actions.closeSpace(space.id); },
+    onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); actions.closeSpace(space.id); } } }, "×");
+  const row = h("button", {
     class: "srow" + (store.ui.spaceId === space.id ? " on" : ""), title: space.cwd,
     onclick: () => actions.selectSpace(space.id),
-  }, spaceAvatar(space), h("span", { class: "trunc", style: { maxWidth: "120px" } }, space.name),
-  h("span", { class: "git" }, space.branch || ""), spaceIndicator(space));
+  }, spaceAvatar(space), h("span", { class: "trunc" }, space.name),
+  h("span", { class: "git" }, space.branch || "", space.dirty ? h("span", { class: "gb-dirty", title: `${space.dirty} uncommitted` }, "●") : null),
+  spaceIndicator(space), close);
+  row.addEventListener("contextmenu", (e) => { e.preventDefault(); actions.closeSpace(space.id); });
+  return row;
 }
 
 function renderSpaces(actions) {

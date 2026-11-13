@@ -7,11 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-
-def _python() -> str:
-    exe = Path(sys.executable)
-    pyw = exe.with_name("pythonw.exe")
-    return str(pyw if sys.platform == "win32" and pyw.exists() else exe)
+from herd.self_command import hd_command
 
 
 def set_autostart(enabled: bool) -> str:
@@ -21,7 +17,8 @@ def set_autostart(enabled: bool) -> str:
         if not enabled:
             script.unlink(missing_ok=True)
             return "autostart off"
-        script.write_text(f'@start "" "{_python()}" -m herd server run --background\r\n', encoding="utf-8")
+        quoted = " ".join(f'"{a}"' for a in hd_command(windowless=True))
+        script.write_text(f'@start "" {quoted} server run --background\r\n', encoding="utf-8")
         return f"autostart on ({script})"
     unit_dir = Path.home() / ".config/systemd/user"
     unit = unit_dir / "herd.service"
@@ -32,7 +29,7 @@ def set_autostart(enabled: bool) -> str:
     unit_dir.mkdir(parents=True, exist_ok=True)
     unit.write_text(
         "[Unit]\nDescription=herd agent daemon\n\n[Service]\n"
-        f"ExecStart={_python()} -m herd server run --background\nRestart=on-failure\n\n"
+        f"ExecStart={' '.join(hd_command())} server run --background\nRestart=on-failure\n\n"
         "[Install]\nWantedBy=default.target\n",
         encoding="utf-8",
     )

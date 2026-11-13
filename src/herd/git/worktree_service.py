@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import re
+import subprocess
+import sys
 from pathlib import Path
+
+# The daemon runs without a console; on Windows each console child would otherwise get a fresh one (~150 ms).
+NO_CONSOLE: dict = {"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
 
 
 class GitError(Exception):
@@ -13,7 +18,8 @@ class GitError(Exception):
 
 async def git(cwd: str, *args: str, check: bool = True) -> str:
     proc = await asyncio.create_subprocess_exec(
-        "git", *args, cwd=cwd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        "git", *args, cwd=cwd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+        stdin=asyncio.subprocess.DEVNULL, **NO_CONSOLE,
     )
     out, err = await proc.communicate()
     if check and proc.returncode != 0:
@@ -29,17 +35,73 @@ def safe_task_name(name: str) -> str:
 
 
 async def repo_info(path: str) -> dict:
-    """Return {"is_repo", "root", "branch", "dirty"} without raising for non-repos."""
+    """Return {"is_repo", "root", "branch", "dirty", "ahead"} without raising for non-repos.
+
+    Two git processes run in parallel; `status --porcelain=v2 --branch` carries branch + ahead too.
+    """
+    top, status = await asyncio.gather(
+        git(path, "rev-parse", "--show-toplevel"),
+        git(path, "status", "--porcelain=v2", "--branch", check=False),
+        return_exceptions=True,  # a missing folder fails both; collect both errors
+    )
+    if isinstance(top, BaseException) or isinstance(status, BaseException):
+        if isinstance(top, (GitError, OSError)) or isinstance(status, OSError):
+            return {"is_repo": False}
+        raise top if isinstance(top, BaseException) else status
+    branch, ahead, dirty = _parse_status_v2(status)
+    return {"is_repo": True, "root": top.strip(), "branch": branch, "dirty": dirty, "ahead": ahead}
+
+
+def _parse_status_v2(status: str) -> tuple[str, int, int]:
+    """(branch, commits ahead of upstream, changed file count) from `git status --porcelain=v2 --branch`."""
+    branch, ahead, dirty = "", 0, 0
+    for line in status.splitlines():
+        if line.startswith("# branch.head "):
+            branch = line.removeprefix("# branch.head ").strip()
+            branch = "HEAD" if branch == "(detached)" else branch
+        elif line.startswith("# branch.ab "):
+            ab = line.split()[2]  # "+N"
+            ahead = int(ab[1:]) if ab[1:].isdigit() else 0
+        elif line.strip() and not line.startswith("#"):
+            dirty += 1
+    return branch, ahead, dirty
+
+
+async def quick_status(cwd: str) -> dict | None:
+    """{"branch", "dirty", "ahead"} for a folder in one git call, or None when it is not a git repo."""
     try:
-        root = (await git(path, "rev-parse", "--show-toplevel")).strip()
-    except (GitError, FileNotFoundError, NotADirectoryError):
-        return {"is_repo": False}
-    branch = (await git(root, "rev-parse", "--abbrev-ref", "HEAD", check=False)).strip()
-    status = await git(root, "status", "--porcelain", check=False)
-    ahead = (await git(root, "rev-list", "--count", "@{u}..HEAD", check=False)).strip()
-    return {"is_repo": True, "root": root, "branch": branch,
-            "dirty": len([line for line in status.splitlines() if line.strip()]),
-            "ahead": int(ahead) if ahead.isdigit() else 0}
+        branch, ahead, dirty = _parse_status_v2(await git(cwd, "status", "--porcelain=v2", "--branch"))
+    except (GitError, OSError):
+        return None
+    return {"branch": branch, "dirty": dirty, "ahead": ahead}
+
+
+async def status_map(cwd: str) -> dict:
+    """{"is_repo", "files": {path relative to cwd: M|A|D|R|?}}. Untracked folders appear once, with a trailing "/"."""
+    try:
+        prefix, out = await asyncio.gather(
+            git(cwd, "rev-parse", "--show-prefix"),
+            git(cwd, "status", "--porcelain=v1", "-z"),
+        )
+    except (GitError, OSError):
+        return {"is_repo": False, "files": {}}
+    prefix = prefix.strip()
+    files: dict[str, str] = {}
+    parts = out.split("\0")
+    i = 0
+    while i < len(parts):
+        entry = parts[i]
+        i += 1
+        if len(entry) < 4:
+            continue
+        xy, path = entry[:2], entry[3:]
+        if "R" in xy or "C" in xy:
+            i += 1  # the old name follows as its own field
+        if prefix and not path.startswith(prefix):
+            continue
+        letter = "?" if xy == "??" else "A" if "A" in xy else "D" if "D" in xy else "R" if "R" in xy else "M"
+        files[path[len(prefix):]] = letter
+    return {"is_repo": True, "files": files}
 
 
 async def list_worktrees(repo: str) -> list[dict]:
@@ -58,9 +120,17 @@ async def list_worktrees(repo: str) -> list[dict]:
             current["branch"] = value.removeprefix("refs/heads/")
         elif key in ("detached", "bare", "locked", "prunable"):
             current[key] = True
+    # A worktree whose folder was deleted is still listed (git calls it "prunable"); asking it for a status would
+    # fail with WinError 267 and take the whole list down, so it is shown as missing instead.
     for item in items:
-        status = await git(item["path"], "status", "--porcelain", check=False)
-        item["changes"] = len([line for line in status.splitlines() if line.strip()])
+        item["missing"] = not Path(item["path"]).is_dir()
+    live = [i for i in items if not i["missing"]]
+    statuses = await asyncio.gather(*(git(i["path"], "status", "--porcelain", check=False) for i in live),
+                                    return_exceptions=True)
+    for item, status in zip(live, statuses):
+        item["changes"] = 0 if isinstance(status, BaseException) else len([x for x in status.splitlines() if x.strip()])
+    for item in items:
+        item.setdefault("changes", 0)
     return items
 
 
@@ -89,20 +159,31 @@ async def remove_worktree(path: str, force: bool = False) -> None:
 
 
 async def changed_files(path: str, base: str) -> list[dict]:
-    out = await git(path, "diff", "--numstat", f"{base}...HEAD", check=False)
-    out += await git(path, "diff", "--numstat", "HEAD", check=False)
+    committed, working, kinds = await asyncio.gather(
+        git(path, "diff", "--numstat", f"{base}...HEAD", check=False),
+        git(path, "diff", "--numstat", "HEAD", check=False),
+        git(path, "diff", "--name-status", f"{base}...HEAD", check=False),
+    )
+    out = committed + working
+    letters = {}
+    for line in kinds.splitlines():
+        parts = line.split("	")
+        if len(parts) >= 2:
+            letters[parts[-1]] = parts[0][:1]
     files: dict[str, dict] = {}
     for line in out.splitlines():
         parts = line.split("\t")
         if len(parts) == 3:
             add, rem, name = parts
-            entry = files.setdefault(name, {"path": name, "added": 0, "removed": 0})
+            entry = files.setdefault(name, {"path": name, "added": 0, "removed": 0, "status": letters.get(name, "M")})
             entry["added"] += int(add) if add.isdigit() else 0
             entry["removed"] += int(rem) if rem.isdigit() else 0
     return list(files.values())
 
 
 async def file_diff(path: str, base: str, file: str) -> str:
-    committed = await git(path, "diff", f"{base}...HEAD", "--", file, check=False)
-    working = await git(path, "diff", "HEAD", "--", file, check=False)
+    committed, working = await asyncio.gather(
+        git(path, "diff", f"{base}...HEAD", "--", file, check=False),
+        git(path, "diff", "HEAD", "--", file, check=False),
+    )
     return (committed + working)[:400_000]

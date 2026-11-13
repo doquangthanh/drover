@@ -104,7 +104,12 @@ def test_unrelated_output_matches_no_rule(rule_sets):
 
 
 def test_spinner_in_title_is_working(rule_sets):
-    assert evaluate(rule_sets["claude"], "✳ Claude Code", ["hi"])[0] == "working"
+    assert evaluate(rule_sets["claude"], "⠂ Claude Code", ["hi"])[0] == "working"
+
+
+def test_idle_star_title_is_not_working(rule_sets):
+    """Claude Code titles itself "✳ <topic>" while waiting at the prompt."""
+    assert evaluate(rule_sets["claude"], "✳ Hỏi đáp chung", ["❯ xóa dòng đó đi"])[0] == "idle"
 
 
 def test_evaluate_without_rule_set_returns_no_verdict():

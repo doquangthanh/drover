@@ -1,7 +1,10 @@
 // Entry point: wires connection, store, renderers and actions.
 import { conn } from "./connection.js";
 import { store } from "./store.js";
-import { toast } from "./dom.js";
+import { h, toast, topExtra, kindIcon } from "./dom.js";
+import { setServerTheme } from "./theme.js";
+import { setServerIconSet } from "./file-icons.js";
+import { renderMobileNav } from "./mobile-nav.js";
 import { registerActions, setPrefix } from "./keys.js";
 import { renderSidebar } from "./sidebar.js";
 import { renderTopbar, renderWorkspace, renderStatus, refreshPaneHeaders } from "./workspace.js";
@@ -11,11 +14,12 @@ import { renderInbox } from "./views/inbox-view.js";
 import { renderTree } from "./views/tree-view.js";
 import { renderMachines } from "./views/machines-view.js";
 import { renderChanges } from "./views/changes-view.js";
+import { renderFiles } from "./views/files-view.js";
 import { renderSettings } from "./views/settings-view.js";
 import { renderServer, maybeShowRestore } from "./views/server-view.js";
 
 const $ = (id) => document.getElementById(id);
-const VIEWS = { inbox: renderInbox, tree: renderTree, machines: renderMachines, changes: renderChanges,
+const VIEWS = { inbox: renderInbox, tree: renderTree, machines: renderMachines, changes: renderChanges, files: renderFiles,
   settings: renderSettings, server: renderServer };
 const LIVE_VIEWS = new Set(["inbox"]); // re-render on every state change
 let lastMachinesKey = "";
@@ -56,7 +60,8 @@ function renderNow() {
   const ui = store.ui;
   renderSidebar($("sidebar"), actions);
   renderTopbar($("topbar"), actions);
-  renderStatus($("statusbar"));
+  renderStatus($("statusbar"), actions);
+  renderMobileNav(actions);
   const inWorkspace = ui.view === "workspace";
   $("workspace").hidden = !inWorkspace;
   $("altview").hidden = inWorkspace;
@@ -83,12 +88,15 @@ function updateFocusClasses() {
 
 const actions = buildActions({ render, forceWorkspace: () => { lastWorkspaceKey = ""; }, refreshView: () => { lastView = ""; } });
 registerActions(actions);
+topExtra.paint = () => renderTopbar($("topbar"), actions);
 
 function onEvent(name, data) {
   if (name === "state" || name === "resync") {
     store.set(data);
     if (name === "resync") conn.reattachAll();
     setPrefix(data.prefix);
+    setServerTheme(data.theme);
+    setServerIconSet(data.file_icons);
     if (!store.ui.focusedPane) {
       const tab = store.tab(store.ui.tabId);
       store.ui.focusedPane = tab?.focused || null;
@@ -101,7 +109,8 @@ function onEvent(name, data) {
     const visible = document.hasFocus() && store.ui.focusedPane === pane.id && store.ui.view === "workspace";
     if (!visible && (data.new === "blocked" || data.new === "done" || data.new === "exited")) {
       const title = data.new === "blocked" ? `${pane.name} needs you` : data.new === "done" ? `${pane.name} finished` : `${pane.name} stopped`;
-      toast(title, pane.title || pane.command, () => actions.focusPane(pane.id));
+      toast(title, pane.title || pane.command, () => actions.focusPane(pane.id),
+        data.new === "done" ? h("span", { class: "dot done" }) : kindIcon(pane.kind));
     }
   } else if (name === "policy") {
     toast(`An agent tried to answer a prompt`, "Open the Inbox to allow or deny it.", () => actions.show("inbox"));

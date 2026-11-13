@@ -13,8 +13,7 @@ def resolve_pane(manager: SessionManager, target: str, caller: str | None = None
         if not caller:
             raise RpcError(E_BAD_PARAMS, "'self' only works inside a herd pane")
         target = caller
-    if target.startswith("local:"):
-        target = target[len("local:"):]
+    target = target.removeprefix("local:")
     if target in manager.panes:
         return target
     space_name, _, name = target.rpartition("/")

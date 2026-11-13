@@ -72,4 +72,4 @@ def validate_new(alias: str, target: str, existing: dict[str, Machine]) -> None:
         raise ValueError("target must look like user@host")
 
 
-__all__ = ["Machine", "load_machines", "save_machines", "validate_new", "asdict"]
+__all__ = ["Machine", "asdict", "load_machines", "save_machines", "validate_new"]

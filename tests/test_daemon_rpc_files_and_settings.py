@@ -56,6 +56,18 @@ async def test_settings_write_saves_valid_file_into_config_dir(start_daemon, her
     assert str(herd_dirs) in str(daemon.ctx.settings.path)
 
 
+async def test_ui_state_carries_theme_and_file_icon_defaults(start_daemon):
+    daemon = await start_daemon()
+    state = daemon.ctx.combined_state()  # what the web UI receives over the websocket
+    assert (state["theme"], state["file_icons"]) == ("dark", "material")
+
+
+async def test_ui_state_follows_settings_toml_for_theme_and_file_icons(start_daemon):
+    daemon = await start_daemon('theme = "light"\nfile_icons = "badge"\n')
+    state = daemon.ctx.combined_state()
+    assert (state["theme"], state["file_icons"]) == ("light", "badge")
+
+
 async def test_settings_write_rejects_unknown_file_name(start_daemon):
     daemon = await start_daemon()
     _, body = await daemon.call("settings.write", {"name": "../escape.toml", "text": "x = 1"})

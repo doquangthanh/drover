@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pytest
 import pytest_asyncio
-
 from daemon_harness import Daemon, boot_daemon
 from git_helpers import run_git
 

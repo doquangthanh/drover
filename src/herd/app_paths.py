@@ -5,21 +5,29 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from platformdirs import user_config_dir, user_state_dir
-
 APP = "herd"
+
+
+def _default_dir(kind: str) -> Path:
+    """On Windows platformdirs returns LOCALAPPDATA/herd for both; skip its ~60 ms import there."""
+    local = os.environ.get("LOCALAPPDATA")
+    if os.name == "nt" and local:
+        return Path(local) / APP
+    from platformdirs import user_config_dir, user_state_dir
+
+    return Path((user_config_dir if kind == "config" else user_state_dir)(APP, appauthor=False))
 
 
 def config_dir() -> Path:
     override = os.environ.get("HERD_CONFIG_DIR")
-    path = Path(override) if override else Path(user_config_dir(APP, appauthor=False))
+    path = Path(override) if override else _default_dir("config")
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
 def state_dir() -> Path:
     override = os.environ.get("HERD_STATE_DIR")
-    path = Path(override) if override else Path(user_state_dir(APP, appauthor=False))
+    path = Path(override) if override else _default_dir("state")
     path.mkdir(parents=True, exist_ok=True)
     return path
 

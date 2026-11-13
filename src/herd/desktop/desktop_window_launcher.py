@@ -8,8 +8,9 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import time
 
-from herd.daemon.daemon_client import DaemonUnavailable, ensure_daemon, ui_url
+from herd.daemon.daemon_client import DaemonUnavailable, ensure_daemon, is_alive, read_info, ui_url
 
 
 class DesktopBridge:
@@ -36,7 +37,7 @@ class DesktopBridge:
         if not (real == allowed or real.startswith(allowed + os.sep)):
             return False
         if sys.platform == "win32":
-            os.startfile(real)  # noqa: S606 - path restricted to the config folder
+            os.startfile(real)
         elif sys.platform == "darwin":
             subprocess.Popen(["open", real])
         else:
@@ -45,6 +46,25 @@ class DesktopBridge:
 
     def platform(self) -> str:
         return sys.platform
+
+
+def follow_daemon(window, loaded_url: str) -> None:
+    """Restarting the server changes its port and token; point the open window at the new one.
+
+    Without this the page retries the dead address forever ("reconnecting...").
+    """
+    while True:
+        time.sleep(1.5)
+        info = read_info()
+        if not info:
+            continue
+        url = ui_url(info)
+        if url != loaded_url and is_alive(info):
+            loaded_url = url
+            try:
+                window.load_url(url)
+            except Exception:  # noqa: BLE001 - pywebview raises assorted errors while the window closes
+                return
 
 
 def main() -> None:
@@ -65,7 +85,10 @@ def main() -> None:
     bridge._window = webview.create_window(
         "herd", url, js_api=bridge, width=1440, height=900, min_size=(900, 560), background_color="#131518"
     )
-    webview.start(private_mode=False)
+    from herd.app_paths import web_static_dir
+
+    icon = web_static_dir() / ("app-icon.ico" if sys.platform == "win32" else "favicon.png")  # WinForms needs .ico
+    webview.start(follow_daemon, (bridge._window, url), private_mode=False, icon=str(icon) if icon.exists() else None)
 
 
 if __name__ == "__main__":

@@ -7,11 +7,10 @@ import os
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
-from pathlib import Path
 
 from herd.app_paths import daemon_info_file, log_dir
+from herd.daemon import local_http
+from herd.self_command import hd_command
 
 
 class DaemonUnavailable(Exception):
@@ -35,23 +34,14 @@ def is_alive(info: dict | None) -> bool:
     if not info:
         return False
     try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{info['port']}/health", timeout=1.5) as resp:
-            return json.loads(resp.read()).get("app") == "herd"
-    except (OSError, ValueError, KeyError):
+        _, body = local_http.request(info["port"], "GET", "/health", timeout=1.5)
+        return json.loads(body).get("app") == "herd"
+    except (OSError, ValueError, KeyError, AttributeError):
         return False
 
 
-def _python_for_background() -> str:
-    exe = Path(sys.executable)
-    if sys.platform == "win32":
-        candidate = exe.with_name("pythonw.exe")
-        if candidate.exists():
-            return str(candidate)
-    return str(exe)
-
-
 def start_background() -> None:
-    cmd = [_python_for_background(), "-m", "herd", "server", "run", "--background"]
+    cmd = [*hd_command(windowless=True), "server", "run", "--background"]
     log = open(log_dir() / "daemon-stdout.log", "ab")  # noqa: SIM115 - handed to the child
     kwargs: dict = {"stdout": log, "stderr": log, "stdin": subprocess.DEVNULL, "close_fds": True}
     if sys.platform == "win32":
@@ -105,23 +95,34 @@ def _wait_for_daemon(timeout: float) -> dict:
     raise DaemonUnavailable(f"herd daemon did not start; see {log_dir() / 'daemon.log'}")
 
 
+def _post_rpc(info: dict, payload: bytes, timeout: float) -> dict:
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {info['token']}"}
+    try:
+        _, body = local_http.request(info["port"], "POST", "/rpc", payload, headers, timeout)
+        reply = json.loads(body)
+    except (OSError, ValueError, KeyError) as exc:
+        raise DaemonUnavailable(f"cannot reach herd daemon: {exc}") from exc
+    if not isinstance(reply, dict):
+        raise DaemonUnavailable("unexpected reply from herd daemon")
+    return reply
+
+
 def call(method: str, params: dict | None = None, timeout: float = 30, autostart: bool = True) -> object:
-    info = ensure_daemon() if autostart else read_info()
-    if not is_alive(info):
-        raise DaemonUnavailable("herd daemon is not running (start it with `hd server start`)")
     params = dict(params or {})
     caller = os.environ.get("HD_PANE_ID")
     if caller and "caller" not in params:
         params["caller"] = caller
-    body = json.dumps({"method": method, "params": params}).encode()
-    req = urllib.request.Request(
-        f"http://127.0.0.1:{info['port']}/rpc", data=body, method="POST",
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {info['token']}"})
+    payload = json.dumps({"method": method, "params": params}).encode()
+    # Fast path: talk to the daemon directly; only probe/start it when that fails (saves a round trip per command).
+    info = read_info()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            reply = json.loads(resp.read())
-    except urllib.error.URLError as exc:
-        raise DaemonUnavailable(f"cannot reach herd daemon: {exc}") from exc
+        if not info:
+            raise DaemonUnavailable("no daemon info")
+        reply = _post_rpc(info, payload, timeout)
+    except DaemonUnavailable:
+        if not autostart:
+            raise DaemonUnavailable("herd daemon is not running (start it with `hd server start`)") from None
+        reply = _post_rpc(ensure_daemon(), payload, timeout)
     if "error" in reply:
         raise RpcFailure(int(reply["error"].get("code", 1)), reply["error"].get("message", "error"))
     return reply.get("result")

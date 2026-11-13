@@ -1,9 +1,11 @@
 // Inbox: every agent sorted by who needs you; quick answers without opening the pane.
 import { conn } from "../connection.js";
 import { store } from "../store.js";
-import { h, kindIcon, stateMark, ago, errorToast } from "../dom.js";
+import { h, kindIcon, stateMark, ago, errorToast, setTopExtra } from "../dom.js";
+import { inboxSidePanel } from "./inbox-side-panel.js";
 
 let filter = "all";
+let machineFilter = "";
 
 function excerpt(pane) {
   return pane.state === "blocked" ? (pane.title ? `${pane.title}` : "Waiting for your answer") : "";
@@ -13,8 +15,11 @@ function card(pane, actions) {
   const space = store.space(pane.space_id);
   const send = (text) => conn.rpc("pane.write", { pane: pane.id, data: text }).catch(errorToast);
   const where = `${space?.name || ""}${pane.machine && pane.machine !== "local" ? " · " + pane.machine : " · This computer"}`;
-  const top = h("div", { class: "top" }, kindIcon(pane.kind), h("span", { style: { fontWeight: 500 } }, pane.name),
-    h("span", { class: "meta grow" }, `${where} · ${ago(pane.since || pane.created_at)}`), stateMark(pane),
+  const helpers = store.panes.filter((p) => p.parent === pane.id).length;
+  const when = { blocked: "waiting", done: "finished", exited: "exited" }[pane.state];
+  const age = `${when ? when + " " : ""}${ago(pane.since || pane.created_at)}${when && pane.state !== "blocked" ? " ago" : ""}`;
+  const top = h("div", { class: "top" }, kindIcon(pane.kind), h("span", { class: "nm" }, pane.name),
+    h("span", { class: "meta grow" }, `${where} · ${helpers && pane.state === "working" ? `spawned ${helpers} helper${helpers > 1 ? "s" : ""}` : age}`), stateMark(pane),
     pane.unread ? h("span", { class: "dot unread" }) : null);
   if (pane.state !== "blocked" && pane.state !== "done" && pane.state !== "exited") {
     return h("div", { class: "lrow", onclick: () => actions.focusPane(pane.id), style: { cursor: "pointer" } }, ...top.childNodes);
@@ -34,7 +39,7 @@ function card(pane, actions) {
       h("button", { class: "btn", onclick: () => conn.rpc("pane.restart", { pane: pane.id }).catch(errorToast) }, "Restart & resume"),
       h("button", { class: "btn", onclick: () => conn.rpc("pane.close", { pane: pane.id }).catch(errorToast) }, "Dismiss")));
   } else {
-    body.push(h("div", { class: "row" }, h("span", { class: "grow" }),
+    body.push(pane.title ? h("div", { class: "ex dimmer" }, pane.title) : null, h("div", { class: "row" }, h("span", { class: "grow" }),
       h("button", { class: "btn", onclick: () => conn.rpc("pane.focus", { pane: pane.id }) }, "Mark read"),
       h("button", { class: "btn", onclick: () => actions.focusPane(pane.id) }, "Open")));
   }
@@ -60,21 +65,28 @@ function policyCards(actions) {
 
 export function renderInbox(root, actions) {
   const groups = [["Needs you", ["blocked"]], ["Done", ["done"]], ["Working", ["working"]], ["Idle · Exited", ["idle", "exited"]]];
-  const panes = store.panes.filter((p) => filter === "all" || (filter === "blocked" && p.state === "blocked")
+  const inMachine = (p) => !machineFilter || (machineFilter === "local" ? !p.machine || p.machine === "local" : p.machine === machineFilter);
+  const scoped = store.panes.filter(inMachine);
+  const panes = scoped.filter((p) => filter === "all" || (filter === "blocked" && p.state === "blocked")
     || (filter === "done" && p.state === "done") || (filter === "unread" && p.unread));
-  const c = store.counts();
-  const seg = (key, label) => h("button", { class: "seg" + (filter === key ? " on" : ""),
-    onclick: () => { filter = key; renderInbox(root, actions); } }, label);
-  const content = [h("div", { class: "row" }, seg("all", `All ${store.panes.length}`), seg("blocked", `Needs you ${c.blocked}`),
-    seg("done", `Done ${c.done}`), seg("unread", `Unread ${c.unread}`), h("span", { class: "grow" }),
-    h("button", { class: "btn", onclick: () => Promise.all(store.panes.filter((p) => p.unread)
-      .map((p) => conn.rpc("pane.focus", { pane: p.id }))).catch(() => {}) }, "Mark all read")),
-  ...policyCards(actions)];
-  for (const [label, states] of groups) {
+  const n = (f) => scoped.filter(f).length;
+  const redraw = () => renderInbox(root, actions);
+  const seg = (key, text) => h("button", { class: "seg" + (filter === key ? " on" : ""), onclick: () => { filter = key; redraw(); } }, text);
+  const sel = h("select", { class: "seg", "aria-label": "Machine", onchange: () => { machineFilter = sel.value; redraw(); } },
+    h("option", { value: "" }, "All machines"), h("option", { value: "local" }, "This computer"),
+    ...(store.raw.machines || []).map((m) => h("option", { value: m.alias }, m.alias)));
+  sel.value = machineFilter;
+  const markAll = () => h("button", { class: "seg", onclick: () => Promise.all(store.panes.filter((p) => p.unread)
+    .map((p) => conn.rpc("pane.focus", { pane: p.id }))).catch(() => {}) }, "Mark all read");
+  const segs = () => [seg("all", `All ${scoped.length}`), seg("blocked", `Needs you ${n((p) => p.state === "blocked")}`),
+    seg("done", `Done ${n((p) => p.state === "done")}`), seg("unread", `Unread ${n((p) => p.unread)}`)];
+  setTopExtra("inbox", { meta: h("div", { class: "seg-b" }, ...segs()), right: [sel, markAll()] });
+  const content = [h("div", { class: "row mobile-only" }, ...segs(), h("span", { class: "grow" }), markAll()), ...policyCards(actions)];
+  for (const [text, states] of groups) {
     const items = panes.filter((p) => states.includes(p.state));
     if (!items.length) continue;
-    content.push(h("div", { class: "sechead" }, label), ...items.map((p) => card(p, actions)));
+    content.push(h("div", { class: "sechead" }, text), h("div", { class: "stack" }, ...items.map((p) => card(p, actions))));
   }
   if (!store.panes.length) content.push(h("div", { class: "meta" }, "No agents yet."));
-  root.replaceChildren(h("div", { class: "view", style: { maxWidth: "980px" } }, ...content));
+  root.replaceChildren(h("div", { class: "inbox-wrap" }, h("div", { class: "view inbox" }, ...content), inboxSidePanel()));
 }

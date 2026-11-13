@@ -13,10 +13,17 @@ import sys
 from aiohttp import web
 
 from herd import __version__
-from herd.app_paths import bundled_rules_dir, daemon_info_file, log_dir, restrict_to_owner, session_file, \
-    user_rules_dir
+from herd.app_paths import (
+    bundled_rules_dir,
+    daemon_info_file,
+    log_dir,
+    restrict_to_owner,
+    session_file,
+    user_rules_dir,
+)
 from herd.config.settings_loader import SettingsStore
 from herd.core.event_hub import EventHub
+from herd.core.git_watcher import GitWatcher
 from herd.core.session_manager import SessionManager
 from herd.core.session_persistence import SessionPersistence
 from herd.core.state_store import StateStore
@@ -25,10 +32,10 @@ from herd.daemon.daemon_context import DaemonContext
 from herd.daemon.web_server import build_app
 from herd.notify.desktop_notifier_service import DesktopNotifierService
 from herd.remote.remote_hub import RemoteHub
-from herd.status.detection_rule_loader import load_rule_sets
 
 # Importing registers the RPC methods.
-from herd.rpc import methods_git_fs, methods_panes, methods_system, methods_workspace  # noqa: F401
+from herd.rpc import methods_files, methods_git_fs, methods_panes, methods_system, methods_workspace  # noqa: F401
+from herd.status.detection_rule_loader import load_rule_sets
 
 log = logging.getLogger("herd.daemon")
 
@@ -81,7 +88,8 @@ async def serve(host: str = "127.0.0.1", port: int = 0) -> None:
     _write_info_securely(path, info)
     log.info("herd daemon %s listening on %s:%s", __version__, host, ctx.port)
 
-    tasks = [asyncio.create_task(ctx.monitor.run()), asyncio.create_task(_housekeeping(ctx))]
+    tasks = [asyncio.create_task(ctx.monitor.run()), asyncio.create_task(_housekeeping(ctx)),
+             asyncio.create_task(GitWatcher(ctx.manager).run())]
     loop = asyncio.get_running_loop()
     if sys.platform != "win32":
         for sig in (signal.SIGTERM, signal.SIGINT):

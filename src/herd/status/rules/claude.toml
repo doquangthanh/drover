@@ -33,7 +33,7 @@ id = "spinner_title"
 state = "working"
 priority = 1100
 region = "title"
-regex = ['^[⠀-⣿◐-◓✻✶✳✢·*] ']
+regex = ['^[⠀-⣿◐-◓✻✶✢·*] ']  # not ✳: Claude Code shows "✳ title" when idle
 
 [[rules]]
 id = "esc_to_interrupt"

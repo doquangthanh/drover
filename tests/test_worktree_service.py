@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import os
+import shutil
 from pathlib import Path
 
 import pytest
-
 from git_helpers import run_git
+
 from herd.git import worktree_service as wt
 from herd.git.worktree_service import GitError
 
@@ -24,6 +25,19 @@ async def test_repo_info_counts_uncommitted_files(git_repo):
     (git_repo / "scratch.txt").write_text("x", encoding="utf-8")
     (git_repo / "README.md").write_text("changed\n", encoding="utf-8")
     assert (await wt.repo_info(str(git_repo)))["dirty"] == 2
+
+
+async def test_repo_info_counts_commits_ahead_of_upstream(git_repo, tmp_path):
+    clone = tmp_path / "clone"
+    run_git(tmp_path, "clone", str(git_repo), str(clone))
+    for key, value in (("user.email", "qa@example.com"), ("user.name", "herd-qa"), ("commit.gpgsign", "false")):
+        run_git(clone, "config", key, value)
+    for n in range(2):
+        (clone / f"f{n}.txt").write_text("x", encoding="utf-8")
+        run_git(clone, "add", "-A")
+        run_git(clone, "commit", "-m", f"c{n}")
+    info = await wt.repo_info(str(clone / "."))
+    assert (info["branch"], info["ahead"], info["dirty"]) == ("main", 2, 0)
 
 
 async def test_repo_info_reports_plain_folder_as_non_repo(tmp_path):
@@ -66,6 +80,20 @@ async def test_list_worktrees_shows_main_and_task(git_repo):
     items = await wt.list_worktrees(str(git_repo))
     assert sorted(i.get("branch", "") for i in items) == ["hd/task-one", "main"]
     assert all(i["changes"] == 0 for i in items)
+
+
+async def test_list_worktrees_survives_a_deleted_worktree_folder(git_repo):
+    """Regression: a worktree whose folder was removed made the whole list fail with WinError 267."""
+    keep = await wt.create_worktree(str(git_repo), "keep")
+    gone = await wt.create_worktree(str(git_repo), "gone")
+    shutil.rmtree(gone["path"])
+    items = {i["branch"]: i for i in await wt.list_worktrees(str(git_repo))}
+    assert items["hd/gone"]["missing"] is True and items["hd/gone"]["changes"] == 0
+    assert items["hd/keep"]["missing"] is False
+    assert items["main"]["missing"] is False
+    assert Path(keep["path"]).is_dir()
+    await wt.git(str(git_repo), "worktree", "prune")  # what the "Clean up" button runs
+    assert "hd/gone" not in {i.get("branch") for i in await wt.list_worktrees(str(git_repo))}
 
 
 async def test_duplicate_worktree_is_refused(git_repo):

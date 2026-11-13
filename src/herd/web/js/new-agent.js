@@ -20,7 +20,9 @@ export function openNewAgent(actions, opts = {}) {
   const custom = h("input", { class: "in mono", placeholder: "command to run", hidden: true, "aria-label": "Custom command" });
   const args = h("input", { class: "in mono", id: "na-args", placeholder: "extra arguments (optional)" });
   const prompt = h("textarea", { class: "in", id: "na-p", rows: "3", placeholder: "Sent once the agent is ready (optional)" });
-  const gitNote = h("span", { class: "meta" });
+  const gitNote = h("span", { class: "gitnote" });
+  const wtDetail = h("div", { class: "na-wt" });
+  let info = null;
   const wtBox = h("input", { type: "checkbox" });
   wtBox.checked = st.worktree;
   const machineSel = h("select", { class: "in", id: "na-m" }, h("option", { value: "" }, "This computer"),
@@ -36,6 +38,12 @@ export function openNewAgent(actions, opts = {}) {
   const refresh = () => {
     chips.replaceChildren(...AGENTS.map(([k, label]) => h("button", { type: "button", class: "chip" + (st.kind === k ? " on" : ""),
       onclick: () => { st.kind = k; custom.hidden = k !== "custom"; refresh(); } }, k !== "custom" ? kindIcon(k) : null, label)));
+    const slug = (name.value.trim() || `${st.kind}`).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "task";
+    const root = (info?.root || "").replace(/[\\/]+$/, "");
+    const cut = Math.max(root.lastIndexOf("/"), root.lastIndexOf("\\"));
+    wtDetail.hidden = !wtBox.checked || !info?.is_repo;
+    wtDetail.replaceChildren("branch ", h("span", { class: "mono ac" }, `hd/${slug}`), " from ", h("span", { class: "mono" }, info?.branch || "HEAD"),
+      " → ", h("span", { class: "mono" }, root ? `${root}-wt/${slug}` : ""));
     preview.textContent = `hd run${st.machine ? " --on " + st.machine : ""}${wtBox.checked ? " --worktree <task>" : ""} -- ${command() || "(shell)"}`;
   };
   const checkGit = async () => {
@@ -43,15 +51,18 @@ export function openNewAgent(actions, opts = {}) {
     gitNote.textContent = "";
     if (!st.cwd) return;
     try {
-      const info = await conn.rpc("git.info", st.machine ? { path: st.cwd, machine: st.machine } : { path: st.cwd });
+      info = await conn.rpc("git.info", st.machine ? { path: st.cwd, machine: st.machine } : { path: st.cwd });
       gitNote.textContent = info.is_repo ? `✓ git repo · ${info.branch}${info.dirty ? ` · ${info.dirty} uncommitted` : ""}` : "not a git repo";
+      gitNote.className = "gitnote" + (info.is_repo ? " ok" : "");
       wtBox.disabled = !info.is_repo;
       if (!info.is_repo) wtBox.checked = false;
-    } catch (e) { gitNote.textContent = e.message; }
+      refresh();
+    } catch (e) { gitNote.textContent = e.message; info = null; }
   };
   const recent = [...new Set(store.spaces.map((s) => s.cwd))].slice(0, 5);
   cwd.addEventListener("change", checkGit);
   machineSel.addEventListener("change", () => { st.machine = machineSel.value || null; cwd.value = ""; refresh(); checkGit(); });
+  name.addEventListener("input", refresh);
   [custom, args].forEach((el) => el.addEventListener("input", refresh));
   wtBox.addEventListener("change", refresh);
 
@@ -78,8 +89,8 @@ export function openNewAgent(actions, opts = {}) {
     h("input", { type: "radio", name: "na-place", value, checked: st.place === value ? true : null }), label);
 
   openModal({
-    size: "", label: "New agent",
-    head: h("div", { class: "mhead" }, h("h2", {}, "New agent"), h("span", { class: "meta" }, space ? `in ${space.name}` : "")),
+    size: "na", label: "New agent",
+    head: h("div", { class: "mhead" }, h("h2", {}, "New agent"), h("span", { class: "meta" }, space ? `in ${space.name} · ${st.machine || "This computer"}` : "")),
     body: h("div", { class: "mbody" },
       h("div", {}, h("span", { class: "lab" }, "Agent"), chips, custom),
       h("div", { class: "row", style: { gap: "10px", alignItems: "flex-start" } },
@@ -94,7 +105,7 @@ export function openNewAgent(actions, opts = {}) {
           recent.length ? h("span", { class: "meta" }, "Recent") : null,
           ...recent.map((r) => h("button", { class: "chip sm", type: "button", title: r,
             onclick: () => { cwd.value = r; checkGit(); } }, r.split(/[\\/]/).pop())), gitNote)),
-      h("div", { class: "box" }, h("label", { class: "ck" }, wtBox, "Work in a new git worktree (branch hd/<name>)")),
+      h("div", { class: "box" }, h("label", { class: "ck" }, wtBox, "Work in a new git worktree"), wtDetail),
       h("div", { class: "row", style: { gap: "18px" } }, radio("tab", "New tab"), radio("split", "Split current pane"),
         radio("background", "Background")),
       h("div", {}, h("label", { class: "lab", for: "na-p" }, "First prompt"), prompt),

@@ -24,6 +24,16 @@ uv run herd            # opens the window (starts herd-server if needed)
 
 Put `hd` on your PATH with `uv tool install --editable .` (then `hd` / `herd` work anywhere).
 
+### Windows app (.exe, no Python needed)
+
+```powershell
+uv run pyinstaller packaging/herd.spec --noconfirm
+```
+
+Output: `dist\herd\` (~50 MB). Run `herd.exe` for the window; `hd.exe` is the CLI and background server.
+Copy the whole folder anywhere; agent panes get it on their PATH so `hd` works inside them.
+Needs the WebView2 runtime (built into Windows 10/11).
+
 ## Everyday use
 
 | Want to | Do |
@@ -59,6 +69,10 @@ wheel first with `uv build --wheel`), starts its daemon and connects through an 
 daemon only listens on 127.0.0.1. Host keys are checked against `known_hosts`.
 
 ## Phone
+
+The web UI has a phone layout (screens up to 760 px wide): a bottom tab bar (Agents, Inbox, Files, Changes, More),
+one full-screen terminal at a time with a key strip (Esc, Tab, arrows, Ctrl+C, Paste…) and a message box, a file
+tree + code editor, and dialogs as bottom sheets. Everything on the desktop is reachable from it.
 
 Simplest: SSH into this computer from the phone and run `hd attach NAME`.
 For the full UI over Tailscale: `hd server stop`, then `hd server run --listen <tailscale-ip>`,

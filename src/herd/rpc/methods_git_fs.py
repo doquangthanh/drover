@@ -34,8 +34,8 @@ async def _git_call(coro):
         return await coro
     except wt.GitError as exc:
         raise RpcError(E_GENERAL, str(exc)) from exc
-    except FileNotFoundError as exc:
-        raise RpcError(E_GENERAL, "git is not installed or the folder is missing") from exc
+    except OSError as exc:  # git missing, or the folder is gone / invalid (WinError 267)
+        raise RpcError(E_GENERAL, f"git cannot run here (is git installed and the folder still there?): {exc}") from exc
 
 
 @registry.method("git.info", "Is this folder a git repo, which branch, how dirty", "path")
@@ -56,6 +56,11 @@ async def worktree_create(ctx, p: dict) -> dict:
 @registry.method("worktree.remove", "Remove a worktree (refuses when dirty unless force)", "path, force?")
 async def worktree_remove(ctx, p: dict) -> None:
     await _git_call(wt.remove_worktree(need(p, "path"), bool(p.get("force"))))
+
+
+@registry.method("worktree.prune", "Forget worktrees whose folder no longer exists", "repo")
+async def worktree_prune(ctx, p: dict) -> None:
+    await _git_call(wt.git(need(p, "repo"), "worktree", "prune"))
 
 
 @registry.method("worktree.changes", "Files changed vs base (committed + working tree)", "path, base")
@@ -98,7 +103,7 @@ async def git_pr(ctx, p: dict) -> dict:
 
     proc = await asyncio.create_subprocess_exec(
         "gh", "pr", "create", "--fill", cwd=need(p, "path"),
-        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT)
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, **wt.NO_CONSOLE)
     out, _ = await proc.communicate()
     text = out.decode("utf-8", "replace").strip()
     if proc.returncode != 0:

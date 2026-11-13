@@ -44,9 +44,9 @@ export function confirmBox(title, text, okLabel = "OK", danger = false) {
     let settled = false;
     const finish = (v) => { if (!settled) { settled = true; closeModal(); resolve(v); } };
     openModal({
-      title, body: h("div", { class: "mbody" }, h("div", { style: { lineHeight: "1.5" } }, text)),
+      title, size: "sm", body: h("div", { class: "mbody", style: { padding: "18px" } }, h("div", { style: { lineHeight: "1.55", color: "var(--tfg)", whiteSpace: "pre-line" } }, text)),
       foot: [h("span", { class: "grow" }), h("button", { class: "btn", onclick: () => finish(false) }, "Cancel"),
-        h("button", { class: "btn " + (danger ? "danger" : "pri"), autofocus: true, onclick: () => finish(true) }, okLabel)],
+        h("button", { class: "btn " + (danger ? "dng" : "pri"), autofocus: true, onclick: () => finish(true) }, okLabel)],
       onClose: () => finish(false),
     });
   });

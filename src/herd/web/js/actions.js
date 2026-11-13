@@ -8,7 +8,7 @@ import { openPalette } from "./palette.js";
 import { openSearch } from "./search.js";
 import { openNewAgent } from "./new-agent.js";
 import { chooseFolder } from "./folder-picker.js";
-import { openShortcuts, openBroadcast } from "./views/server-view.js";
+import { openShortcuts, openBroadcast } from "./views/shortcuts-dialog.js";
 
 /** Group pane ids by machine: "vps-1:%3" -> vps-1, "%3" -> null (this computer). */
 function byMachine(ids) {
@@ -97,6 +97,17 @@ export function buildActions({ render, forceWorkspace, refreshView }) {
       if (pane.state === "working" && !(await confirmBox(`Stop ${pane.name}?`, "It is still working.", "Stop", true))) return;
       rpc("pane.close", { pane: pane.id }).then(() => { ui.focusedPane = null; }).catch(() => {});
     },
+    async closeSpace(spaceId) {
+      const space = store.space(typeof spaceId === "string" ? spaceId : ui.spaceId);
+      if (!space) return;
+      const count = store.panesOf(space.id).filter((p) => p.state !== "exited").length;
+      const detail = count ? `${count} agent${count > 1 ? "s" : ""} running in it will stop. The folder itself is not touched.`
+        : "The folder itself is not touched.";
+      if (!(await confirmBox(`Close ${space.name}?`, detail, "Close", true))) return;
+      rpc("space.remove", { space: space.id }).then(() => {
+        if (ui.spaceId === space.id) { ui.spaceId = null; ui.tabId = null; ui.focusedPane = null; forceWorkspace(); }
+      }).catch(() => {});
+    },
     async closeTab(tabId) {
       const tab = store.tab(tabId);
       if (!tab || !(await confirmBox(`Close tab ${tab.name}?`, "Every agent in this tab stops.", "Close", true))) return;
@@ -140,7 +151,7 @@ export function buildActions({ render, forceWorkspace, refreshView }) {
     search() { openSearch(a); },
     help() { openShortcuts(); },
     broadcast() { openBroadcast(); },
-    inbox() { a.show("inbox"); }, changes() { a.show("changes"); }, machines() { a.show("machines"); },
+    inbox() { a.show("inbox"); }, changes() { a.show("changes"); }, files() { a.show("files"); }, machines() { a.show("machines"); },
     settings() { a.show("settings"); }, server() { a.show("server"); }, tree() { a.show("tree"); },
     testNotify() { rpc("notify.test").catch(() => {}); },
     resume(ids, fresh = false) {

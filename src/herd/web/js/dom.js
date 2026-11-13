@@ -5,6 +5,15 @@ export function fill(el, ...kids) {
   el.replaceChildren(...kids.flat(Infinity).filter((k) => k != null && k !== false));
 }
 
+/** "branch main ●2 ↑1" for a space that is a git repo (branch, uncommitted files, unpushed commits), else null. */
+export function branchChip(space, onclick) {
+  if (!space || !space.branch) return null;
+  const bits = [icon("branch"), h("span", { class: "gb-name" }, space.branch)];
+  if (space.dirty) bits.push(h("span", { class: "gb-dirty", title: `${space.dirty} uncommitted file${space.dirty > 1 ? "s" : ""}` }, `●${space.dirty}`));
+  if (space.ahead) bits.push(h("span", { class: "gb-ahead", title: `${space.ahead} commit${space.ahead > 1 ? "s" : ""} not pushed` }, `↑${space.ahead}`));
+  return h(onclick ? "button" : "span", { class: "gb", title: `Git branch ${space.branch}`, onclick }, ...bits);
+}
+
 export function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
@@ -41,6 +50,11 @@ const PATHS = {
   restart: '<path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/>',
   back: '<path d="M15 6l-6 6 6 6"/>',
   up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  more: '<path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/>',
+  chevron: '<path d="M9 6l6 6-6 6"/>',
+  tab: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/>',
+  send: '<path d="M4 12h16M14 6l6 6-6 6"/>',
+  home: '<path d="M3 11l9-7 9 7v9H3z"/>',
   keyboard: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
 };
 
@@ -91,8 +105,13 @@ export function shortPath(path) {
   return parts.length > 3 ? "…/" + parts.slice(-2).join("/") : path;
 }
 
-export function toast(title, sub = "", onClick = null) {
-  const el = h("div", { class: "toast", role: "status" }, h("div", { class: "row" }, h("b", { class: "grow" }, title)),
+/** Per-view extras for the desktop top bar: `meta` follows the title, `right` sits at the far end. Views set them; renderTopbar draws them. */
+export const topExtra = { view: null, meta: null, right: null, paint: () => {} };
+export function setTopExtra(view, parts) { Object.assign(topExtra, { view, meta: null, right: null }, parts); topExtra.paint(); }
+
+export function toast(title, sub = "", onClick = null, lead = null) {
+  const close = h("button", { class: "ibtn tx", "aria-label": "Dismiss", onclick: (e) => { e.stopPropagation(); el.remove(); } }, "×");
+  const el = h("div", { class: "toast", role: "status" }, h("div", { class: "row" }, lead, h("b", { class: "grow" }, title), close),
     sub ? h("div", { class: "sub" }, sub) : null);
   el.addEventListener("click", () => { el.remove(); onClick && onClick(); });
   document.getElementById("toasts").append(el);

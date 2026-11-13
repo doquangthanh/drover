@@ -12,7 +12,7 @@ export const SHORTCUTS = [
   ["Tabs & spaces", [["t", "New tab", "newTab"], ["1", "Go to tab 1–9", "gotoTab"], ["Tab", "Next tab", "nextTab"],
     ["s", "Switch space", "switchSpace"], ["S", "New space", "newSpace"], ["b", "Toggle sidebar", "toggleSidebar"]]],
   ["herd", [[":", "Command palette", "palette"], ["/", "Jump to a terminal", "search"], ["i", "Inbox", "inbox"],
-    ["w", "Changes / worktrees", "changes"], ["m", "Machines", "machines"], [".", "Settings", "settings"],
+    ["f", "Files", "files"], ["w", "Changes / worktrees", "changes"], ["m", "Machines", "machines"], [".", "Settings", "settings"],
     ["D", "Server", "server"], ["?", "This list", "help"]]],
 ];
 
