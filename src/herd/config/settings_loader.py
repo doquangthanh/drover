@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 DEFAULT_SETTINGS: dict[str, Any] = {
     "theme": "dark",
     "file_icons": "material",
-    "prefix": "C-b",
+    "prefix": "C-a",
     "scrollback": 5000,
     "shell": "",  # empty = platform default
     "fs_roots": [],  # empty = home directory only
@@ -40,11 +40,11 @@ DEFAULT_SETTINGS: dict[str, Any] = {
 }
 
 DEFAULT_SETTINGS_TOML = """# herd settings — reloads on save. See AGENTS.md in this folder.
-# theme: dark | light | midnight | auto. Ctrl+B : "Theme" overrides it on one device.
+# theme: dark | light | midnight | auto. Ctrl+A : "Theme" overrides it on one device.
 theme = "dark"
 # file_icons: material | badge | line | none  (icons in the Files tree; Settings can override per device)
 file_icons = "material"
-prefix = "C-b"
+prefix = "C-a"
 scrollback = 5000
 # shell = "pwsh"
 # fs_roots = ["C:/Users/me/PROJECT"]   # folders the in-app picker may browse

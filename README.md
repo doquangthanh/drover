@@ -54,13 +54,13 @@ Needs the WebView2 runtime (built into Windows 10/11).
 
 | Want to | Do |
 |---|---|
-| Start an agent | `+` in the tab bar, or **Ctrl+B c**. Pick agent, folder (**Choose…** opens the Windows folder picker), optional worktree and first prompt |
-| Jump to whoever needs you | **Ctrl+B n**, or the Inbox |
-| Find any agent or text | **Ctrl+B /** |
-| All commands | **Ctrl+B :** — all shortcuts: **Ctrl+B ?** |
-| Split / zoom / close | **Ctrl+B %**, **Ctrl+B "**, **Ctrl+B z**, **Ctrl+B x** |
+| Start an agent | `+` in the tab bar, or **Ctrl+A c**. Pick agent, folder (**Choose…** opens the Windows folder picker), optional worktree and first prompt |
+| Jump to whoever needs you | **Ctrl+A n**, or the Inbox |
+| Find any agent or text | **Ctrl+A /** |
+| All commands | **Ctrl+A :** — all shortcuts: **Ctrl+A ?** |
+| Split / zoom / close | **Ctrl+A %**, **Ctrl+A "**, **Ctrl+A z**, **Ctrl+A x** |
 
-The prefix is Ctrl+B (tmux style). Press Ctrl+B twice to send a real Ctrl+B to the agent.
+The prefix is Ctrl+A (tmux style). Press Ctrl+A twice to send a real Ctrl+A to the agent.
 
 ## CLI (`hd`)
 
