@@ -48,6 +48,27 @@ class DesktopBridge:
         return sys.platform
 
 
+def dark_title_bar(window) -> None:
+    """The default title bar is bright white on top of the dark UI. Windows 10 1809+/11: dark caption, Windows 11: UI colours."""
+    if sys.platform != "win32":
+        return
+    import ctypes
+
+    hwnd = ctypes.windll.user32.FindWindowW(None, window.title)
+    if not hwnd:
+        return
+    dwm = ctypes.windll.dwmapi
+
+    def set_attr(attr: int, value: int) -> None:
+        v = ctypes.c_int(value)
+        dwm.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(v), ctypes.sizeof(v))  # unsupported attrs just fail
+
+    set_attr(20, 1)            # DWMWA_USE_IMMERSIVE_DARK_MODE
+    set_attr(35, 0x181513)     # DWMWA_CAPTION_COLOR  (COLORREF 0x00BBGGRR of #131518)
+    set_attr(34, 0x181513)     # DWMWA_BORDER_COLOR
+    set_attr(36, 0xE8E6E4)     # DWMWA_TEXT_COLOR
+
+
 def follow_daemon(window, loaded_url: str) -> None:
     """Restarting the server changes its port and token; point the open window at the new one.
 
@@ -81,13 +102,19 @@ def main() -> None:
 
         webbrowser.open(url)
         return
+    if sys.platform == "win32":
+        import ctypes
+
+        # Own taskbar identity: without it Windows can show a blank-page icon for the window's taskbar button.
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Herd.Desktop")
     bridge = DesktopBridge()
     bridge._window = webview.create_window(
-        "herd", url, js_api=bridge, width=1440, height=900, min_size=(900, 560), background_color="#131518"
+        " ", url, js_api=bridge, width=1440, height=900, min_size=(360, 480), background_color="#131518"
     )
     from herd.app_paths import web_static_dir
 
     icon = web_static_dir() / ("app-icon.ico" if sys.platform == "win32" else "favicon.png")  # WinForms needs .ico
+    bridge._window.events.shown += lambda: dark_title_bar(bridge._window)
     webview.start(follow_daemon, (bridge._window, url), private_mode=False, icon=str(icon) if icon.exists() else None)
 
 
