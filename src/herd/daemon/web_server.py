@@ -39,13 +39,17 @@ async def _call_remote(ctx, alias: str, method: str, params: dict):
     return prefix_ids(await link.call(method, remote_params, timeout=timeout), alias)
 
 
+# Large enough for a chat message carrying pictures (methods_chat.MAX_IMAGES_B64); everything needs the token anyway.
+MAX_MESSAGE_BYTES = 24 * 1024 * 1024
+
+
 def build_app(ctx) -> web.Application:
-    app = web.Application(client_max_size=4 * 1024 * 1024)
+    app = web.Application(client_max_size=MAX_MESSAGE_BYTES)
 
     async def ws_handler(request: web.Request) -> web.StreamResponse:
         if not _token_ok(ctx, request.query.get("token")):
             raise web.HTTPUnauthorized(text="bad token")
-        ws = web.WebSocketResponse(heartbeat=25, max_msg_size=4 * 1024 * 1024)
+        ws = web.WebSocketResponse(heartbeat=25, max_msg_size=MAX_MESSAGE_BYTES)
         await ws.prepare(request)
         label = request.query.get("label", "browser")[:40]
         await WsClientSession(ctx, ws, label).run()

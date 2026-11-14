@@ -10,7 +10,7 @@ if not os.path.isfile(os.path.join(SPECPATH, "..", "src", "herd", "web_dist", "i
 
 datas = collect_data_files("herd", includes=["web/**/*", "web_dist/**/*", "status/rules/*.toml"])
 datas += collect_data_files("winpty", includes=["*.exe"])  # ConPTY helpers (OpenConsole.exe, winpty-agent.exe)
-hidden = collect_submodules("herd") + collect_submodules("desktop_notifier") + ["winpty"]
+hidden = collect_submodules("herd") + collect_submodules("desktop_notifier") + collect_submodules("claude_agent_sdk") + ["winpty"]
 
 
 def analysis(script):

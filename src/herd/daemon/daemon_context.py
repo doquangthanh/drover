@@ -29,6 +29,7 @@ class DaemonContext:
     clients: dict[int, dict] = field(default_factory=dict)
     pending_answers: dict[str, tuple] = field(default_factory=dict)
     remotes: Any = None  # RemoteHub, set after construction
+    chats: Any = None  # ChatManager, set after construction
     stop_event: asyncio.Event = field(default_factory=asyncio.Event)
 
     def request_stop(self) -> None:
@@ -38,7 +39,8 @@ class DaemonContext:
         """Local snapshot plus every remote machine's snapshot (ids prefixed `alias:`)."""
         state = self.manager.snapshot()
         state["machines"] = self.remotes.public_state() if self.remotes else []
-        state["prefix"] = self.settings.get("prefix", "C-b")
+        state["chats"] = self.chats.snapshot() if self.chats else []
+        state["prefix"] = self.settings.get("prefix", "C-a")
         state["theme"] = self.settings.get("theme", "dark")
         state["file_icons"] = self.settings.get("file_icons", "material")
         state["notify"] = self.settings.get("notify", {})

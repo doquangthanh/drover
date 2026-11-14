@@ -19,8 +19,10 @@ from herd.app_paths import (
     log_dir,
     restrict_to_owner,
     session_file,
+    state_dir,
     user_rules_dir,
 )
+from herd.chat.chat_manager import ChatManager
 from herd.config.settings_loader import SettingsStore
 from herd.core.event_hub import EventHub
 from herd.core.git_watcher import GitWatcher
@@ -34,7 +36,14 @@ from herd.notify.desktop_notifier_service import DesktopNotifierService
 from herd.remote.remote_hub import RemoteHub
 
 # Importing registers the RPC methods.
-from herd.rpc import methods_files, methods_git_fs, methods_panes, methods_system, methods_workspace  # noqa: F401
+from herd.rpc import (  # noqa: F401
+    methods_chat,
+    methods_files,
+    methods_git_fs,
+    methods_panes,
+    methods_system,
+    methods_workspace,
+)
 from herd.status.detection_rule_loader import load_rule_sets
 
 log = logging.getLogger("herd.daemon")
@@ -51,6 +60,7 @@ def build_context(token: str) -> DaemonContext:
     monitor.rule_errors = rule_errors
     ctx = DaemonContext(settings, hub, manager, persistence, monitor, notifier, token)
     ctx.remotes = RemoteHub(ctx)
+    ctx.chats = ChatManager(state_dir() / "chats", hub.emit)
     manager.on_structure_change = persistence.schedule_save
     manager.notify_state = lambda name, kind, state: notifier.notify_state(name, kind, state, settings)
     return ctx
@@ -98,6 +108,7 @@ async def serve(host: str = "127.0.0.1", port: int = 0) -> None:
         await ctx.stop_event.wait()
     finally:
         ctx.persistence.save_now()
+        await ctx.chats.shutdown()
         for task in tasks:
             task.cancel()
         for link in ctx.remotes.links.values():
