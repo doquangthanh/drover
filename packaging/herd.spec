@@ -1,8 +1,14 @@
 ﻿# PyInstaller spec: one folder (dist/herd/) holding herd.exe (window) + hd.exe (CLI/daemon).
 # Build:  uv run pyinstaller packaging/herd.spec --noconfirm
+import os
+
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
-datas = collect_data_files("herd", includes=["web/**/*", "status/rules/*.toml"])
+# Run first: npm --prefix frontend ci && npm --prefix frontend run build  (writes src/herd/web_dist/)
+if not os.path.isfile(os.path.join(SPECPATH, "..", "src", "herd", "web_dist", "index.html")):
+    raise SystemExit("web_dist missing: run `npm --prefix frontend ci && npm --prefix frontend run build` first")
+
+datas = collect_data_files("herd", includes=["web/**/*", "web_dist/**/*", "status/rules/*.toml"])
 datas += collect_data_files("winpty", includes=["*.exe"])  # ConPTY helpers (OpenConsole.exe, winpty-agent.exe)
 hidden = collect_submodules("herd") + collect_submodules("desktop_notifier") + ["winpty"]
 

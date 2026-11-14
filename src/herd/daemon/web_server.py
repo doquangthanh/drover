@@ -9,6 +9,7 @@ import logging
 from aiohttp import web
 
 from herd.app_paths import web_static_dir
+from herd.daemon.web_ui_routes import add_ui_routes
 from herd.daemon.ws_client_session import WsClientSession
 from herd.rpc.rpc_registry import RpcError, registry
 
@@ -40,11 +41,6 @@ async def _call_remote(ctx, alias: str, method: str, params: dict):
 
 def build_app(ctx) -> web.Application:
     app = web.Application(client_max_size=4 * 1024 * 1024)
-    static = web_static_dir()
-
-    async def index(request: web.Request) -> web.StreamResponse:
-        # The page itself is harmless; every data channel below requires the token.
-        return web.FileResponse(static / "index.html", headers=SECURITY_HEADERS)
 
     async def ws_handler(request: web.Request) -> web.StreamResponse:
         if not _token_ok(ctx, request.query.get("token")):
@@ -81,9 +77,10 @@ def build_app(ctx) -> web.Application:
     async def health(request: web.Request) -> web.StreamResponse:
         return web.json_response({"ok": True, "app": "herd"})
 
-    app.router.add_get("/", index)
     app.router.add_get("/ws", ws_handler)
     app.router.add_post("/rpc", rpc_handler)
     app.router.add_get("/health", health)
-    app.router.add_static("/static/", static, show_index=False)
+    # Icons, ace and favicon stay as plain files; the UI itself is the built bundle (see web_ui_routes).
+    app.router.add_static("/static/", web_static_dir(), show_index=False)
+    add_ui_routes(app, SECURITY_HEADERS)
     return app

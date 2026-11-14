@@ -34,6 +34,9 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build]
+artifacts = ["src/herd/web_dist/**"]  # gitignored Vite build output
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/herd"]
 

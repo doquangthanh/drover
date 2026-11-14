@@ -61,6 +61,11 @@ def web_static_dir() -> Path:
     return Path(__file__).parent / "web"
 
 
+def web_dist_dir() -> Path:
+    """Vite build output of the React UI (gitignored; `cd frontend && npm run build`)."""
+    return Path(__file__).parent / "web_dist"
+
+
 def restrict_to_owner(path: Path) -> None:
     """Best-effort: make a secret file readable by the current user only."""
     try:

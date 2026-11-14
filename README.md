@@ -24,9 +24,25 @@ uv run herd            # opens the window (starts herd-server if needed)
 
 Put `hd` on your PATH with `uv tool install --editable .` (then `hd` / `herd` work anywhere).
 
+### Web UI (React) build
+
+The UI is a Vite + React + TypeScript app in `frontend/`; the daemon serves its build from `src/herd/web_dist/`
+(gitignored). Build it once before running from a checkout (needs Node 20.19+ or 22+):
+
+```
+npm --prefix frontend ci
+npm --prefix frontend run build      # -> src/herd/web_dist/, served at / (and /ui/)
+```
+
+Without it the daemon answers `503 UI not built`. For UI work run the daemon, then `npm --prefix frontend run dev`:
+the dev server (http://localhost:5173/ui/?token=...) proxies `/ws`, `/rpc`, `/static` and `/health` to the running
+daemon (read from `daemon.json`; override with `HERD_STATE_DIR`). Checks: `npm --prefix frontend run typecheck`
+and `npm --prefix frontend test`.
+
 ### Windows app (.exe, no Python needed)
 
 ```powershell
+npm --prefix frontend ci; npm --prefix frontend run build   # the spec refuses to build without web_dist
 uv run pyinstaller packaging/herd.spec --noconfirm
 ```
 
@@ -92,5 +108,5 @@ Files live in `%APPDATA%\herd` (Linux: `~/.config/herd`): `settings.toml`, `keys
 
 ## Licenses
 
-herd: Apache-2.0. Bundles xterm.js (MIT, `src/herd/web/vendor/LICENSE-xterm.txt`).
+herd: Apache-2.0. Uses xterm.js (MIT, npm `@xterm/*`; license copy in `src/herd/web/vendor/LICENSE-xterm.txt`).
 Detection rules are inspired by Herdr's `distribution/agent-detection` (Apache-2.0).

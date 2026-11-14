@@ -11,3 +11,7 @@ build/
 daemon.json
 session.json
 *.log
+
+# frontend (React/Vite)
+frontend/node_modules/
+src/herd/web_dist/
