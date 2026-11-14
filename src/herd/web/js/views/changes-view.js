@@ -3,8 +3,10 @@ import { conn } from "../connection.js";
 import { store } from "../store.js";
 import { h, kindIcon, stateMark, errorToast, toast, setTopExtra } from "../dom.js";
 import { confirmBox, promptText } from "../modal.js";
+import { isPhone } from "../viewport.js";
+import { renderPhoneChanges } from "./changes-phone.js";
 
-const st = { path: null, file: null, base: "", cache: null, confirm: false }; // cache: last git data, reused when only the file changes
+const st = { path: null, file: null, base: "", cache: null, confirm: false, stage: "list", wtOpen: false, wrap: true }; // cache: last git data, reused when only the file changes
 
 function rpc(method, params, machine) { return conn.rpc(method, machine ? { ...params, machine } : params); }
 
@@ -60,7 +62,11 @@ export async function renderChanges(root, actions, reuse = false) {
   if (!st.path || !live.some((t) => t.path === st.path)) st.path = (live[1] || live[0] || trees[0]).path;
   const current = trees.find((t) => t.path === st.path);
   const agentsIn = (path) => store.panes.filter((p) => p.cwd && p.cwd.replace(/\\/g, "/").startsWith(path.replace(/\\/g, "/")));
-  const redraw = () => renderChanges(root, actions);
+  const redraw = (keepData) => renderChanges(root, actions, keepData === true);
+  const run = async (label, fn) => {
+    try { const r = await fn(); if (r?.output) toast(label, r.output.slice(0, 200)); redraw(); } catch (e) { errorToast(e); }
+  };
+  const act = (label, fn, pri, disabled) => h("button", { class: "btn" + (pri ? " pri" : ""), disabled: disabled ? true : null, onclick: () => run(label, fn) }, label);
 
   const newWorktree = async () => {
     const task = await promptText("New task worktree", "", "Task name");
@@ -79,7 +85,7 @@ export async function renderChanges(root, actions, reuse = false) {
       h("button", { class: "btn", onclick: () => { st.confirm = false; redraw(); } }, "Cancel"))) : null;
 
   const list = h("div", { class: "wtlist" }, ...trees.map((t, i) => treeRow(t, i, { path: st.path, agent: i ? agentsIn(t.path)[0] : null,
-    onpick: () => { st.path = t.path; st.file = null; st.confirm = false; redraw(); } })),
+    onpick: () => { st.path = t.path; st.file = null; st.stage = "list"; st.confirm = false; redraw(); } })),
   missing ? h("div", { style: { padding: "4px 10px" } },
     h("button", { class: "btn", title: "git worktree prune: forget worktrees whose folder is gone", onclick: async () => {
       try { await rpc("worktree.prune", { repo: info.root }, machine); toast("Cleaned up", `${missing} stale worktree${missing > 1 ? "s" : ""} removed from git's list`); redraw(); }
@@ -92,19 +98,21 @@ export async function renderChanges(root, actions, reuse = false) {
 
   const files = cached ? cached.files : await rpc("worktree.changes", { path: st.path, base: st.base }, machine).catch(() => []);
   st.cache = { spaceId: space.id, path: st.path, info, trees, files };
+  if (isPhone()) {
+    renderPhoneChanges({ root, st, files, current, mainTree, trees, list, redraw, rpc, machine, actions, newWorktree, act: { run, btn: act } });
+    return;
+  }
   if (!st.file && files.length) st.file = files[0].path;
   const diffBox = h("div", { class: "grow", style: { overflow: "auto", padding: "10px 0" } });
   const fileList = h("div", { class: "cfiles" },
     ...files.map((f) => h("button", { class: "cf" + (f.path === st.file ? " on" : ""), onclick: () => { st.file = f.path; renderChanges(root, actions, true); } },
-      h("span", { class: "cs " + (f.status || "M") }, f.status || "M"), h("span", { class: "mono grow trunc" }, f.path),
+      h("span", { class: "cs " + (f.status || "M") }, f.status || "M"), h("span", { class: "mono grow trunc", title: f.path }, f.path.slice(f.path.lastIndexOf("/") + 1), " ",
+        h("span", { class: "dim" }, f.path.slice(0, f.path.lastIndexOf("/") + 1))),
       h("span", { class: "add mono" }, `+${f.added}`), f.removed ? h("span", { class: "rem mono" }, `-${f.removed}`) : null)),
     files.length ? null : h("div", { class: "meta", style: { padding: "8px" } }, "No changes vs " + st.base));
   if (st.file) rpc("worktree.diff", { path: st.path, base: st.base, file: st.file }, machine)
     .then((r) => diffBox.replaceChildren(diffEl(r.diff))).catch((e) => diffBox.replaceChildren(h("div", { class: "errtext" }, e.message)));
 
-  const act = (label, fn, pri) => h("button", { class: "btn" + (pri ? " pri" : ""), onclick: async () => {
-    try { const r = await fn(); if (r?.output) toast(label, r.output.slice(0, 200)); redraw(); } catch (e) { errorToast(e); }
-  } }, label);
   const baseIn = h("input", { class: "in mono basein", value: st.base, "aria-label": "Compare against",
     onchange: () => { st.base = baseIn.value.trim() || "main"; redraw(); } });
   root.replaceChildren(h("div", { class: "vsplit" },
@@ -114,7 +122,7 @@ export async function renderChanges(root, actions, reuse = false) {
         h("span", { class: "mono", style: { color: "var(--accent)" } }, current?.branch || ""), h("span", { class: "meta" }, "vs"), baseIn,
         h("span", { class: "grow" }),
         act("Commit…", async () => { const m = await promptText("Commit message", "", "Message"); return m ? rpc("git.commit", { path: st.path, message: m }, machine) : null; }),
-        act(`Rebase on ${st.base}`, () => rpc("git.rebase", { path: st.path, base: st.base }, machine)),
+        current && current.branch !== st.base ? act(`Rebase on ${st.base}`, () => rpc("git.rebase", { path: st.path, base: st.base }, machine)) : null,
         act("Push & open PR", async () => { await rpc("git.push", { path: st.path }, machine); return rpc("git.pr", { path: st.path }, machine); }, true)),
       h("div", { class: "csplit", style: { display: "flex", flex: "1", minHeight: "0" } }, fileList, diffBox))));
 }
