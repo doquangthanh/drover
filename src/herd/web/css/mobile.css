@@ -4,7 +4,7 @@
 .mobile-only, #bottomnav, #fab, .m-phead, .m-ihead, .m-isearch { display: none !important; }
 .keybar { display: none !important; }
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (pointer: coarse) and (max-height: 500px) {
   :root { --nav-h: 66px; --m-deep: #0d0e10; --m-field: #1f2125; }
   :root[data-theme="light"] { --m-deep: var(--canvas); --m-field: var(--raised); }
   :root[data-theme="midnight"] { --m-deep: var(--chrome); --m-field: var(--raised); }
@@ -122,4 +122,21 @@
   .kb-send::before { content: ""; position: absolute; inset: 13px; background: currentColor;
     -webkit-mask: var(--m-arrow) center / contain no-repeat; mask: var(--m-arrow) center / contain no-repeat; }
   :root { --m-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 19V5M5 12l7-7 7 7'/%3E%3C/svg%3E"); }
+}
+
+/* Phone turned sideways (touch + short viewport): slimmer chrome so the terminal keeps its height, notch-safe sides */
+@media (pointer: coarse) and (max-height: 500px) {
+  :root { --nav-h: 48px; }
+  #bottomnav { padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+  .mt { flex-direction: row; gap: 6px; font-size: 12px; }
+  .mt-ic .i { width: 20px; height: 20px; }
+  .brand { height: 44px; }
+  body[data-m="pane"] .tabs { min-height: 44px; padding: 2px 8px; }
+  .m-ps { display: none; }
+  body[data-m="home"] #fab { height: 40px; padding: 0 16px; }
+  .kb-keys { padding: 4px 12px; } .kb-keys button { height: 32px; }
+  .kb-compose { padding-top: 4px; } .keybar .compose { height: 38px; } .kb-send, .kb-mic { width: 38px; height: 38px; }
+}
+@media (pointer: coarse) and (max-height: 500px) {
+  body[data-m="home"] #fab { font-size: 0; gap: 0; width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 50%; } /* icon only */
 }

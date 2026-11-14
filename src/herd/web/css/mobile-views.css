@@ -1,6 +1,6 @@
 /* Phone screens: Inbox, Files, editor, Changes, Settings (PhoneList / PhoneFiles / PhoneEditor / PhoneChanges / PhoneSettings).
    Layout rules only; the markup is the desktop markup. */
-@media (max-width: 760px) {
+@media (max-width: 760px), (pointer: coarse) and (max-height: 500px) {
   .view { padding: 12px 14px 24px; }
   .vsplit { flex-direction: column; padding: 6px; gap: 6px; }
   .vsplit > .panel { width: 100% !important; min-width: 0; }

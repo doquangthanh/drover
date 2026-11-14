@@ -1,7 +1,7 @@
 .scrim { position: fixed; inset: 0; background: rgba(5,6,8,.55); z-index: 20; display: flex;
   align-items: flex-start; justify-content: center; padding-top: 8vh; }
 .modal { background: var(--card); border: 1px solid var(--border2); border-radius: 12px; width: min(600px, 94vw);
-  max-height: 84vh; display: flex; flex-direction: column; box-shadow: 0 30px 80px -20px rgba(0,0,0,.8); overflow: hidden; }
+  max-height: 84vh; max-height: 84dvh; display: flex; flex-direction: column; box-shadow: 0 30px 80px -20px rgba(0,0,0,.8); overflow: hidden; }
 .modal.wide { width: min(960px, 96vw); }
 .modal.xwide { width: min(1080px, 96vw); }
 .mhead { min-height: 50px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 16px;
@@ -47,9 +47,9 @@ mark { background: rgb(var(--accent-rgb) / .25); color: var(--fg); border-radius
 .keysgrid .kr span:first-child { flex: 1; }
 
 /* dialog variants (desktop): width / position follow the design boards */
-@media (min-width: 761px) {
-.modal.pal { width: 600px; } .modal.srch { width: 960px; height: 600px; max-height: 90vh; }
-.modal.na { width: 580px; } .modal.fp { width: 900px; height: 640px; max-height: 92vh; }
+@media (min-width: 761px) and (pointer: fine), (min-width: 761px) and (min-height: 501px) {
+.modal.pal { width: 600px; } .modal.srch { width: 960px; height: 600px; max-height: 90vh; max-height: 90dvh; }
+.modal.na { width: 580px; } .modal.fp { width: 900px; height: 640px; max-height: 92vh; max-height: 92dvh; }
 .modal.keys { width: 1080px; max-width: 96vw; } .modal.sm { width: 480px; }
 .scrim:has(> .modal.pal) { padding-top: 96px; } .scrim:has(> .modal.srch) { padding-top: 80px; }
 .scrim:has(> .modal.na) { padding-top: 56px; } .scrim:has(> .modal.fp) { padding-top: 70px; }
@@ -115,9 +115,9 @@ mark { background: rgb(var(--accent-rgb) / .25); color: var(--fg); border-radius
 .keysgrid .keys { display: flex; gap: 4px; align-items: center; }
 .kfoot { padding: 12px 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
 .kfoot .mono { color: var(--tfg); }
-@media (max-width: 760px) { .sp-r, .fp-pl { display: none; } .sp-l { width: 100%; border-right: 0; } .modal.srch, .modal.fp { height: 92dvh; } }
+@media (max-width: 760px), (pointer: coarse) and (max-height: 500px) { .sp-r, .fp-pl { display: none; } .sp-l { width: 100%; border-right: 0; } .modal.srch, .modal.fp { height: 92dvh; } }
 .gitnote { font-size: 11.5px; color: var(--dim); } .gitnote.ok { color: var(--done); }
-@media (min-width: 761px) { .modal.na { max-height: calc(100vh - 72px); } }
+@media (min-width: 761px) and (pointer: fine), (min-width: 761px) and (min-height: 501px) { .modal.na { max-height: calc(100vh - 72px); max-height: calc(100dvh - 72px); } }
 .na .chip { padding: 0 11px; gap: 7px; }
 .na .chip.sm { padding: 0 8px; }
 .na .mfoot .btn, .fp .mfoot .btn { height: 32px; padding: 0 14px; border-radius: 8px; }

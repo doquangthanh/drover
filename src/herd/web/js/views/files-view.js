@@ -5,6 +5,7 @@ import { h, fill, toast, errorToast } from "../dom.js";
 import { confirmBox, promptText } from "../modal.js";
 import { diffEl } from "./changes-view.js";
 import { fileIcon, onIconSetChange } from "../file-icons.js";
+import { isPhone } from "../viewport.js";
 import { getEditor, openDoc, getDoc, isDirty, reloadDoc, markSaved, onSave, onEdit, layout } from "../editor.js";
 
 const st = { spaceId: null, dirs: new Map(), open: new Set(), status: {}, isRepo: false, file: null, tab: "file",
@@ -36,7 +37,7 @@ function syncDoc() {
   if (isDirty(keyOf(st.file))) st.stale = true; else reloadDoc(keyOf(st.file), c.text, c.mtime_us);
 }
 
-const phone = () => matchMedia("(max-width: 760px)").matches; // phones show the tree OR the file, never both
+const phone = isPhone; // phones show the tree OR the file, never both
 
 async function openFile(space, path) {
   st.file = path; st.content = null; st.diff = null; st.stale = false; st.stage = "file";

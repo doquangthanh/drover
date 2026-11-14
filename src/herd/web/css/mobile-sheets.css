@@ -1,5 +1,5 @@
 /* Phone dialogs: every modal becomes a bottom sheet (PhoneMore, PhoneNewAgent). */
-@media (max-width: 760px) {
+@media (max-width: 760px), (pointer: coarse) and (max-height: 500px) {
   .scrim { align-items: flex-end; padding-top: 0; }
   .modal, .modal.wide, .modal.xwide { width: 100%; max-height: calc(var(--vvh, 100dvh) * .92); border-radius: 16px 16px 0 0;
     border-bottom: 0; background: var(--card); border-color: var(--border2); }

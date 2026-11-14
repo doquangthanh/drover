@@ -70,4 +70,4 @@ button.gb { cursor: pointer; } button.gb:hover { background: rgb(var(--accent-rg
 .srow .git .gb-dirty { margin-left: 4px; font-size: 0; width: 5px; height: 5px; border-radius: 50%; background: var(--yellow); display: inline-block; }
 
 /* desktop-only top bar extras: the phone has its own navigation */
-@media (max-width: 760px) { .desk, .vbar > .desk { display: none !important; } }
+@media (max-width: 760px), (pointer: coarse) and (max-height: 500px) { .desk, .vbar > .desk { display: none !important; } }

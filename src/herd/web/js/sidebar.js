@@ -15,7 +15,7 @@ function spaceIndicator(space) {
 function machineHeader(label, iconName, status, actions) {
   const dot = status === "connected" || status === "local" ? "ok" : status === "error" ? "bad" : "blocked";
   return h("div", { class: "mach" }, icon(iconName, "i"), h("span", { class: "grow trunc" }, label),
-    h("button", { class: "ibtn", style: { width: "20px", height: "20px" }, title: "New space here",
+    h("button", { class: "ibtn", title: "New space here",
       "aria-label": `New space on ${label}`, onclick: actions.newSpace }, "+"),
     h("span", { class: `dot ${dot}`, title: status }));
 }

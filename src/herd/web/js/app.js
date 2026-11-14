@@ -5,6 +5,7 @@ import { h, toast, topExtra, kindIcon } from "./dom.js";
 import { setServerTheme } from "./theme.js";
 import { setServerIconSet } from "./file-icons.js";
 import { renderMobileNav } from "./mobile-nav.js";
+import { onLayoutChange } from "./viewport.js";
 import { registerActions, setPrefix } from "./keys.js";
 import { renderSidebar } from "./sidebar.js";
 import { renderTopbar, renderWorkspace, renderStatus, refreshPaneHeaders } from "./workspace.js";
@@ -87,6 +88,8 @@ function updateFocusClasses() {
 }
 
 const actions = buildActions({ render, forceWorkspace: () => { lastWorkspaceKey = ""; }, refreshView: () => { lastView = ""; } });
+// Rotating a phone or resizing across the phone/tablet boundary changes which markup a view builds: redraw everything.
+onLayoutChange(() => { lastWorkspaceKey = ""; lastView = ""; render(); });
 registerActions(actions);
 topExtra.paint = () => renderTopbar($("topbar"), actions);
 
