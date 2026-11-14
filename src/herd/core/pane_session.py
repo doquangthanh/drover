@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 import time
 from collections import deque
 from collections.abc import Callable
@@ -103,9 +104,14 @@ class PaneSession:
         if self.backend:
             self.backend.resize(cols, rows)
 
-    def kill(self) -> None:
-        if self.backend:
+    def kill(self, wait: bool = False) -> None:
+        """Terminate the process. Off the event loop by default (ConPTY teardown takes 100+ ms); `wait` for shutdown."""
+        if not self.backend:
+            return
+        if wait:
             self.backend.kill()
+        else:
+            threading.Thread(target=self.backend.kill, name=f"kill-{self.meta.id}", daemon=True).start()
 
     def replay_text(self) -> str:
         return "".join(self.replay)

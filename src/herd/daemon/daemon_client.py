@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
 import time
 
@@ -41,6 +40,8 @@ def is_alive(info: dict | None) -> bool:
 
 
 def start_background() -> None:
+    import subprocess  # only the cold-start path needs it; saves ~25 ms on every other command
+
     cmd = [*hd_command(windowless=True), "server", "run", "--background"]
     log = open(log_dir() / "daemon-stdout.log", "ab")  # noqa: SIM115 - handed to the child
     kwargs: dict = {"stdout": log, "stderr": log, "stdin": subprocess.DEVNULL, "close_fds": True}

@@ -37,7 +37,7 @@ class Daemon:
 
     async def shutdown(self) -> None:
         for pane in list(self.ctx.manager.panes.values()):
-            pane.kill()
+            pane.kill(wait=True)
         self.monitor.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await self.monitor

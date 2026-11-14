@@ -103,7 +103,7 @@ async def serve(host: str = "127.0.0.1", port: int = 0) -> None:
         for link in ctx.remotes.links.values():
             link.stop()
         for pane in list(ctx.manager.panes.values()):
-            pane.kill()
+            pane.kill(wait=True)
         await runner.cleanup()
         try:
             if json.loads(path.read_text(encoding="utf-8")).get("pid") == os.getpid():
