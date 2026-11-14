@@ -66,7 +66,17 @@ COMMANDS = {
 }
 
 
+def _utf8_output() -> None:
+    """Agent screens contain box-drawing characters and emoji; a Windows console or pipe defaults to cp1252 and `hd read` crashed."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):  # not a text stream (captured by a test, closed)
+            pass
+
+
 def main(argv: list[str] | None = None) -> None:
+    _utf8_output()
     args = build_parser().parse_args(argv)
     if args.cmd in (None, "app"):
         from herd.desktop.desktop_window_launcher import main as open_app
