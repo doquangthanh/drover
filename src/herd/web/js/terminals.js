@@ -2,7 +2,10 @@
 import { conn } from "./connection.js";
 import { handleKey } from "./keys.js";
 import { onThemeChange, termOptions, termTheme } from "./theme.js";
+import { isPhone } from "./viewport.js";
+import { attachTouchScroll } from "./terminal-touch-scroll.js";
 
+const FONT = '"JetBrains Mono", ui-monospace, Consolas, monospace';
 const terms = new Map();
 onThemeChange(() => { for (const { term } of terms.values()) term.options.theme = termTheme(); });
 
@@ -12,7 +15,7 @@ export function getTerminal(paneId) {
   const el = document.createElement("div");
   el.className = "term";
   const term = new Terminal({
-    fontFamily: '"JetBrains Mono", ui-monospace, Consolas, monospace', fontSize: matchMedia("(max-width: 760px)").matches ? 12 : 13, lineHeight: 1.15,
+    fontFamily: FONT, fontSize: isPhone() ? 12 : 13, lineHeight: 1.15,
     ...termOptions(), scrollback: 5000, allowProposedApi: true, macOptionIsMeta: true,
   });
   const fit = new FitAddon.FitAddon();
@@ -32,12 +35,25 @@ export function getTerminal(paneId) {
   return entry;
 }
 
+/** xterm measures a character once. If the web font arrives after that, the cells are wider than measured and the grid
+ *  overflows the screen (text cut off on the right/bottom). Re-measure when the font is ready. */
+function refitWhenFontReady(entry) {
+  document.fonts.load('13px "JetBrains Mono"').then(() => {
+    entry.term.options.fontFamily = FONT + ", monospace"; // a changed value makes xterm measure again
+    scheduleFit(entry);
+  }).catch(() => {});
+}
+
 /** GPU renderer: far smoother than the default DOM renderer. Falls back silently. */
 function enableWebgl(entry) {
   if (typeof WebglAddon === "undefined") return;
+  // Touch devices keep the DOM renderer: with WebGL the cell size changes after the first fit, so the grid came out wider
+  // and taller than the screen (text cut off on the right and bottom), and iOS drops WebGL contexts in the background.
+  if (matchMedia("(pointer: coarse)").matches) return;
   try {
     const gl = new WebglAddon.WebglAddon();
     gl.onContextLoss(() => gl.dispose()); // xterm falls back to the DOM renderer
+    gl.onChangeTextureAtlas(() => scheduleFit(entry)); // WebGL's real cell size is known only after its first render
     entry.term.loadAddon(gl);
   } catch { /* no WebGL available */ }
 }
@@ -47,7 +63,9 @@ function scheduleFit(entry) {
   if (!entry.opened) {
     entry.term.open(entry.el);
     entry.opened = true;
+    attachTouchScroll(entry.term, entry.el, (keys) => conn.input(entry.paneId, keys));
     enableWebgl(entry);
+    refitWhenFontReady(entry);
   }
   clearTimeout(entry.resizeTimer);
   entry.resizeTimer = setTimeout(() => {
