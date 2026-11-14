@@ -1,40 +1,49 @@
-"""Draw the herd app icon (packaging/herd.ico + web favicon). Run: uv run --with pillow python packaging/make_icon.py"""
+"""Draw the herd app icon, a robot agent head (packaging/herd.ico + web favicon). Run: uv run --with pillow python packaging/make_icon.py"""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent
-ACCENT_TOP, ACCENT_BOTTOM = (166, 194, 228), (118, 150, 196)  # around the UI accent #96b2d7
+ACCENT = (150, 178, 215)  # UI accent #96b2d7
 INK = (19, 21, 24)  # canvas #131518
 DONE = (76, 196, 140)  # done dot #4cc48c
-FONT = "C:/Windows/Fonts/segoeuib.ttf"
+EAR = tuple(round(a * 0.6 + b * 0.4) for a, b in zip(ACCENT, INK))  # accent at 60% over the canvas
 S = 1024  # draw big, downsample for crisp small sizes
+U = S / 64  # the design is laid out on a 64-unit grid
+
+
+def _dot(d: ImageDraw.ImageDraw, cx: float, cy: float, r: float, fill) -> None:
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=fill)
 
 
 def draw() -> Image.Image:
     img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    grad = Image.new("RGBA", (S, S))
-    gd = ImageDraw.Draw(grad)
-    for y in range(S):
-        t = y / (S - 1)
-        gd.line([(0, y), (S, y)], fill=tuple(round(a + (b - a) * t) for a, b in zip(ACCENT_TOP, ACCENT_BOTTOM)))
-    mask = Image.new("L", (S, S), 0)
-    pad = 40
-    ImageDraw.Draw(mask).rounded_rectangle([pad, pad, S - pad, S - pad], radius=220, fill=255)
-    img.paste(grad, (0, 0), mask)
-
     d = ImageDraw.Draw(img)
-    font = ImageFont.truetype(FONT, 760)
-    box = d.textbbox((0, 0), "h", font=font)
-    w, h = box[2] - box[0], box[3] - box[1]
-    d.text(((S - w) / 2 - box[0] - 40, (S - h) / 2 - box[1] + 10), "h", font=font, fill=INK)
+    d.rounded_rectangle([2 * U, 2 * U, 62 * U, 62 * U], radius=15 * U, fill=INK)
 
-    r, cx, cy = 118, S - 230, S - 230  # status dot, ringed in the canvas colour so it reads at 16px
-    d.ellipse([cx - r - 34, cy - r - 34, cx + r + 34, cy + r + 34], fill=INK)
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=DONE)
+    # antenna with the green status light
+    d.line([(32 * U, 22 * U), (32 * U, 14 * U)], fill=ACCENT, width=round(3.5 * U))
+    _dot(d, 32 * U, 22 * U, 1.75 * U, ACCENT)
+    _dot(d, 32 * U, 11.5 * U, 4 * U, DONE)
+
+    # ears, head
+    d.rounded_rectangle([8 * U, 32 * U, 13 * U, 43 * U], radius=2.5 * U, fill=EAR)
+    d.rounded_rectangle([51 * U, 32 * U, 56 * U, 43 * U], radius=2.5 * U, fill=EAR)
+    d.rounded_rectangle([14 * U, 22 * U, 50 * U, 53 * U], radius=10 * U, fill=ACCENT)
+
+    # eyes
+    _dot(d, 24.5 * U, 36 * U, 3.8 * U, INK)
+    _dot(d, 39.5 * U, 36 * U, 3.8 * U, INK)
+
+    # smile: quadratic curve (25,44.5) -> (39,44.5), control (32,49), drawn as round-capped dots
+    for i in range(41):
+        t = i / 40
+        x = (1 - t) ** 2 * 25 + 2 * (1 - t) * t * 32 + t**2 * 39
+        y = (1 - t) ** 2 * 44.5 + 2 * (1 - t) * t * 49 + t**2 * 44.5
+        _dot(d, x * U, y * U, 1.5 * U, INK)
     return img
 
 
