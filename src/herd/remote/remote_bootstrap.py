@@ -13,8 +13,11 @@ def sh(script: str) -> str:
     return "sh -lc " + shlex.quote(script)
 
 
-ENSURE_CMD = sh('for c in hd "$HOME/.local/bin/hd"; do '
-                'command -v "$c" >/dev/null 2>&1 && exec "$c" server ensure --json; done; exit 127')
+# Prefer the uv-tool install, and skip any `hd` that is not herd's: on Debian/Ubuntu
+# /usr/bin/hd is hexdump, which would otherwise shadow herd and never trigger an install.
+ENSURE_CMD = sh('for c in "$HOME/.local/bin/hd" hd; do '
+                'command -v "$c" >/dev/null 2>&1 && "$c" server --help >/dev/null 2>&1 '
+                '&& exec "$c" server ensure --json; done; exit 127')
 UV = 'UV=$(command -v uv || echo "$HOME/.local/bin/uv"); '
 
 
