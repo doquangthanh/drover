@@ -102,6 +102,17 @@ def log_stderr_to_file() -> None:
         pass
 
 
+def xcb_cursor_available() -> bool:
+    """Qt >= 6.5 aborts the whole process (uncatchable) when libxcb-cursor is missing, so test for it first."""
+    import ctypes
+
+    try:
+        ctypes.CDLL("libxcb-cursor.so.0")
+        return True
+    except OSError:
+        return False
+
+
 def main() -> None:
     log_stderr_to_file()
     try:
@@ -115,6 +126,16 @@ def main() -> None:
     except ImportError:
         import webbrowser
 
+        webbrowser.open(url)
+        return
+    if sys.platform == "linux" and not xcb_cursor_available():
+        import webbrowser
+
+        print(
+            "native window needs libxcb-cursor0 (Debian/Ubuntu: sudo apt install libxcb-cursor0); "
+            f"opening {url} in the browser",
+            file=sys.stderr,
+        )
         webbrowser.open(url)
         return
     if sys.platform == "win32":
