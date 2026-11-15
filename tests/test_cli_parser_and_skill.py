@@ -10,7 +10,37 @@ from drover.cli import cli_commands_admin as admin
 from drover.cli.cli_main import build_parser, main
 
 CORE_COMMANDS = ["run", "ls", "send", "read", "wait", "attach", "kill", "status", "schema", "skill",
-                 "server", "machine", "worktree", "rules"]
+                 "server", "machine", "worktree", "rules", "prompt", "keys", "wait-output", "rename",
+                 "space", "tab", "pane", "completion"]
+
+
+def test_pane_split_keeps_every_word_after_the_separator_in_the_command():
+    args = build_parser().parse_args(["pane", "split", "lead", "--direction", "down", "--", "codex", "--model", "x"])
+    assert args.target == "lead" and args.direction == "down"
+    assert args.rest == ["codex", "--model", "x"]
+
+
+def test_pane_swap_and_prompt_flags_parse():
+    p = build_parser()
+    assert p.parse_args(["pane", "swap", "a", "b"]).rest == ["b"]
+    args = p.parse_args(["prompt", "reviewer", "check the diff", "--wait", "--state", "done", "--timeout", "90"])
+    assert (args.wait, args.state, args.timeout) == (True, ["done"], 90.0)
+    assert p.parse_args(["keys", "reviewer", "esc", "ctrl+c"]).keys == ["esc", "ctrl+c"]
+    assert p.parse_args(["space", "new", "--", "codex"]).command == ["codex"]
+
+
+@pytest.mark.parametrize("shell", ["bash", "zsh", "fish", "powershell"])
+def test_completion_scripts_list_commands_flags_and_agent_names(shell, capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(["completion", shell])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    for word in ("wait-output", "-l regex" if shell == "fish" else "--regex", "dr ls --names"):
+        assert word in out
+    if shell == "powershell":
+        assert "Register-ArgumentCompleter" in out and "'server' = @('start'" in out
+    if shell == "zsh":
+        assert "bashcompinit" in out
 
 
 def _subcommands(parser: argparse.ArgumentParser) -> dict:

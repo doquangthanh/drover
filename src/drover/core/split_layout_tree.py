@@ -75,3 +75,29 @@ def is_valid(node: Any) -> bool:
     if "pane" in node:
         return isinstance(node["pane"], str)
     return node.get("split") in ("row", "col") and is_valid(node.get("a")) and is_valid(node.get("b"))
+
+
+def swap_leaves(node: Node | None, a: str, b: str) -> Node | None:
+    """Exchange two panes' places in one tree (either may be absent: then it is a plain replace)."""
+    if not node:
+        return node
+    if "pane" in node:
+        return leaf(b) if node["pane"] == a else leaf(a) if node["pane"] == b else node
+    return {**node, "a": swap_leaves(node["a"], a, b), "b": swap_leaves(node["b"], a, b)}
+
+
+def path_to(node: Node | None, pane_id: str, path: str = "") -> str | None:
+    """Steps ("a"/"b") from the root to a pane's leaf, or None when it is not in the tree."""
+    if not node:
+        return None
+    if "pane" in node:
+        return path if node["pane"] == pane_id else None
+    return path_to(node["a"], pane_id, path + "a") or path_to(node["b"], pane_id, path + "b")
+
+
+def set_share(node: Node | None, pane_id: str, share: float) -> Node | None:
+    """Give a pane (its side of the nearest enclosing split) `share` of that split's space."""
+    path = path_to(node, pane_id)
+    if not path:
+        raise ValueError(f"{pane_id} is alone in its tab; nothing to resize against")
+    return set_ratio(node, path[:-1], share if path[-1] == "a" else 1 - share)

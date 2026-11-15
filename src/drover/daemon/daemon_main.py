@@ -37,9 +37,11 @@ from drover.remote.remote_hub import RemoteHub
 
 # Importing registers the RPC methods.
 from drover.rpc import (  # noqa: F401
+    methods_agent_input,
     methods_chat,
     methods_files,
     methods_git_fs,
+    methods_layout,
     methods_panes,
     methods_system,
     methods_workspace,

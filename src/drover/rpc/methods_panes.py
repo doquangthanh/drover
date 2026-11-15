@@ -6,10 +6,12 @@ import asyncio
 import itertools
 import time
 
+from drover.core.alt_screen_history_reader import read_scrolled_history
 from drover.core.orchestration_policy import OrchestrationPolicy, PolicyError
 from drover.git import worktree_service as wt
 from drover.rpc.rpc_registry import E_BAD_PARAMS, E_POLICY, E_TIMEOUT, RpcError, need, registry
 from drover.rpc.target_resolver import resolve_pane
+from drover.status.status_change_tracker import ACTIVITY_WINDOW
 
 _answer_ids = itertools.count(1)
 TERMINAL_STATES = {"exited"}
@@ -44,7 +46,7 @@ async def pane_write(ctx, p: dict) -> None:
     ctx.manager.get(need(p, "pane")).write(str(p.get("data", "")))
 
 
-def _mark_busy(ctx, pane) -> None:
+def mark_busy(ctx, pane) -> None:
     """New input = new turn. Leave done/idle at once so a following `dr wait` waits for *this* turn."""
     if pane.state in ("done", "idle"):
         old = pane.state
@@ -56,6 +58,21 @@ def _mark_busy(ctx, pane) -> None:
         ctx.hub.emit("status", {"pane": pane.to_dict(), "old": old, "new": "working"})
 
 
+def gate_agent_input(ctx, pane_id: str, pane, data: str, label: str, caller: str | None) -> None:
+    """An agent typing into a pane stuck on a permission prompt: refuse, or forward the answer to the user."""
+    policy = OrchestrationPolicy.from_settings(ctx.settings.get("orchestration", {}))
+    if not caller or caller == pane_id or policy.may_agent_answer(pane.state):
+        return
+    if policy.answer_prompts == "never":
+        raise RpcError(E_POLICY, "agents may not answer permission prompts (policy: never)")
+    answer_id = f"a{next(_answer_ids)}"
+    ctx.pending_answers[answer_id] = (pane_id, data, caller)
+    ctx.manager.messages.add("denied", caller, pane_id, label)
+    ctx.hub.emit("policy", {"id": answer_id, "source": caller, "target": pane_id, "text": label})
+    ctx.hub.emit("state", None)
+    raise RpcError(E_POLICY, "target is waiting on a permission prompt; forwarded to the user")
+
+
 @registry.method("pane.send", "Type text into an agent (as `dr send`)", "pane, text, enter?, caller?")
 async def pane_send(ctx, p: dict) -> dict:
     pane_id = _pane(ctx, p)
@@ -63,19 +80,10 @@ async def pane_send(ctx, p: dict) -> dict:
     text = str(p.get("text", ""))
     data = text + ("\r" if p.get("enter", True) else "")
     caller = p.get("caller")
-    policy = OrchestrationPolicy.from_settings(ctx.settings.get("orchestration", {}))
-    if caller and caller != pane_id and not policy.may_agent_answer(pane.state):
-        if policy.answer_prompts == "never":
-            raise RpcError(E_POLICY, "agents may not answer permission prompts (policy: never)")
-        answer_id = f"a{next(_answer_ids)}"
-        ctx.pending_answers[answer_id] = (pane_id, data, caller)
-        ctx.manager.messages.add("denied", caller, pane_id, text)
-        ctx.hub.emit("policy", {"id": answer_id, "source": caller, "target": pane_id, "text": text})
-        ctx.hub.emit("state", None)
-        raise RpcError(E_POLICY, "target is waiting on a permission prompt; forwarded to the user")
+    gate_agent_input(ctx, pane_id, pane, data, text, caller)
     pane.write(data)
     if p.get("enter", True):
-        _mark_busy(ctx, pane)
+        mark_busy(ctx, pane)
     if caller:
         ctx.manager.messages.add("send", caller, pane_id, text)
     return {"pane": pane_id}
@@ -108,6 +116,15 @@ async def pane_read(ctx, p: dict) -> dict:
         ctx.manager.messages.add("read", p["caller"], pane_id, f"{lines or 'all'} lines")
     pane = ctx.manager.get(pane_id)
     pane.flush_screen()
+    if lines and lines > pane.rows and pane.modes.scrollable_transcript and pane.state in ("idle", "done"):
+        async with pane.read_lock:  # two readers scrolling the same viewport would interleave pages
+            try:
+                text = "\n".join(await read_scrolled_history(pane, lines))
+            finally:
+                # Status detection is paused while the lock is held; keep it paused until the activity
+                # window has forgotten our scroll redraws, so a done agent does not flash working -> done.
+                pane.detection_paused_until = time.time() + ACTIVITY_WINDOW + 0.5
+            return {"pane": pane_id, "text": text}
     return {"pane": pane_id, "text": pane.screen.read_text(lines)}
 
 
@@ -120,8 +137,15 @@ async def pane_wait(ctx, p: dict) -> dict:
     if p.get("caller"):
         ctx.manager.messages.add("wait", p["caller"], pane_id, ",".join(sorted(wanted - TERMINAL_STATES)))
     # "idle" is the starting state of every pane, so only a *transition* into idle counts.
-    if pane.state in wanted and pane.state != "idle":
-        return {"pane": pane_id, "state": pane.state}
+    state = await wait_for_state(ctx, pane, wanted, timeout, accept_current=pane.state != "idle")
+    return {"pane": pane_id, "state": state}
+
+
+async def wait_for_state(ctx, pane, wanted: set[str], timeout: float, accept_current: bool = True) -> str:
+    """Return the pane's state once it is in `wanted` (now, if `accept_current`, or on the next transition)."""
+    pane_id = pane.meta.id
+    if accept_current and pane.state in wanted:
+        return pane.state
     future = asyncio.get_running_loop().create_future()
 
     def listener(name, data):
@@ -130,12 +154,11 @@ async def pane_wait(ctx, p: dict) -> dict:
 
     unsubscribe = ctx.hub.subscribe(listener)
     try:
-        state = await asyncio.wait_for(future, timeout)
+        return await asyncio.wait_for(future, max(0.0, timeout))
     except TimeoutError as exc:
         raise RpcError(E_TIMEOUT, f"timed out after {timeout:.0f}s; state is {pane.state}") from exc
     finally:
         unsubscribe()
-    return {"pane": pane_id, "state": state}
 
 
 @registry.method("pane.close", "Stop a pane and remove it from its tab", "pane, subtree?")
@@ -159,9 +182,19 @@ async def pane_restart(ctx, p: dict) -> dict:
 
 
 @registry.method("pane.rename", "Rename a pane", "pane, name")
-async def pane_rename(ctx, p: dict) -> None:
-    ctx.manager.get(_pane(ctx, p)).meta.name = need(p, "name")[:60]
+async def pane_rename(ctx, p: dict) -> dict:
+    pane_id = _pane(ctx, p)
+    name = need(p, "name").strip()[:60]
+    # The resolver treats "self", "local" and "%..." specially, so such names could never be used as targets.
+    if not name or "/" in name or ":" in name or name in ("self", "local") or name.startswith("%"):
+        raise RpcError(E_BAD_PARAMS, "name must be non-empty, contain no '/' or ':', not start with '%' "
+                                     "and not be 'self' or 'local'")
+    clash = next((o.meta.id for o in ctx.manager.panes.values() if o.meta.name == name and o.meta.id != pane_id), None)
+    if clash:
+        raise RpcError(E_BAD_PARAMS, f"name '{name}' is already used by {clash}")
+    ctx.manager.get(pane_id).meta.name = name
     ctx.manager._changed()
+    return {"pane": pane_id, "name": name}
 
 
 @registry.method("pane.focus", "Mark a pane focused and read", "pane")

@@ -184,14 +184,21 @@ The prefix is **Ctrl+A**, tmux style. Press it twice to send a real Ctrl+A to th
 dr run [--bg] [--name N] [--cwd DIR] [--on MACHINE] [--worktree TASK] -- claude
 dr ls [--json]            dr read NAME [--lines 60]      dr send NAME "text"
 dr wait NAME --state done --timeout 900                  dr attach NAME   (Ctrl+\ detaches)
+dr prompt NAME "text" [--wait] [--state done]            dr keys NAME esc | up | enter | ctrl+c ...
+dr wait-output NAME "passed|failed" [--regex] [--lines 80]   dr rename NAME-OR-ID NEW
+dr space new|ls           dr tab new SPACE|ls|rename|close   dr pane split|move|swap|zoom|unzoom|share|focus
 dr kill NAME [--tree]     dr status                      dr schema / dr skill
+dr completion bash|zsh|fish|powershell
 dr server start|stop|restart|logs|url|autostart on|off
 dr machine add vps-1 deploy@vps-1 [--install] | ls | rm | test
 dr worktree new TASK [--run claude] | ls | rm PATH [--force]
 dr rules ls | test NAME
 ```
 
-Exit codes: `2` timeout, `3` not found, `4` refused by policy, `10` server unavailable.
+Exit codes: `2` timeout, `3` not found, `4` refused by policy, `5` bad arguments, `6` agent is on a permission prompt
+(`dr prompt` typed nothing), `7` prompt sent but the agent never started, `10` server unavailable.
+Tab completion: add `dr completion powershell | Out-String | Invoke-Expression` to `$PROFILE`, or
+`eval "$(dr completion bash)"` to `~/.bashrc`.
 On Windows the same file is the CLI: `drover status`, `drover server autostart on`. Inside agent panes `dr` is on PATH.
 `hd`, the old name, still works.
 

@@ -11,6 +11,7 @@ from aiohttp import web
 from drover.app_paths import web_static_dir
 from drover.daemon.web_ui_routes import add_ui_routes
 from drover.daemon.ws_client_session import WsClientSession
+from drover.remote.id_prefixing import route_of
 from drover.rpc.rpc_registry import RpcError, registry
 
 log = logging.getLogger(__name__)
@@ -28,8 +29,11 @@ def _token_ok(ctx, supplied: str | None) -> bool:
 
 
 async def _call_remote(ctx, alias: str, method: str, params: dict):
-    from drover.remote.id_prefixing import prefix_ids, strip_ids
+    from drover.remote.id_prefixing import foreign_ids, prefix_ids, strip_ids
 
+    mixed = foreign_ids(params, alias)
+    if mixed:
+        raise RpcError(5, f"ids from different machines in one call ({', '.join(mixed)}); use ids on {alias}")
     link = ctx.remotes.links[alias]
     timeout = float(params.get("timeout", 25)) + 5
     remote_params = strip_ids(params, alias)
@@ -67,7 +71,7 @@ def build_app(ctx) -> web.Application:
             return web.json_response({"error": {"code": 5, "message": "expected {method, params}"}}, status=400)
         method, params = str(body.get("method")), body.get("params") or {}
         try:
-            routed = str(params.get("machine") or params.get("pane") or "")
+            routed = route_of(params)
             if ctx.remotes and ctx.remotes.owns(routed):
                 result = await _call_remote(ctx, routed.split(":", 1)[0], method, params)
             else:

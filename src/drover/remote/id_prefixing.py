@@ -4,7 +4,23 @@ from __future__ import annotations
 
 from typing import Any
 
-ID_KEYS = {"id", "space_id", "tab_id", "parent", "focused", "pane", "target", "source", "split_from"}
+ID_KEYS = {"id", "space_id", "tab_id", "parent", "focused", "pane", "target", "source", "split_from", "previous_tab"}
+ROUTE_KEYS = ("machine", "pane", "tab", "space", "tab_id")  # first one present decides which machine handles a call
+PEER_ID_KEYS = ("pane", "target", "tab", "tab_id", "space", "split_from")
+
+
+def route_of(params: dict) -> str:
+    return next((str(params[k]) for k in ROUTE_KEYS if params.get(k)), "")
+
+
+def foreign_ids(params: dict, alias: str) -> list[str]:
+    """Id params of a call routed to `alias` that name another machine's objects (e.g. swap vps:%3 with local %2).
+
+    Forwarded unchanged they would silently resolve to the remote machine's own, unrelated %2.
+    """
+    marker = f"{alias}:"
+    return [f"{k}={params[k]}" for k in PEER_ID_KEYS
+            if isinstance(params.get(k), str) and params[k] and not params[k].startswith(marker)]
 
 
 def prefix_ids(value: Any, alias: str, key: str | None = None) -> Any:

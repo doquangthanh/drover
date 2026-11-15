@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from drover.core.pane_screen_text import PaneScreen
+from drover.core.terminal_mode_tracker import TerminalModes
 from drover.pty.pty_backend_factory import create_pty_backend
 from drover.status.osc7501_parser import parse_osc7501
 from drover.status.status_change_tracker import StatusTracker
@@ -40,9 +41,14 @@ class PaneSession:
         self.cols, self.rows = cols, rows
         self.screen = PaneScreen(cols, rows, history)
         self.tracker = StatusTracker()
+        self.modes = TerminalModes()
+        self.read_lock = asyncio.Lock()  # serialises viewport-scrolling reads
+        self.input_lock = asyncio.Lock()  # keeps one prompt's paste and Enter together
+        self.detection_paused_until = 0.0  # after a scrolling read, until its redraws age out
         self.replay: deque[str] = deque()
         self._replay_size = 0
         self.last_output_at = 0.0
+        self.screen_changed_at = 0.0  # last output that changed visible text (not just terminal modes)
         self.dirty = False
         self.unread = False
         self.exit_code: int | None = None
@@ -67,6 +73,7 @@ class PaneSession:
         self._replay_size += len(data)
         while self._replay_size > REPLAY_LIMIT and len(self.replay) > 1:
             self._replay_size -= len(self.replay.popleft())
+        self.modes.feed(data)
         report = parse_osc7501(data) if "\x1b]7501;" in data else None
         if report:
             self.tracker.report(report["state"])
@@ -81,7 +88,8 @@ class PaneSession:
         if self._pending_screen:
             chunk = "".join(self._pending_screen)
             self._pending_screen.clear()
-            self.screen.feed(chunk)
+            if self.screen.feed(chunk):
+                self.screen_changed_at = time.time()
             self.dirty = True
 
     def _on_exit(self, code: int | None) -> None:

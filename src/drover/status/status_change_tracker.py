@@ -22,6 +22,7 @@ class StatusTracker:
     reported: str | None = None  # from OSC 7501, authoritative while fresh
     reported_at: float = 0.0
     hold_until: float = 0.0  # after new input, don't fall back to idle/done before the agent reacts
+    detected_working_at: float = 0.0  # last frame that *looked* busy (not the state forced by new input)
 
     def observe(self, detected: str | None, last_output_at: float, focused: bool, now: float | None = None,
                 allow_done: bool = True) -> str | None:
@@ -33,6 +34,8 @@ class StatusTracker:
             detected = "idle" if self.reported == "done" else self.reported
         if detected is None:
             detected = "working" if now - last_output_at < ACTIVITY_WINDOW else "idle"
+        if detected in ("working", "blocked"):
+            self.detected_working_at = now
         if detected == "idle" and now < self.hold_until:
             return None
         if detected != self._candidate:

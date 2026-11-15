@@ -8,7 +8,7 @@ import shlex
 import sys
 import time
 
-from drover.daemon.daemon_client import call
+from drover.daemon.daemon_client import DaemonUnavailable, RpcFailure, call
 
 STATE_LABEL = {"blocked": "needs you", "working": "working", "done": "done", "idle": "idle",
                "exited": "exited", "stopped": "stopped"}
@@ -56,7 +56,19 @@ def _age(since: float) -> str:
     return f"{seconds}s"
 
 
+def _print_names() -> int:
+    """For shell completion: local agent names, silently nothing when the daemon is not running."""
+    try:
+        panes = call("state.get", timeout=2, autostart=False)["panes"]
+    except (DaemonUnavailable, RpcFailure):
+        return 0
+    print("\n".join(sorted({p["name"] for p in panes})))
+    return 0
+
+
 def cmd_ls(args) -> int:
+    if getattr(args, "names", False):
+        return _print_names()
     state = call("state.get")
     panes = list(state["panes"])
     for machine in state.get("machines", []):

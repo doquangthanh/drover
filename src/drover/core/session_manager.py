@@ -126,16 +126,22 @@ class SessionManager:
         if not pane:
             raise KeyError(pane_id)
         pane.kill()
-        tab = self.tabs.get(pane.meta.tab_id)
-        if tab:
-            tab.layout = layout.remove(tab.layout, pane_id)
-            if tab.focused == pane_id:
-                ids = layout.pane_ids(tab.layout)
-                tab.focused = ids[-1] if ids else None
-            if not tab.layout:
-                self.tabs.pop(tab.id, None)
+        self.detach_from_tab(pane)
         if notify:
             self._changed()
+
+    def detach_from_tab(self, pane: PaneSession) -> None:
+        """Take a pane out of its tab's layout; a tab left empty is removed."""
+        tab = self.tabs.get(pane.meta.tab_id)
+        if not tab:
+            return
+        tab.layout = layout.remove(tab.layout, pane.meta.id)
+        if tab.focused == pane.meta.id:
+            ids = layout.pane_ids(tab.layout)
+            tab.focused = ids[-1] if ids else None
+            tab.zoomed = False  # the zoom belonged to the pane that left
+        if not tab.layout:
+            self.tabs.pop(tab.id, None)
 
     def get(self, pane_id: str) -> PaneSession:
         if pane_id not in self.panes:

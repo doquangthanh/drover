@@ -16,10 +16,24 @@ Exit code 2 = timeout, 3 = no such agent.
 
 ## Read what it did
     dr read tests --lines 60
+Full-screen agents (OpenCode...) are scrolled for you when you ask for more lines than one screen.
 
-## Talk to it
-    dr send tests "also cover expired codes"
+## Give it more work and wait for that turn
+    dr prompt tests "also cover expired codes" --wait --timeout 900
+Exit code 6 = it is on a permission prompt (nothing was typed: read it first), 7 = it never started working
+(read it before retrying so the prompt is not sent twice). `dr send` types raw text without these checks.
+
+## Press keys in its UI
+    dr keys tests esc            # also: enter, up, down, tab, shift+tab, ctrl+c
 If the helper is stuck on a permission prompt, the user decides; your answer is forwarded to them.
+
+## Wait for a plain process (tests, a server), not an agent
+    dr run --bg --name unit -- npm test
+    dr wait-output unit "passed|failed" --regex --timeout 600
+
+## Names and layout
+    dr rename %7 reviewer                 # any later command can use the name
+    dr pane split self --direction down -- codex     # prints JSON with the new pane id
 
 ## See everything
     dr ls          # all agents and states (add --json for machine-readable output)

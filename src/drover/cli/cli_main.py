@@ -6,7 +6,10 @@ import argparse
 import sys
 
 from drover.cli import cli_commands_admin as admin
+from drover.cli import cli_commands_agent_input as agent_input
 from drover.cli import cli_commands_agents as agents
+from drover.cli import cli_commands_layout as layout_cmds
+from drover.cli import cli_shell_completion as completion
 from drover.daemon.daemon_client import DaemonUnavailable, RpcFailure
 
 
@@ -27,6 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     ls = sub.add_parser("ls", help="list agents and their state")
     ls.add_argument("--json", action="store_true")
+    ls.add_argument("--names", action="store_true", help="only agent names (used by shell completion)")
 
     send = sub.add_parser("send", help="type text into an agent")
     send.add_argument("target")
@@ -54,6 +58,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("schema", help="print the JSON-RPC API")
     sub.add_parser("skill", help="print instructions that teach an agent to use dr")
     admin.add_admin_parsers(sub)
+    agent_input.add_agent_input_parsers(sub)
+    layout_cmds.add_layout_parsers(sub)
+    completion.add_completion_parser(sub)
     return p
 
 
@@ -62,7 +69,8 @@ COMMANDS = {
     "wait": agents.cmd_wait, "attach": agents.cmd_attach, "kill": agents.cmd_kill,
     "status": admin.cmd_status, "schema": admin.cmd_schema, "skill": admin.cmd_skill,
     "server": admin.cmd_server, "machine": admin.cmd_machine, "worktree": admin.cmd_worktree,
-    "rules": admin.cmd_rules,
+    "rules": admin.cmd_rules, **agent_input.COMMANDS, **layout_cmds.COMMANDS,
+    "completion": lambda args: completion.cmd_completion(args, build_parser()),
 }
 
 

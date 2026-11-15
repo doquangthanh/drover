@@ -20,6 +20,7 @@ import logging
 from aiohttp import WSMsgType, web
 
 from drover.core.event_hub import BoundedQueue
+from drover.remote.id_prefixing import foreign_ids, route_of
 from drover.rpc.rpc_registry import RpcError, registry
 
 log = logging.getLogger(__name__)
@@ -91,9 +92,13 @@ class WsClientSession:
         pane_id = str(msg.get("pane", ""))
         remotes = self.ctx.remotes
         params = msg.get("params") or {}
-        routed = pane_id or next((str(params[k]) for k in ("machine", "pane", "tab", "space", "tab_id")
-                                  if params.get(k)), "")
+        routed = pane_id or route_of(params)
         if remotes and remotes.owns(routed):
+            mixed = foreign_ids(params, routed.split(":", 1)[0]) if kind == "rpc" else []
+            if mixed:
+                err = RpcError(5, f"ids from different machines in one call ({', '.join(mixed)})")
+                self.out.put({"t": "res", "id": msg.get("id"), "error": err.to_dict()})
+                return
             await remotes.forward_from_client(self, {**msg, "pane": msg.get("pane") or routed}
                                               if kind != "rpc" else {**msg, "_route": routed})
             return

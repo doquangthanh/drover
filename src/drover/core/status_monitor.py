@@ -50,7 +50,13 @@ class StatusMonitor:
 
     def check_pane(self, pane, now: float) -> None:
         recent = now - pane.last_output_at < 3
-        if not (pane.dirty or recent or pane.tracker._candidate != pane.tracker.state):
+        # New input holds "working" for a few seconds; a quick command can go quiet before the hold ends, so keep
+        # evaluating until the idle candidate has had time to debounce, or the pane stays "working" forever.
+        settling = now < pane.tracker.hold_until + 1.5
+        if pane.read_lock.locked() or now < pane.detection_paused_until:
+            return  # `dr read` is scrolling the agent: its redraws are ours, not the agent working
+
+        if not (pane.dirty or recent or settling or pane.tracker._candidate != pane.tracker.state):
             return
         pane.dirty = False
         if pane.meta.kind == "shell" and pane.screen.title:

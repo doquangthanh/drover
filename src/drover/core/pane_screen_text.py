@@ -19,11 +19,14 @@ class PaneScreen:
         self.screen = pyte.HistoryScreen(cols, rows, history=history, ratio=0.5)
         self.stream = pyte.Stream(self.screen)
 
-    def feed(self, data: str) -> None:
+    def feed(self, data: str) -> bool:
+        """Apply output. True when visible cells changed (mode switches and terminal queries do not count)."""
+        self.screen.dirty.clear()
         try:
             self.stream.feed(data)
         except Exception as exc:  # pyte can trip over unusual sequences; never kill the pane
             log.debug("pyte feed error: %s", exc)
+        return bool(self.screen.dirty)
 
     def resize(self, cols: int, rows: int) -> None:
         try:

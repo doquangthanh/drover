@@ -11,6 +11,7 @@ log = logging.getLogger(__name__)
 
 # Error codes surfaced to the CLI as exit codes where it makes sense.
 E_GENERAL, E_TIMEOUT, E_NOT_FOUND, E_POLICY, E_BAD_PARAMS = 1, 2, 3, 4, 5
+E_BLOCKED, E_STALLED = 6, 7  # prompt refused: target on a permission prompt / never started working
 E_NO_METHOD = -32601
 
 
