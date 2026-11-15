@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.16
 ### Changed
 - Agent tree redesigned. The tree draws real connector lines, shows each agent's title, a state badge and a name
   filter. The selected agent gets a header with its tree's counts (helpers, working, needs you, done), a progress
