@@ -123,4 +123,5 @@ async def settings_write(ctx, p: dict) -> None:
 
 @registry.method("notify.test", "Send a test desktop notification", "")
 async def notify_test(ctx, p: dict) -> None:
-    ctx.notifier.send("drover notifications work", "You'll see this when an agent needs you.", sound=True)
+    ctx.notifier.send("Drover notifications are on", "You'll see one like this when an agent needs you or finishes.",
+                      sound=True)

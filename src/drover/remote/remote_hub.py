@@ -27,7 +27,7 @@ class RemoteHub:
         if name == "status" and data:
             pane = data.get("pane", {})
             self.ctx.notifier.notify_state(pane.get("name", "agent"), pane.get("kind", ""), data.get("new"),
-                                           self.ctx.settings)
+                                           self.ctx.settings, detail=pane.get("title", ""))
 
     def sync_from_file(self) -> None:
         """Start/stop links to match machines.toml (polled by the daemon)."""

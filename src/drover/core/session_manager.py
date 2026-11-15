@@ -30,7 +30,7 @@ class SessionManager:
         self.git: dict[str, dict] = {}  # space id -> {branch, dirty, ahead}, refreshed by GitWatcher
         self.messages = AgentMessagesLog()
         self.on_structure_change = lambda: None
-        self.notify_state = lambda name, kind, state: None  # wired to desktop notifications by the daemon
+        self.notify_state = lambda name, kind, state, detail="": None  # wired to desktop notifications by the daemon
 
     # -- spaces & tabs ---------------------------------------------------------------
     def ensure_space(self, cwd: str) -> Space:
@@ -114,7 +114,7 @@ class SessionManager:
         self.hub.emit("pane", pane.to_dict())
         self.hub.emit("status", {"pane": pane.to_dict(), "old": "working", "new": "exited"})
         if not pane.focused:
-            self.notify_state(pane.meta.name, pane.meta.kind, "exited")
+            self.notify_state(pane.meta.name, pane.meta.kind, "exited", pane.screen.title)
         if self.settings.get("orchestration.kill_children_on_parent_exit", False):
             for child in self.children_of(pane.meta.id):
                 if child in self.panes:

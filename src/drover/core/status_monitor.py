@@ -80,4 +80,5 @@ class StatusMonitor:
         self.manager.hub.emit("pane", pane.to_dict())
         self.manager.hub.emit("status", {"pane": pane.to_dict(), "old": old, "new": new})
         if not pane.focused:
-            self.notifier.notify_state(pane.meta.name, pane.meta.kind, new, self.manager.settings)
+            self.notifier.notify_state(pane.meta.name, pane.meta.kind, new, self.manager.settings,
+                                       detail=pane.screen.title)

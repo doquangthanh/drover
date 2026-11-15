@@ -9,10 +9,30 @@ import logging
 log = logging.getLogger(__name__)
 
 MESSAGES = {
-    "blocked": "{name} is waiting for you",
+    "blocked": "{name} needs you",
     "done": "{name} finished",
     "exited": "{name} stopped",
 }
+# One line of context under the title; {agent} is the human name of the agent kind.
+HINTS = {
+    "blocked": "{agent} is waiting for your answer or approval.",
+    "done": "{agent} finished its work. Review the result when you are ready.",
+    "exited": "The {agent} process has ended.",
+}
+AGENT_LABELS = {"claude": "Claude Code", "codex": "Codex", "gemini": "Gemini", "opencode": "opencode", "shell": "Shell"}
+# blocked is the only state that must not be missed, so it asks the OS for a higher urgency.
+URGENCY = {"blocked": "Critical", "done": "Normal", "exited": "Low"}
+
+
+def build_message(name: str, kind: str, state: str, detail: str = "") -> tuple[str, str]:
+    """Title and body for a state change: what happened, then what the agent was doing."""
+    agent = AGENT_LABELS.get(kind, kind or "The agent")
+    title = MESSAGES[state].format(name=name)
+    body = HINTS[state].format(agent=agent)
+    detail = " ".join((detail or "").split())
+    if detail:
+        body = f"{body}\n{detail[:140]}"
+    return title, body
 
 
 def in_quiet_hours(spec: str, now: dt.time | None = None) -> bool:
@@ -43,7 +63,7 @@ class DesktopNotifierService:
         except Exception as exc:  # missing platform support must never break the daemon
             log.info("desktop notifications unavailable: %s", exc)
 
-    def notify_state(self, name: str, kind: str, state: str, settings) -> None:
+    def notify_state(self, name: str, kind: str, state: str, settings, detail: str = "") -> None:
         if state not in MESSAGES or not self.enabled:
             return
         channels = settings.get(f"notify.{state}", []) or []
@@ -51,16 +71,17 @@ class DesktopNotifierService:
             return
         if in_quiet_hours(settings.get("notify.quiet_hours", "")):
             return
-        title = MESSAGES[state].format(name=name)
-        self.send(title, kind, sound="sound" in channels)
+        title, body = build_message(name, kind, state, detail)
+        self.send(title, body, sound="sound" in channels, urgency=URGENCY[state], thread=name)
 
-    def send(self, title: str, body: str, sound: bool = False) -> None:
+    def send(self, title: str, body: str, sound: bool = False, urgency: str = "Normal", thread: str | None = None) -> None:
         if self._notifier is None:
             return
         try:
-            from desktop_notifier import DEFAULT_SOUND
+            from desktop_notifier import DEFAULT_SOUND, Urgency
 
-            coro = self._notifier.send(title=title, message=body, sound=DEFAULT_SOUND if sound else None)
+            coro = self._notifier.send(title=title, message=body, sound=DEFAULT_SOUND if sound else None,
+                                       urgency=getattr(Urgency, urgency, Urgency.Normal), thread=thread)
             task = asyncio.get_running_loop().create_task(self._safe(coro))
             self._tasks.add(task)
             task.add_done_callback(self._tasks.discard)

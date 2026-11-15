@@ -65,7 +65,7 @@ def build_context(token: str) -> DaemonContext:
     ctx.remotes = RemoteHub(ctx)
     ctx.chats = ChatManager(state_dir() / "chats", hub.emit)
     manager.on_structure_change = persistence.schedule_save
-    manager.notify_state = lambda name, kind, state: notifier.notify_state(name, kind, state, settings)
+    manager.notify_state = lambda name, kind, state, detail="": notifier.notify_state(name, kind, state, settings, detail)
     return ctx
 
 
