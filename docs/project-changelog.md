@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.15
+### Changed
+- Sidebar is back to two halves, Spaces (grouped by machine) and Agents (grouped by space); the single workspace
+  tree of 0.1.14 is gone, along with its collapse state, the machine picker on "+", the top-bar workspace title and
+  the new-workspace toast. "Workspace" is "Space" again in the UI.
+- Chats are listed inside the Agents section, under the space with the same folder (others last), instead of a
+  separate "Chats" group.
+
 ## 0.1.14
 ### Changed
 - Sidebar is one tree of workspaces: each workspace lists its agents under it and collapses (chevron or ←/→,
