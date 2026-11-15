@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from herd.core.pane_screen_text import PaneScreen
+from drover.core.pane_screen_text import PaneScreen
 
 
 def test_read_text_returns_visible_output():

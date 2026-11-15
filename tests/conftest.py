@@ -1,6 +1,6 @@
 """Shared fixtures.
 
-Every test gets private HERD_STATE_DIR / HERD_CONFIG_DIR folders under tmp_path so the real user
+Every test gets private DROVER_STATE_DIR / DROVER_CONFIG_DIR folders under tmp_path so the real user
 config, the real session file and any daemon the user runs are never touched.
 """
 
@@ -22,7 +22,7 @@ def git_repo(tmp_path: Path) -> Path:
     repo.mkdir()
     run_git(repo, "init", "-b", "main")
     run_git(repo, "config", "user.email", "qa@example.com")
-    run_git(repo, "config", "user.name", "herd-qa")
+    run_git(repo, "config", "user.name", "drover-qa")
     run_git(repo, "config", "commit.gpgsign", "false")
     (repo / "README.md").write_text("hello\n", encoding="utf-8")
     run_git(repo, "add", "-A")
@@ -31,24 +31,24 @@ def git_repo(tmp_path: Path) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def herd_dirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    state = tmp_path / "herd-state"
-    config = tmp_path / "herd-config"
+def drover_dirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    state = tmp_path / "drover-state"
+    config = tmp_path / "drover-config"
     state.mkdir()
     config.mkdir()
-    monkeypatch.setenv("HERD_STATE_DIR", str(state))
-    monkeypatch.setenv("HERD_CONFIG_DIR", str(config))
+    monkeypatch.setenv("DROVER_STATE_DIR", str(state))
+    monkeypatch.setenv("DROVER_CONFIG_DIR", str(config))
     return tmp_path
 
 
 @pytest_asyncio.fixture(loop_scope="function")
-async def start_daemon(herd_dirs: Path) -> AsyncIterator[Callable[..., object]]:
+async def start_daemon(drover_dirs: Path) -> AsyncIterator[Callable[..., object]]:
     """Boot the real daemon app in-process. Optional settings.toml text is written first."""
     running: list[Daemon] = []
 
     async def _start(settings_toml: str = "") -> Daemon:
         if settings_toml:
-            config = Path(herd_dirs / "herd-config")
+            config = Path(drover_dirs / "drover-config")
             (config / "settings.toml").write_text(settings_toml, encoding="utf-8")
         daemon = await boot_daemon()
         running.append(daemon)

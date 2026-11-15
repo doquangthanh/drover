@@ -1,4 +1,4 @@
-"""Draw the herd app icon, a robot agent head (packaging/herd.ico + web favicon). Run: uv run --with pillow python packaging/make_icon.py"""
+"""Draw the drover app icon, a robot agent head (packaging/drover.ico + web favicon). Run: uv run --with pillow python packaging/make_icon.py"""
 
 from __future__ import annotations
 
@@ -50,12 +50,12 @@ def draw() -> Image.Image:
 def main() -> None:
     img = draw()
     sizes = [16, 20, 24, 32, 40, 48, 64, 128, 256]
-    img.save(ROOT / "herd.ico", sizes=[(s, s) for s in sizes])
-    img.resize((256, 256), Image.LANCZOS).save(ROOT / "herd-256.png")
-    web = ROOT.parent / "src" / "herd" / "web"
+    img.save(ROOT / "drover.ico", sizes=[(s, s) for s in sizes])
+    img.resize((256, 256), Image.LANCZOS).save(ROOT / "drover-256.png")
+    web = ROOT.parent / "src" / "drover" / "web"
     img.resize((64, 64), Image.LANCZOS).save(web / "favicon.png")
     img.save(web / "app-icon.ico", sizes=[(s, s) for s in sizes])  # pywebview on Windows needs .ico
-    print("wrote herd.ico, herd-256.png, web/favicon.png, web/app-icon.ico")
+    print("wrote drover.ico, drover-256.png, web/favicon.png, web/app-icon.ico")
 
 
 if __name__ == "__main__":

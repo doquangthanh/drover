@@ -9,8 +9,8 @@ from pathlib import Path
 import pytest
 from git_helpers import run_git
 
-from herd.git import worktree_service as wt
-from herd.git.worktree_service import GitError
+from drover.git import worktree_service as wt
+from drover.git.worktree_service import GitError
 
 
 async def test_repo_info_describes_clean_repo(git_repo):
@@ -30,7 +30,7 @@ async def test_repo_info_counts_uncommitted_files(git_repo):
 async def test_repo_info_counts_commits_ahead_of_upstream(git_repo, tmp_path):
     clone = tmp_path / "clone"
     run_git(tmp_path, "clone", str(git_repo), str(clone))
-    for key, value in (("user.email", "qa@example.com"), ("user.name", "herd-qa"), ("commit.gpgsign", "false")):
+    for key, value in (("user.email", "qa@example.com"), ("user.name", "drover-qa"), ("commit.gpgsign", "false")):
         run_git(clone, "config", key, value)
     for n in range(2):
         (clone / f"f{n}.txt").write_text("x", encoding="utf-8")
@@ -65,9 +65,9 @@ def test_safe_task_name_rejects_empty_and_truncates():
     assert len(wt.safe_task_name("a" * 100)) == 60
 
 
-async def test_create_worktree_makes_hd_branch_in_sibling_folder(git_repo):
+async def test_create_worktree_makes_dr_branch_in_sibling_folder(git_repo):
     info = await wt.create_worktree(str(git_repo), "Add Login")
-    assert info["branch"] == "hd/add-login"
+    assert info["branch"] == "dr/add-login"
     assert info["base"] == "main"
     path = Path(info["path"])
     assert path.is_dir()
@@ -78,7 +78,7 @@ async def test_create_worktree_makes_hd_branch_in_sibling_folder(git_repo):
 async def test_list_worktrees_shows_main_and_task(git_repo):
     await wt.create_worktree(str(git_repo), "Task One")
     items = await wt.list_worktrees(str(git_repo))
-    assert sorted(i.get("branch", "") for i in items) == ["hd/task-one", "main"]
+    assert sorted(i.get("branch", "") for i in items) == ["dr/task-one", "main"]
     assert all(i["changes"] == 0 for i in items)
 
 
@@ -88,12 +88,12 @@ async def test_list_worktrees_survives_a_deleted_worktree_folder(git_repo):
     gone = await wt.create_worktree(str(git_repo), "gone")
     shutil.rmtree(gone["path"])
     items = {i["branch"]: i for i in await wt.list_worktrees(str(git_repo))}
-    assert items["hd/gone"]["missing"] is True and items["hd/gone"]["changes"] == 0
-    assert items["hd/keep"]["missing"] is False
+    assert items["dr/gone"]["missing"] is True and items["dr/gone"]["changes"] == 0
+    assert items["dr/keep"]["missing"] is False
     assert items["main"]["missing"] is False
     assert Path(keep["path"]).is_dir()
     await wt.git(str(git_repo), "worktree", "prune")  # what the "Clean up" button runs
-    assert "hd/gone" not in {i.get("branch") for i in await wt.list_worktrees(str(git_repo))}
+    assert "dr/gone" not in {i.get("branch") for i in await wt.list_worktrees(str(git_repo))}
 
 
 async def test_duplicate_worktree_is_refused(git_repo):
@@ -133,7 +133,7 @@ async def test_remove_clean_worktree_without_force(git_repo):
     info = await wt.create_worktree(str(git_repo), "clean-task")
     await wt.remove_worktree(info["path"])
     assert not Path(info["path"]).exists()
-    assert "hd/clean-task" not in [i.get("branch") for i in await wt.list_worktrees(str(git_repo))]
+    assert "dr/clean-task" not in [i.get("branch") for i in await wt.list_worktrees(str(git_repo))]
 
 
 async def test_remove_refuses_main_working_tree(git_repo):

@@ -6,7 +6,7 @@ import copy
 
 import pytest
 
-from herd.core import split_layout_tree as layout
+from drover.core import split_layout_tree as layout
 
 
 def test_pane_ids_of_empty_tree_is_empty():

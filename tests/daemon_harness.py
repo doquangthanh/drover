@@ -14,8 +14,8 @@ from typing import Any
 
 from aiohttp.test_utils import TestClient, TestServer
 
-from herd.daemon.daemon_main import build_context
-from herd.daemon.web_server import build_app
+from drover.daemon.daemon_main import build_context
+from drover.daemon.web_server import build_app
 
 
 @dataclass

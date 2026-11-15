@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from aiohttp.test_utils import TestClient, TestServer
 
-from herd.daemon import web_ui_routes
-from herd.daemon.web_server import build_app
+from drover.daemon import web_ui_routes
+from drover.daemon.web_server import build_app
 
 
 async def _client(monkeypatch, dist) -> TestClient:

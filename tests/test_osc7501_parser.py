@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from herd.status.osc7501_parser import parse_osc7501
+from drover.status.osc7501_parser import parse_osc7501
 
 ESC = "\x1b"
 BEL = "\x07"

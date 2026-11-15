@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from herd.status.status_change_tracker import DEBOUNCE_SECONDS, StatusTracker
+from drover.status.status_change_tracker import DEBOUNCE_SECONDS, StatusTracker
 
 T0 = 1_000.0
 

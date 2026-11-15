@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from git_helpers import run_git
 
-from herd.chat import file_search as fs
+from drover.chat import file_search as fs
 
 FILES = ["src/app/pricing.tsx", "src/app/page.tsx", "src/components/plan-card.tsx", "README.md", "docs/pricing-notes.md", "a/b/c/deep.txt"]
 

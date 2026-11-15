@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from herd.app_paths import bundled_rules_dir
-from herd.status.detection_rule_loader import load_rule_sets, match_agent_kind, parse_rule_file
-from herd.status.status_detector import detect_kind_from_title, evaluate
+from drover.app_paths import bundled_rules_dir
+from drover.status.detection_rule_loader import load_rule_sets, match_agent_kind, parse_rule_file
+from drover.status.status_detector import detect_kind_from_title, evaluate
 
 PERMISSION_SCREEN = [
     "⏺ Bash(rm -rf build/)",
@@ -137,7 +137,7 @@ def test_match_agent_kind_maps_launch_command(rule_sets, command, expected):
 
 def test_match_agent_kind_handles_quoted_path_with_spaces(rule_sets):
     # Expected to FAIL: split() keeps the leading quote and the stem becomes "Program".
-    # Source: herd/status/detection_rule_loader.py:98 (match_agent_kind).
+    # Source: drover/status/detection_rule_loader.py:98 (match_agent_kind).
     assert match_agent_kind('"C:/Program Files/Claude/claude.exe" --continue', rule_sets) == "claude"
 
 

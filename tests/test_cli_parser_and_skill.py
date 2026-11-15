@@ -1,4 +1,4 @@
-"""hd CLI: parser shape and `hd skill` output. No daemon is contacted."""
+"""dr CLI: parser shape and `dr skill` output. No daemon is contacted."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import argparse
 
 import pytest
 
-from herd.cli import cli_commands_admin as admin
-from herd.cli.cli_main import build_parser, main
+from drover.cli import cli_commands_admin as admin
+from drover.cli.cli_main import build_parser, main
 
 CORE_COMMANDS = ["run", "ls", "send", "read", "wait", "attach", "kill", "status", "schema", "skill",
                  "server", "machine", "worktree", "rules"]
@@ -52,8 +52,8 @@ def test_no_subcommand_leaves_cmd_empty():
 def test_skill_text_is_printed_and_returns_zero(capsys):
     assert admin.cmd_skill(argparse.Namespace()) == 0
     out = capsys.readouterr().out
-    assert "Working with other agents through herd" in out
-    assert "hd wait tests --state done" in out
+    assert "Working with other agents through drover" in out
+    assert "dr wait tests --state done" in out
     assert "Exit code 2 = timeout" in out
 
 
@@ -61,4 +61,4 @@ def test_main_skill_exits_zero_with_instructions(capsys):
     with pytest.raises(SystemExit) as exc:
         main(["skill"])
     assert exc.value.code == 0
-    assert "hd kill" in capsys.readouterr().out
+    assert "dr kill" in capsys.readouterr().out

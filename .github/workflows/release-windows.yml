@@ -1,7 +1,7 @@
 name: release-windows
 
-# Builds the single-file Windows app (herd.exe) when a tag like v0.1.0 is pushed, and attaches it to the GitHub release.
-# The landing page links to releases/latest/download/herd.exe, so the asset name must stay "herd.exe".
+# Builds the single-file Windows app (drover.exe) when a tag like v0.1.0 is pushed, and attaches it to the GitHub release.
+# The landing page links to releases/latest/download/drover.exe, so the asset name must stay "drover.exe".
 on:
   push:
     tags: ["v*"]
@@ -21,24 +21,24 @@ jobs:
       - name: Stamp version from tag
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
-        run: sed -i "s/__version__ = \".*\"/__version__ = \"${GITHUB_REF_NAME#v}\"/" src/herd/__init__.py
+        run: sed -i "s/__version__ = \".*\"/__version__ = \"${GITHUB_REF_NAME#v}\"/" src/drover/__init__.py
       - name: Build web UI
         run: |
           npm --prefix frontend ci
           npm --prefix frontend run build
-      - name: Build herd.exe
+      - name: Build drover.exe
         run: |
           uv sync
-          uv run pyinstaller packaging/herd.spec --noconfirm
+          uv run pyinstaller packaging/drover.spec --noconfirm
       - name: Check output
         shell: bash
-        run: test -s dist/herd.exe && ls -l dist/herd.exe
+        run: test -s dist/drover.exe && ls -l dist/drover.exe
       - uses: actions/upload-artifact@v4
         with:
-          name: herd-windows-x64
-          path: dist/herd.exe
+          name: drover-windows-x64
+          path: dist/drover.exe
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/herd.exe
+          files: dist/drover.exe

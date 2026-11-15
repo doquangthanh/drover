@@ -1,5 +1,5 @@
 [project]
-name = "herd"
+name = "drover"
 version = "0.1.5"
 description = "Personal workspace for running coding agents: persistent sessions, status detection, multi-machine"
 readme = "README.md"
@@ -19,10 +19,11 @@ dependencies = [
 ]
 
 [project.scripts]
-hd = "herd.cli.cli_main:main"
+dr = "drover.cli.cli_main:main"
+hd = "drover.cli.cli_main:main"  # old name from before the rename to Drover; agents and scripts may still call it
 
 [project.gui-scripts]
-herd = "herd.desktop.desktop_window_launcher:main"
+drover = "drover.desktop.desktop_window_launcher:main"
 
 [dependency-groups]
 dev = [
@@ -37,10 +38,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build]
-artifacts = ["src/herd/web_dist/**"]  # gitignored Vite build output
+artifacts = ["src/drover/web_dist/**"]  # gitignored Vite build output
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/herd"]
+packages = ["src/drover"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

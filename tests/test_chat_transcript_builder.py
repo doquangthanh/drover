@@ -14,7 +14,7 @@ from claude_agent_sdk import (
     UserMessage,
 )
 
-from herd.chat.transcript_builder import MAX_RESULT_CHARS, TranscriptBuilder, result_text
+from drover.chat.transcript_builder import MAX_RESULT_CHARS, TranscriptBuilder, result_text
 
 
 def stream(event: dict) -> StreamEvent:

@@ -605,7 +605,7 @@ wheels = [
 ]
 
 [[package]]
-name = "herd"
+name = "drover"
 version = "0.1.5"
 source = { editable = "." }
 dependencies = [

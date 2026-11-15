@@ -7,8 +7,8 @@ import os
 import pytest
 from git_helpers import run_git
 
-from herd.core import space_files as sf
-from herd.git import worktree_service as wt
+from drover.core import space_files as sf
+from drover.git import worktree_service as wt
 
 
 def test_list_dir_puts_folders_first_and_hides_dot_git(git_repo):
@@ -94,7 +94,7 @@ def test_write_replaces_file_and_returns_new_mtime(git_repo):
     out = sf.write_text(str(git_repo), "a.txt", "new\nline\n", base_mtime_us=before)
     assert (git_repo / "a.txt").read_bytes() == b"new\nline\n"  # exact bytes, no newline translation
     assert out["size"] == 9
-    assert not list(git_repo.glob(".*.herd-tmp"))
+    assert not list(git_repo.glob(".*.drover-tmp"))
 
 
 def test_write_keeps_crlf_files_intact(git_repo):

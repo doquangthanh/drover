@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 
-from herd.remote.id_prefixing import prefix_ids, strip_ids, tag_machine
+from drover.remote.id_prefixing import prefix_ids, strip_ids, tag_machine
 
 SNAPSHOT = {
     "spaces": [{"id": "s1", "name": "repo", "cwd": "C:/repo"}],

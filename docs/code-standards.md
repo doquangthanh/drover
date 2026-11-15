@@ -2,7 +2,7 @@
 
 General: YAGNI/KISS/DRY, kebab-case file names, files under ~200 lines, real code (no mocks), conventional commits.
 
-## Python (`src/herd`)
+## Python (`src/drover`)
 - aiohttp daemon; RPC methods register in `rpc/`; every data channel needs the daemon token.
 - Tests: `.venv/Scripts/python.exe -m pytest -q`. `tests/daemon_harness.py` boots the real app.
 

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from git_helpers import run_git
 
-from herd.core.git_watcher import GitWatcher
-from herd.git import worktree_service as wt
+from drover.core.git_watcher import GitWatcher
+from drover.git import worktree_service as wt
 
 
 async def test_quick_status_reports_branch_dirty_and_ahead(git_repo, tmp_path):
@@ -15,7 +15,7 @@ async def test_quick_status_reports_branch_dirty_and_ahead(git_repo, tmp_path):
     assert (await wt.quick_status(str(git_repo)))["dirty"] == 2
     clone = tmp_path / "clone"
     run_git(tmp_path, "clone", str(git_repo), str(clone))
-    for key, value in (("user.email", "qa@example.com"), ("user.name", "herd-qa"), ("commit.gpgsign", "false")):
+    for key, value in (("user.email", "qa@example.com"), ("user.name", "drover-qa"), ("commit.gpgsign", "false")):
         run_git(clone, "config", key, value)
     (clone / "n.txt").write_text("n", encoding="utf-8")
     run_git(clone, "add", "-A")

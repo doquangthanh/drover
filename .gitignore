@@ -14,4 +14,4 @@ session.json
 
 # frontend (React/Vite)
 frontend/node_modules/
-src/herd/web_dist/
+src/drover/web_dist/

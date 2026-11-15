@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from herd.core import self_update
+from drover.core import self_update
 
 
 def test_version_tuple_orders_releases():
@@ -30,13 +30,13 @@ def test_apply_rejects_bad_tag(monkeypatch):
 
 
 def test_apply_swaps_bundle_folder(tmp_path: Path, monkeypatch):
-    bundle = tmp_path / "herd"
+    bundle = tmp_path / "drover"
     bundle.mkdir()
-    (bundle / "hd").write_text("old")
+    (bundle / "dr").write_text("old")
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as tar:
         data = b"new"
-        info = tarfile.TarInfo("herd/hd")
+        info = tarfile.TarInfo("drover/dr")
         info.size = len(data)
         tar.addfile(info, io.BytesIO(data))
     buf.seek(0)
@@ -45,5 +45,5 @@ def test_apply_swaps_bundle_folder(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(self_update, "arch", lambda: "x64")
     monkeypatch.setattr(self_update.urllib.request, "urlopen", lambda url, timeout=0: buf)
     self_update.apply("v0.2.0")
-    assert (bundle / "hd").read_text() == "new"
-    assert not [p for p in tmp_path.iterdir() if p.name.startswith(".herd-update-")]  # temp dir cleaned up
+    assert (bundle / "dr").read_text() == "new"
+    assert not [p for p in tmp_path.iterdir() if p.name.startswith(".drover-update-")]  # temp dir cleaned up

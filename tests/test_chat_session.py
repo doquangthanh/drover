@@ -8,8 +8,8 @@ from typing import ClassVar
 import pytest
 from claude_agent_sdk import AssistantMessage, ResultMessage, TextBlock
 
-from herd.chat.chat_manager import ChatError, ChatManager
-from herd.chat.chat_session import ChatBusy
+from drover.chat.chat_manager import ChatError, ChatManager
+from drover.chat.chat_session import ChatBusy
 
 
 def reply(text: str) -> AssistantMessage:

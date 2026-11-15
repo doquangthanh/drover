@@ -1,14 +1,14 @@
 # System architecture
 
 ```
-herd.exe (pywebview window) / browser
+drover.exe (pywebview window) / browser
         |  http://127.0.0.1:<port>/?token=...
         v
-herd-server (aiohttp daemon, src/herd/daemon)
-  /            index.html of the React build (no-store)      src/herd/web_dist/   (built, gitignored)
+drover-server (aiohttp daemon, src/drover/daemon)
+  /            index.html of the React build (no-store)      src/drover/web_dist/   (built, gitignored)
   /ui/         same index (kept so old links and the dev server path work)
   /ui/assets/  hashed JS/CSS/fonts, `immutable` cache
-  /static/     shared runtime files: icons/material, vendor/ace, favicon, app-icon    src/herd/web/
+  /static/     shared runtime files: icons/material, vendor/ace, favicon, app-icon    src/drover/web/
   /ws /rpc     token-protected state stream + JSON-RPC (unchanged)
   503 "UI not built" when web_dist is missing (daemon, CLI and tests still work)
 ```
@@ -25,6 +25,6 @@ herd-server (aiohttp daemon, src/herd/daemon)
 - Rendering rule: components subscribe with narrow selectors (`useStore(s => ...)`) and rows are `React.memo`, so a state
   event re-renders only what changed.
 
-Build: `npm --prefix frontend run build` writes `src/herd/web_dist/` (`base: "/ui/"`). Dev: `npm --prefix frontend run dev`
-proxies `/ws /rpc /static /health` to the running daemon. Packaging: `packaging/herd.spec` bundles `web/` and `web_dist/`
+Build: `npm --prefix frontend run build` writes `src/drover/web_dist/` (`base: "/ui/"`). Dev: `npm --prefix frontend run dev`
+proxies `/ws /rpc /static /health` to the running daemon. Packaging: `packaging/drover.spec` bundles `web/` and `web_dist/`
 and refuses to build when `web_dist` is missing; the hatch wheel includes it via `artifacts`.

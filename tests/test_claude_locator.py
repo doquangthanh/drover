@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from herd.chat import claude_locator as cl
+from drover.chat import claude_locator as cl
 
 windows_only = pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific lookup")
 

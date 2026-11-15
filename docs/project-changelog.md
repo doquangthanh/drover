@@ -2,15 +2,19 @@
 
 ## Unreleased
 ### Changed
+- Renamed herd to Drover everywhere: Python package `drover`, window/app `drover` (`drover.exe` on Windows), CLI `dr`
+  (`hd` stays as an alias), env vars `DROVER_*`, pane env `DR_PANE_ID`, worktree branches `dr/<task>`, release assets
+  `drover.exe` / `drover-linux-<arch>.tar.gz`, GitHub repo `doquangthanh/drover`. Old `herd` config/state folders and
+  the sign-in autostart entry move over automatically on first start; the Linux installer removes an old herd install.
 - Web UI rewritten as Vite + React + TypeScript + Zustand (`frontend/`). Same layout, CSS and shortcuts; the sidebar,
   top bar and status bar no longer rebuild on every state event, Ace and the xterm WebGL addon load lazily.
-- `/` now serves the built UI from `src/herd/web_dist/` (also reachable at `/ui/`); hashed assets are cached as immutable,
+- `/` now serves the built UI from `src/drover/web_dist/` (also reachable at `/ui/`); hashed assets are cached as immutable,
   `index.html` stays `no-store`. Missing build answers `503 UI not built`.
 - Building from source needs Node 20.19+ or 22+: `npm --prefix frontend ci && npm --prefix frontend run build`.
-- `packaging/herd.spec` bundles `web_dist/` and fails fast when it is missing; the wheel includes it via hatch `artifacts`.
+- `packaging/drover.spec` bundles `web_dist/` and fails fast when it is missing; the wheel includes it via hatch `artifacts`.
 
 ### Removed
-- Legacy vanilla-JS UI (`src/herd/web/js`, `index.html`) and vendored xterm files (xterm now comes from npm `@xterm/*`).
+- Legacy vanilla-JS UI (`src/drover/web/js`, `index.html`) and vendored xterm files (xterm now comes from npm `@xterm/*`).
 - CSS and fonts moved to `frontend/src/styles/` (content unchanged).
 
 ### Fixed

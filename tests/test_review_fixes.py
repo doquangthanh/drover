@@ -7,13 +7,13 @@ import time
 
 import pytest
 
-from herd.core.event_hub import BoundedQueue
-from herd.remote.machine_registry import validate_new
-from herd.status.status_change_tracker import StatusTracker
+from drover.core.event_hub import BoundedQueue
+from drover.remote.machine_registry import validate_new
+from drover.status.status_change_tracker import StatusTracker
 
 
 def test_tracker_hold_keeps_working_after_new_input():
-    """H1: right after `hd send`, an idle screen must not flip the pane back to done/idle."""
+    """H1: right after `dr send`, an idle screen must not flip the pane back to done/idle."""
     t = StatusTracker(state="working", since=time.time())
     t.hold_until = time.time() + 3
     now = time.time()

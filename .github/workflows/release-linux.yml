@@ -25,7 +25,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Stamp version from tag
         if: startsWith(github.ref, 'refs/tags/v')
-        run: sed -i "s/__version__ = \".*\"/__version__ = \"${GITHUB_REF_NAME#v}\"/" src/herd/__init__.py
+        run: sed -i "s/__version__ = \".*\"/__version__ = \"${GITHUB_REF_NAME#v}\"/" src/drover/__init__.py
       - name: Build web UI
         run: |
           npm --prefix frontend ci
@@ -33,17 +33,19 @@ jobs:
       - name: Build binaries
         run: |
           uv sync
-          uv run pyinstaller packaging/herd.spec --noconfirm
+          uv run pyinstaller packaging/drover.spec --noconfirm
       - name: Smoke test
-        run: dist/herd/hd --help
+        run: dist/drover/dr --help
       - name: Package
-        run: tar -czf herd-linux-${{ matrix.arch }}.tar.gz -C dist herd
+        run: |
+          ln -s dr dist/drover/hd  # old CLI name, kept so agents and scripts that call `hd` still work
+          tar -czf drover-linux-${{ matrix.arch }}.tar.gz -C dist drover
       - uses: actions/upload-artifact@v4
         with:
-          name: herd-linux-${{ matrix.arch }}
-          path: herd-linux-${{ matrix.arch }}.tar.gz
+          name: drover-linux-${{ matrix.arch }}
+          path: drover-linux-${{ matrix.arch }}.tar.gz
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: herd-linux-${{ matrix.arch }}.tar.gz
+          files: drover-linux-${{ matrix.arch }}.tar.gz

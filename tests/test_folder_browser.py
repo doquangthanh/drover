@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from herd.core.folder_browser import FolderAccessError, allowed_roots, list_dirs, make_dir
+from drover.core.folder_browser import FolderAccessError, allowed_roots, list_dirs, make_dir
 
 
 @pytest.fixture
@@ -69,7 +69,7 @@ def test_file_path_is_not_a_folder(workspace):
 
 def test_missing_configured_root_raises_access_error_not_index_error(tmp_path):
     # Expected to FAIL: roots[0] raises IndexError when no configured root exists.
-    # Source: herd/core/folder_browser.py:30 (list_dirs, empty path branch).
+    # Source: drover/core/folder_browser.py:30 (list_dirs, empty path branch).
     with pytest.raises(FolderAccessError):
         list_dirs("", [str(tmp_path / "does-not-exist")])
 

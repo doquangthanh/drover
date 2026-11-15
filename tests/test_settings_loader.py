@@ -5,11 +5,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from herd.config.settings_loader import SettingsStore, deep_merge, read_toml
+from drover.config.settings_loader import SettingsStore, deep_merge, read_toml
 
 
 def _settings_path() -> Path:
-    return Path(os.environ["HERD_CONFIG_DIR"]) / "settings.toml"
+    return Path(os.environ["DROVER_CONFIG_DIR"]) / "settings.toml"
 
 
 def test_deep_merge_keeps_untouched_nested_keys():

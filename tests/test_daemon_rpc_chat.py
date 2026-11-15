@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 
-async def test_create_list_history_rename_remove(start_daemon, herd_dirs: Path):
+async def test_create_list_history_rename_remove(start_daemon, drover_dirs: Path):
     daemon = await start_daemon()
-    folder = herd_dirs / "proj"
+    folder = drover_dirs / "proj"
     folder.mkdir()
     _, body = await daemon.call("chat.create", {"cwd": str(folder), "name": "notes", "permission_mode": "acceptEdits"})
     chat = body["result"]
@@ -28,14 +28,14 @@ async def test_create_list_history_rename_remove(start_daemon, herd_dirs: Path):
     assert body["result"] == []
 
 
-async def test_bad_input_is_refused_with_clear_errors(start_daemon, herd_dirs: Path):
+async def test_bad_input_is_refused_with_clear_errors(start_daemon, drover_dirs: Path):
     daemon = await start_daemon()
-    _, body = await daemon.call("chat.create", {"cwd": str(herd_dirs / "nope")})
+    _, body = await daemon.call("chat.create", {"cwd": str(drover_dirs / "nope")})
     assert body["error"]["code"] == 5 and "not a folder" in body["error"]["message"]
     _, body = await daemon.call("chat.send", {"chat": "c9", "text": "hi"})
     assert body["error"]["code"] == 3
 
-    folder = herd_dirs / "proj"
+    folder = drover_dirs / "proj"
     folder.mkdir()
     await daemon.call("chat.create", {"cwd": str(folder)})
     _, body = await daemon.call("chat.send", {"chat": "c1"})
@@ -50,9 +50,9 @@ async def test_bad_input_is_refused_with_clear_errors(start_daemon, herd_dirs: P
     assert body["result"] == {"ok": False}
 
 
-async def test_files_endpoint_ranks_project_files_and_set_model_is_saved(start_daemon, herd_dirs: Path):
+async def test_files_endpoint_ranks_project_files_and_set_model_is_saved(start_daemon, drover_dirs: Path):
     daemon = await start_daemon()
-    folder = herd_dirs / "proj"
+    folder = drover_dirs / "proj"
     (folder / "src").mkdir(parents=True)
     (folder / "src" / "pricing.tsx").write_text("x", encoding="utf-8")
     (folder / "README.md").write_text("x", encoding="utf-8")

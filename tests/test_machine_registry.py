@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from herd.remote.machine_registry import Machine, load_machines, machines_file, save_machines, validate_new
+from drover.remote.machine_registry import Machine, load_machines, machines_file, save_machines, validate_new
 
 
 def test_validate_new_accepts_good_alias_and_target():

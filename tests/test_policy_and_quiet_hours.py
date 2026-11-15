@@ -6,8 +6,8 @@ import datetime as dt
 
 import pytest
 
-from herd.core.orchestration_policy import OrchestrationPolicy, PolicyError
-from herd.notify.desktop_notifier_service import in_quiet_hours
+from drover.core.orchestration_policy import OrchestrationPolicy, PolicyError
+from drover.notify.desktop_notifier_service import in_quiet_hours
 
 
 def test_defaults_when_settings_section_is_empty():
