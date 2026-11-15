@@ -88,7 +88,22 @@ def follow_daemon(window, loaded_url: str) -> None:
                 return
 
 
+def log_stderr_to_file() -> None:
+    """Started from a menu there is no terminal, so crashes (even Qt aborts) would vanish: keep them in app.log."""
+    if sys.platform == "win32" or sys.stderr is None or sys.stderr.isatty():
+        return
+    from herd.app_paths import config_dir
+
+    try:
+        log = open(config_dir() / "app.log", "a", buffering=1, encoding="utf-8")  # noqa: SIM115 - lives as long as the process
+        os.dup2(log.fileno(), 2)  # fd 2 too, so native (Qt) messages land here as well
+        sys.stderr = log
+    except OSError:
+        pass
+
+
 def main() -> None:
+    log_stderr_to_file()
     try:
         info = ensure_daemon()
     except DaemonUnavailable as exc:
