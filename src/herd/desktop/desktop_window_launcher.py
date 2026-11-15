@@ -47,9 +47,37 @@ class DesktopBridge:
     def platform(self) -> str:
         return sys.platform
 
+    def set_dark_title(self, dark: bool) -> None:
+        """Called by the page whenever the app theme changes, so the native title bar matches."""
+        style_title_bar(self._window, bool(dark))
 
-def dark_title_bar(window) -> None:
-    """The default title bar is bright white on top of the dark UI. Windows 10 1809+/11: dark caption, Windows 11: UI colours."""
+
+def title_bar_linux(window, dark: bool) -> None:
+    """Qt window on Linux: Wayland draws the frame client-side (follows Qt colour scheme, Qt >= 6.8);
+    X11/GNOME draws it server-side and honours the _GTK_THEME_VARIANT hint."""
+    import contextlib
+    import shutil
+
+    with contextlib.suppress(Exception):  # older Qt has no setColorScheme; the X11 hint below may still work
+        from qtpy.QtCore import Qt
+        from qtpy.QtWidgets import QApplication
+
+        QApplication.styleHints().setColorScheme(Qt.ColorScheme.Dark if dark else Qt.ColorScheme.Light)
+    with contextlib.suppress(Exception):  # cosmetic only
+        native = getattr(window, "native", None)
+        if native is not None and shutil.which("xprop") and os.environ.get("DISPLAY"):
+            subprocess.run(
+                ["xprop", "-id", str(int(native.winId())), "-f", "_GTK_THEME_VARIANT", "8u",
+                 "-set", "_GTK_THEME_VARIANT", "dark" if dark else "light"],
+                check=False, timeout=5, capture_output=True,
+            )
+
+
+def style_title_bar(window, dark: bool = True) -> None:
+    """The default title bar is bright white on top of a dark UI. Follows the app theme (dark=False: system default).
+    Windows 10 1809+/11: dark caption, Windows 11: UI colours."""
+    if sys.platform == "linux":
+        title_bar_linux(window, dark)
     if sys.platform != "win32":
         return
     import ctypes
@@ -63,10 +91,11 @@ def dark_title_bar(window) -> None:
         v = ctypes.c_int(value)
         dwm.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(v), ctypes.sizeof(v))  # unsupported attrs just fail
 
-    set_attr(20, 1)            # DWMWA_USE_IMMERSIVE_DARK_MODE
-    set_attr(35, 0x181513)     # DWMWA_CAPTION_COLOR  (COLORREF 0x00BBGGRR of #131518)
-    set_attr(34, 0x181513)     # DWMWA_BORDER_COLOR
-    set_attr(36, 0xE8E6E4)     # DWMWA_TEXT_COLOR
+    default = 0xFFFFFFFF  # DWMWA_COLOR_DEFAULT
+    set_attr(20, 1 if dark else 0)               # DWMWA_USE_IMMERSIVE_DARK_MODE
+    set_attr(35, 0x181513 if dark else default)  # DWMWA_CAPTION_COLOR  (COLORREF 0x00BBGGRR of #131518)
+    set_attr(34, 0x181513 if dark else default)  # DWMWA_BORDER_COLOR
+    set_attr(36, 0xE8E6E4 if dark else default)  # DWMWA_TEXT_COLOR
 
 
 def follow_daemon(window, loaded_url: str) -> None:
@@ -150,7 +179,7 @@ def main() -> None:
     from herd.app_paths import web_static_dir
 
     icon = web_static_dir() / ("app-icon.ico" if sys.platform == "win32" else "favicon.png")  # WinForms needs .ico
-    bridge._window.events.shown += lambda: dark_title_bar(bridge._window)
+    bridge._window.events.shown += lambda: style_title_bar(bridge._window)
     gui = "qt" if sys.platform == "linux" else None  # Linux builds bundle Qt WebEngine; don't probe for system GTK
     try:
         webview.start(
