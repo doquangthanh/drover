@@ -2,6 +2,14 @@
 
 ## Unreleased
 ### Added
+- In-app update on Windows: Settings → Updates downloads the release `drover.exe`, checks it is a real program,
+  renames the running file to `drover.exe.old`, puts the new one in its place and restarts the server; the `.old`
+  copy is removed on the next start.
+- The UI checks for a new release 15 s after start and every 12 h, and shows a toast (once per version) that opens
+  Settings → Updates.
+
+## 0.1.10
+### Added
 - `dr prompt NAME "text" [--wait]` (`pane.prompt`): submits a prompt (bracketed paste when the app enabled it), refuses
   an agent on a permission prompt without typing (exit 6, `agent_blocked`), reports `agent_prompt_stalled` (exit 7) when
   the screen shows no work within 5 s, otherwise waits for the turn to settle.

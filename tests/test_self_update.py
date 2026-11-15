@@ -47,3 +47,37 @@ def test_apply_swaps_bundle_folder(tmp_path: Path, monkeypatch):
     self_update.apply("v0.2.0")
     assert (bundle / "dr").read_text() == "new"
     assert not [p for p in tmp_path.iterdir() if p.name.startswith(".drover-update-")]  # temp dir cleaned up
+
+
+def _fake_download(payload: bytes):
+    return lambda url, timeout=0: io.BytesIO(payload)
+
+
+def test_windows_exe_swap_keeps_old_copy_and_cleanup_removes_it(tmp_path: Path, monkeypatch):
+    exe = tmp_path / "drover.exe"
+    exe.write_bytes(b"MZold")
+    new = b"MZ" + b"\0" * self_update.MIN_EXE_BYTES
+    monkeypatch.setattr(self_update.urllib.request, "urlopen", _fake_download(new))
+    self_update.apply_windows_exe("v0.2.0", exe)
+    assert exe.read_bytes() == new
+    assert (tmp_path / "drover.exe.old").read_bytes() == b"MZold"
+    assert not (tmp_path / "drover.exe.new").exists()
+    monkeypatch.setattr(self_update, "is_single_exe", lambda: True)
+    monkeypatch.setattr(self_update.sys, "executable", str(exe))
+    self_update.remove_old_exe()
+    assert not (tmp_path / "drover.exe.old").exists()
+
+
+def test_windows_exe_swap_rejects_a_non_program_download(tmp_path: Path, monkeypatch):
+    exe = tmp_path / "drover.exe"
+    exe.write_bytes(b"MZold")
+    monkeypatch.setattr(self_update.urllib.request, "urlopen", _fake_download(b"<html>Not Found</html>"))
+    with pytest.raises(self_update.UpdateError, match="not a Windows program"):
+        self_update.apply_windows_exe("v0.2.0", exe)
+    assert exe.read_bytes() == b"MZold"
+    assert sorted(p.name for p in tmp_path.glob("drover.exe*")) == ["drover.exe"]
+
+
+def test_windows_single_exe_is_installable(monkeypatch):
+    monkeypatch.setattr(self_update, "is_single_exe", lambda: True)
+    assert self_update.installable()

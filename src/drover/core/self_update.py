@@ -1,4 +1,4 @@
-"""Check GitHub for a newer drover release and swap the installed Linux bundle in place."""
+"""Check GitHub for a newer drover release and replace this install in place (Linux bundle or Windows drover.exe)."""
 
 from __future__ import annotations
 
@@ -13,12 +13,14 @@ import urllib.request
 from pathlib import Path
 
 from drover import __version__
-from drover.self_command import bundle_dir, is_frozen
+from drover.self_command import bundle_dir, is_frozen, is_single_exe
 
 REPO = "doquangthanh/drover"
 LATEST_API = f"https://api.github.com/repos/{REPO}/releases/latest"
 ASSET_URL = f"https://github.com/{REPO}/releases/download/{{tag}}/drover-linux-{{arch}}.tar.gz"
+EXE_URL = f"https://github.com/{REPO}/releases/download/{{tag}}/drover.exe"
 TIMEOUT = 15
+MIN_EXE_BYTES = 1_000_000  # a real drover.exe is tens of MB; anything tiny is an error page
 
 
 class UpdateError(Exception):
@@ -31,8 +33,8 @@ def version_tuple(text: str) -> tuple[int, ...]:
 
 
 def installable() -> bool:
-    """Only the Linux release bundle can replace itself; source/uv installs update with git/uv."""
-    return is_frozen() and sys.platform == "linux"
+    """Release builds replace themselves (Linux bundle, Windows drover.exe); source/uv installs update with git/uv."""
+    return is_single_exe() or (is_frozen() and sys.platform == "linux")
 
 
 def arch() -> str:
@@ -67,6 +69,9 @@ def apply(tag: str) -> None:
         raise UpdateError("this install can't update itself; re-run the install script")
     if not re.fullmatch(r"v\d+(\.\d+)*", tag):
         raise UpdateError("bad version tag")
+    if is_single_exe():
+        apply_windows_exe(tag, Path(sys.executable).resolve())
+        return
     target = bundle_dir()
     parent = target.parent
     tmp = Path(tempfile.mkdtemp(prefix=".drover-update-", dir=parent))  # same filesystem as target: rename is atomic
@@ -92,3 +97,54 @@ def apply(tag: str) -> None:
             raise
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def old_exe_path(exe: Path) -> Path:
+    return exe.with_name(exe.name + ".old")
+
+
+def apply_windows_exe(tag: str, exe: Path) -> None:
+    """Blocking: download drover.exe for `tag` next to the running one and swap them.
+
+    Windows refuses to overwrite or delete a running .exe but allows renaming it, so the running file becomes
+    drover.exe.old (removed on the next start by `remove_old_exe`) and the download takes its name.
+    """
+    staged = exe.with_name(exe.name + ".new")
+    try:
+        with urllib.request.urlopen(EXE_URL.format(tag=tag), timeout=TIMEOUT) as resp, open(staged, "wb") as out:
+            shutil.copyfileobj(resp, out)
+    except OSError as exc:
+        staged.unlink(missing_ok=True)
+        raise UpdateError(f"download failed: {exc}") from exc
+    with open(staged, "rb") as fh:
+        head = fh.read(2)
+    if head != b"MZ" or staged.stat().st_size < MIN_EXE_BYTES:
+        staged.unlink(missing_ok=True)
+        raise UpdateError("downloaded file is not a Windows program")
+    old = old_exe_path(exe)
+    try:
+        old.unlink(missing_ok=True)  # left by the previous update
+    except OSError as exc:
+        staged.unlink(missing_ok=True)
+        raise UpdateError(f"an older drover.exe.old is still in use; restart Drover and retry ({exc})") from exc
+    try:
+        exe.rename(old)
+    except OSError as exc:
+        staged.unlink(missing_ok=True)
+        raise UpdateError(f"could not move the running drover.exe aside: {exc}") from exc
+    try:
+        staged.rename(exe)
+    except OSError as exc:
+        old.rename(exe)  # put the working copy back
+        staged.unlink(missing_ok=True)
+        raise UpdateError(f"could not install the new drover.exe: {exc}") from exc
+
+
+def remove_old_exe() -> None:
+    """On start-up: delete drover.exe.old from the last update once nothing runs it any more (best effort)."""
+    if not is_single_exe():
+        return
+    try:
+        old_exe_path(Path(sys.executable).resolve()).unlink(missing_ok=True)
+    except OSError:
+        pass  # an old window still runs it; the next start retries

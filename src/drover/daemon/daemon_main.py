@@ -24,6 +24,7 @@ from drover.app_paths import (
 )
 from drover.chat.chat_manager import ChatManager
 from drover.config.settings_loader import SettingsStore
+from drover.core import self_update
 from drover.core.event_hub import EventHub
 from drover.core.git_watcher import GitWatcher
 from drover.core.session_manager import SessionManager
@@ -87,6 +88,7 @@ async def serve(host: str = "127.0.0.1", port: int = 0) -> None:
         return
     ctx = build_context(secrets.token_urlsafe(32))
     ctx.persistence.load_previous()
+    self_update.remove_old_exe()  # drover.exe.old from the previous in-app update
     runner = web.AppRunner(build_app(ctx), access_log=None)
     await runner.setup()
     site = web.TCPSite(runner, "127.0.0.1", port)
