@@ -14,7 +14,9 @@ hidden = collect_submodules("herd") + collect_submodules("desktop_notifier") + c
 if sys.platform == "win32":
     datas += collect_data_files("winpty", includes=["*.exe"])  # ConPTY helpers (OpenConsole.exe, winpty-agent.exe)
     hidden += ["winpty", "win32timezone"]  # win32timezone: imported lazily (pywin32), PyInstaller can't see it
-ICON = {"icon": "herd.ico"} if sys.platform == "win32" else {}  # Linux executables take no icon
+if sys.platform == "linux":
+    hidden += ["webview.platforms.qt", "qtpy", "PyQt6.QtWebEngineCore", "PyQt6.QtWebChannel"]  # pywebview picks its backend dynamically
+ICON ={"icon": "herd.ico"} if sys.platform == "win32" else {}  # Linux executables take no icon
 
 
 def analysis(script):
