@@ -14,6 +14,7 @@ from typing import Any
 
 from drover.chat.chat_store import ChatStore
 from drover.chat.claude_locator import find_claude_exe
+from drover.chat.sdk_no_console import hide_sdk_console
 from drover.chat.transcript_builder import TranscriptBuilder, new_id
 
 log = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class ChatBusy(Exception):
 def make_client(options: Any) -> Any:
     from claude_agent_sdk import ClaudeSDKClient
 
+    hide_sdk_console()
     return ClaudeSDKClient(options=options)
 
 
