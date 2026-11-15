@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.1.12
+### Fixed
+- "Check for updates" failed once GitHub's API rate limit (60 calls/hour per IP) was used up; it now falls back to
+  the tag that github.com/<repo>/releases/latest redirects to.
+
+## 0.1.11
 ### Added
 - In-app update on Windows: Settings → Updates downloads the release `drover.exe`, checks it is a real program,
   renames the running file to `drover.exe.old`, puts the new one in its place and restarts the server; the `.old`

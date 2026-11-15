@@ -17,6 +17,7 @@ from drover.self_command import bundle_dir, is_frozen, is_single_exe
 
 REPO = "doquangthanh/drover"
 LATEST_API = f"https://api.github.com/repos/{REPO}/releases/latest"
+LATEST_PAGE = f"https://github.com/{REPO}/releases/latest"
 ASSET_URL = f"https://github.com/{REPO}/releases/download/{{tag}}/drover-linux-{{arch}}.tar.gz"
 EXE_URL = f"https://github.com/{REPO}/releases/download/{{tag}}/drover.exe"
 TIMEOUT = 15
@@ -47,13 +48,18 @@ def arch() -> str:
 
 
 def check() -> dict:
-    """Blocking: ask GitHub for the latest release."""
+    """Blocking: ask GitHub for the latest release.
+
+    The API allows 60 unauthenticated calls an hour per IP; when it refuses, the tag is read from where
+    github.com/<repo>/releases/latest redirects (no rate limit, but no release notes either).
+    """
     req = urllib.request.Request(LATEST_API, headers={"Accept": "application/vnd.github+json", "User-Agent": "drover"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             data = json.load(resp)
     except (OSError, ValueError) as exc:
-        raise UpdateError(f"could not reach GitHub: {exc}") from exc
+        data = {"tag_name": latest_tag_from_redirect(exc)}
+        data["html_url"] = f"{LATEST_PAGE.rsplit('/', 1)[0]}/tag/{data['tag_name']}"
     tag = str(data.get("tag_name", ""))
     return {
         "current": __version__, "latest": tag.lstrip("v"), "tag": tag, "url": data.get("html_url", ""),
@@ -61,6 +67,20 @@ def check() -> dict:
         "available": bool(tag) and version_tuple(tag) > version_tuple(__version__),
         "installable": installable(),
     }
+
+
+def latest_tag_from_redirect(api_error: Exception) -> str:
+    """Fallback for check(): the final URL of /releases/latest ends in /tag/<tag>."""
+    req = urllib.request.Request(LATEST_PAGE, method="HEAD", headers={"User-Agent": "drover"})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            final_url = resp.geturl()
+    except OSError as exc:
+        raise UpdateError(f"could not reach GitHub: {api_error}") from exc
+    match = re.search(r"/tag/(v[\d.]+)$", final_url)
+    if not match:
+        raise UpdateError(f"could not reach GitHub: {api_error}")
+    return match.group(1)
 
 
 def apply(tag: str) -> None:
