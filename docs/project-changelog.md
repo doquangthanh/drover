@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.13
+### Changed
+- In-app toasts redesigned: tone-coloured accent bar and badge (needs you, done, error, update, stopped), an action
+  button ("Answer", "Open", "Update"), a countdown bar that pauses on hover, longer lifetime for "needs you", at most
+  four on screen. The Inbox side panel sample uses the same card.
+- Desktop notifications now say what happened and what the agent was doing (agent name plus the terminal title), use a
+  critical urgency for "needs you", and group per pane.
+
 ## 0.1.12
 ### Fixed
 - "Check for updates" failed once GitHub's API rate limit (60 calls/hour per IP) was used up; it now falls back to
