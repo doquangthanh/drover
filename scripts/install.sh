@@ -39,6 +39,22 @@ mv "$tmp/unpack/herd" "$HERD_HOME"
 ln -sf "$HERD_HOME/hd" "$HERD_BIN/hd"
 ln -sf "$HERD_HOME/herd" "$HERD_BIN/herd"
 
+# App-menu entry so herd shows up in the desktop launcher (icon ships inside the bundle).
+apps="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+icon="$HERD_HOME/_internal/herd/web/favicon.png"
+mkdir -p "$apps"
+cat > "$apps/herd.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Herd
+Comment=Workspace for running coding agents
+Exec=$HERD_HOME/herd
+Icon=$icon
+Terminal=false
+Categories=Development;
+EOF
+command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$apps" >/dev/null 2>&1 || true
+
 echo "herd: installed to $HERD_HOME (hd, herd linked in $HERD_BIN)"
 case ":$PATH:" in
   *":$HERD_BIN:"*) ;;
