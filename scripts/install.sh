@@ -32,6 +32,8 @@ curl -fSL --proto '=https' "$url" -o "$tmp/$asset"
 mkdir -p "$tmp/unpack"
 tar -xzf "$tmp/$asset" -C "$tmp/unpack"
 [ -x "$tmp/unpack/herd/hd" ] || { echo "herd: archive is missing herd/hd" >&2; exit 1; }
+# A running daemon outlives its window and keeps serving the old UI: stop it so the next launch uses the new files.
+if [ -x "$HERD_HOME/hd" ]; then "$HERD_HOME/hd" server stop >/dev/null 2>&1 || true; fi
 rm -rf "$HERD_HOME"
 mkdir -p "$(dirname "$HERD_HOME")" "$HERD_BIN"
 mv "$tmp/unpack/herd" "$HERD_HOME"
