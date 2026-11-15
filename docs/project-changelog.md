@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.20
 ### Changed
 - Windows: `dr` calls from agent panes and Claude hooks start about 2x faster (measured `dr ls`: ~390 ms -> ~190 ms).
   Each release now also ships `drover-cli-windows-x64.zip`, an unpacked `dr.exe`. The daemon downloads it once per
