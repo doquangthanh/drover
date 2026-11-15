@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import http.client
 import json
 import platform
 import re
@@ -26,6 +27,16 @@ MIN_EXE_BYTES = 1_000_000  # a real drover.exe is tens of MB; anything tiny is a
 
 class UpdateError(Exception):
     pass
+
+
+def download(url: str, dest: Path) -> None:
+    """Blocking: save `url` to `dest`; UpdateError on any network/disk error (partial file removed)."""
+    try:
+        with urllib.request.urlopen(url, timeout=TIMEOUT) as resp, open(dest, "wb") as out:
+            shutil.copyfileobj(resp, out)
+    except (OSError, http.client.HTTPException) as exc:  # HTTPException: e.g. IncompleteRead on a cut connection
+        dest.unlink(missing_ok=True)
+        raise UpdateError(f"download failed: {exc}") from exc
 
 
 def version_tuple(text: str) -> tuple[int, ...]:
@@ -97,12 +108,7 @@ def apply(tag: str) -> None:
     tmp = Path(tempfile.mkdtemp(prefix=".drover-update-", dir=parent))  # same filesystem as target: rename is atomic
     try:
         archive = tmp / "drover.tar.gz"
-        try:
-            with urllib.request.urlopen(ASSET_URL.format(tag=tag, arch=arch()), timeout=TIMEOUT) as resp, \
-                    open(archive, "wb") as out:
-                shutil.copyfileobj(resp, out)
-        except OSError as exc:
-            raise UpdateError(f"download failed: {exc}") from exc
+        download(ASSET_URL.format(tag=tag, arch=arch()), archive)
         with tarfile.open(archive) as tar:
             tar.extractall(tmp / "new", filter="data")
         fresh = tmp / "new" / "drover"
@@ -163,12 +169,7 @@ def apply_windows_exe(tag: str, exe: Path) -> None:
     download takes its name.
     """
     staged = exe.with_name(exe.name + ".new")
-    try:
-        with urllib.request.urlopen(EXE_URL.format(tag=tag), timeout=TIMEOUT) as resp, open(staged, "wb") as out:
-            shutil.copyfileobj(resp, out)
-    except OSError as exc:
-        staged.unlink(missing_ok=True)
-        raise UpdateError(f"download failed: {exc}") from exc
+    download(EXE_URL.format(tag=tag), staged)
     with open(staged, "rb") as fh:
         head = fh.read(2)
     if head != b"MZ" or staged.stat().st_size < MIN_EXE_BYTES:

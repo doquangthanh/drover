@@ -32,13 +32,21 @@ jobs:
           uv run pyinstaller packaging/drover.spec --noconfirm
       - name: Check output
         shell: bash
-        run: test -s dist/drover.exe && ls -l dist/drover.exe
+        run: test -s dist/drover.exe && ls -l dist/drover.exe && dist/drover-cli/dr.exe --help > /dev/null
+      - name: Zip fast CLI runtime
+        # dr.exe at the zip root: the daemon extracts it into <state>/runtime/<version>/ (windows_cli_runtime_installer)
+        shell: pwsh
+        run: Compress-Archive -Path dist/drover-cli/* -DestinationPath dist/drover-cli-windows-x64.zip
       - uses: actions/upload-artifact@v4
         with:
           name: drover-windows-x64
-          path: dist/drover.exe
+          path: |
+            dist/drover.exe
+            dist/drover-cli-windows-x64.zip
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/drover.exe
+          files: |
+            dist/drover.exe
+            dist/drover-cli-windows-x64.zip

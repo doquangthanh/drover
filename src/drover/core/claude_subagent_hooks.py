@@ -9,12 +9,12 @@ import json
 from pathlib import Path
 
 from drover.app_paths import state_dir
-from drover.self_command import dr_command
+from drover.self_command import fast_cli_command
 
 
 def hook_command() -> str:
     """Shell command line for the hook. Forward slashes + double quotes work in Git Bash, cmd and sh alike."""
-    return " ".join('"' + part.replace("\\", "/") + '"' for part in dr_command()) + " hook claude"
+    return " ".join('"' + part.replace("\\", "/") + '"' for part in fast_cli_command()) + " hook claude"
 
 
 def settings_file() -> Path:

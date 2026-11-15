@@ -9,7 +9,7 @@ import time
 
 from drover.app_paths import daemon_info_file, log_dir
 from drover.daemon import local_http
-from drover.self_command import dr_command, is_single_exe
+from drover.self_command import dr_command, is_frozen
 
 
 class DaemonUnavailable(Exception):
@@ -45,7 +45,7 @@ def start_background() -> None:
     cmd = [*dr_command(windowless=True), "server", "run", "--background"]
     log = open(log_dir() / "daemon-stdout.log", "ab")  # noqa: SIM115 - handed to the child
     kwargs: dict = {"stdout": log, "stderr": log, "stdin": subprocess.DEVNULL, "close_fds": True}
-    if is_single_exe():  # a onefile child must unpack its own copy, else it dies with the parent's temp dir
+    if is_frozen():  # a onefile child (drover.exe) must unpack its own copy, else it dies with the parent's temp dir
         kwargs["env"] = {**os.environ, "PYINSTALLER_RESET_ENVIRONMENT": "1"}
     if sys.platform == "win32":
         kwargs["creationflags"] = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS

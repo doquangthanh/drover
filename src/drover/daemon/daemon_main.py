@@ -31,6 +31,7 @@ from drover.core.session_manager import SessionManager
 from drover.core.session_persistence import SessionPersistence
 from drover.core.state_store import StateStore
 from drover.core.status_monitor import StatusMonitor
+from drover.core.windows_cli_runtime_installer import install_in_background
 from drover.daemon.daemon_context import DaemonContext
 from drover.daemon.web_server import build_app
 from drover.notify.desktop_notifier_service import DesktopNotifierService
@@ -90,6 +91,7 @@ async def serve(host: str = "127.0.0.1", port: int = 0) -> None:
     ctx = build_context(secrets.token_urlsafe(32))
     ctx.persistence.load_previous()
     self_update.remove_old_exe()  # drover.exe.old from the previous in-app update
+    install_in_background()  # Windows: unpacked dr.exe so each `dr` call skips onefile unpacking
     runner = web.AppRunner(build_app(ctx), access_log=None)
     await runner.setup()
     site = web.TCPSite(runner, "127.0.0.1", port)
