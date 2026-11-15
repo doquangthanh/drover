@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Drover">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c2147"/><stop offset="1" stop-color="#0b0d1f"/></linearGradient>
+    <linearGradient id="d" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#b9c2ff"/></linearGradient>
+    <linearGradient id="dot" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7c8cff"/><stop offset="1" stop-color="#ffb86b"/></linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect x="3" y="3" width="506" height="506" rx="113" fill="none" stroke="#ffffff" stroke-opacity=".08" stroke-width="2"/>
+  <!-- the D: a pen the herd is driven into -->
+  <path fill="url(#d)" fill-rule="evenodd" d="M142 112H262C356 112 418 172 418 256S356 400 262 400H142Z M214 176V336H258C312 336 346 304 346 256S312 176 258 176Z"/>
+  <!-- the herd: followers shrink behind, the leader (the drover) is warm and glows -->
+  <g fill="url(#dot)">
+    <circle cx="246" cy="256" r="9" opacity=".55"/>
+    <circle cx="276" cy="256" r="13" opacity=".8"/>
+    <circle cx="314" cy="256" r="20" filter="url(#glow)" opacity=".7"/>
+    <circle cx="314" cy="256" r="20"/>
+  </g>
+</svg>

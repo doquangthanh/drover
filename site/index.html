@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Drover runs Claude Code, Codex, Gemini, opencode and any shell side by side, keeps them working and tells you which one needs you.">
+<link rel="icon" href="drover-mark.svg" type="image/svg+xml">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Drover</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-bleed 3D herd field hero → tilted app window → install tabs → numbered guide → reference grid.
+   Palette is the app's own (frontend/src/styles/themes.css): agent state colours do the talking. */
+:root {
+  --bg: #0d0e10; --chrome: #131518; --pane: #17191d; --card: #1d1f23; --line: #2a2d33;
+  --fg: #eeeeef; --muted: #98999b; --dim: #6d7078;
+  --accent: #96b2d7; --on-accent: #101114;
+  --working: #76a8ff; --blocked: #f2a33c; --done: #4cc48c; --idle: #4a4d55;
+  --glow: rgba(118,168,255,.16);
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #eef0f3; --chrome: #e4e7eb; --pane: #ffffff; --card: #f6f7f9; --line: #d3d7de;
+  --fg: #16181c; --muted: #565a62; --dim: #7a7f88;
+  --accent: #3d6aa8; --on-accent: #ffffff;
+  --working: #2f6fe0; --blocked: #c97a0c; --done: #1f9a63; --idle: #a3a8b2;
+  --glow: rgba(47,111,224,.10); color-scheme: light } }
+:root[data-theme="light"] {
+  --bg: #eef0f3; --chrome: #e4e7eb; --pane: #ffffff; --card: #f6f7f9; --line: #d3d7de;
+  --fg: #16181c; --muted: #565a62; --dim: #7a7f88;
+  --accent: #3d6aa8; --on-accent: #ffffff;
+  --working: #2f6fe0; --blocked: #c97a0c; --done: #1f9a63; --idle: #a3a8b2;
+  --glow: rgba(47,111,224,.10); color-scheme: light }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 400 16px/1.6 var(--f-body); overflow-x: hidden }
+a { color: inherit }
+.wrap { max-width: 1160px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)) }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -.02em }
+code, pre, kbd { font-family: var(--f-mono) }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent) }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px }
+
+/* nav */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg) }
+nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; backdrop-filter: blur(14px); background: color-mix(in srgb, var(--bg) 70%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent) }
+nav .wrap { display: flex; align-items: center; gap: 28px; height: 60px }
+.brand { display: flex; align-items: center; gap: 10px; font: 800 20px var(--f-display); text-decoration: none; letter-spacing: -.02em }
+.brand svg { width: 30px; height: 30px; border-radius: 7px; box-shadow: 0 0 0 1px var(--line) }
+nav .links { display: flex; gap: 22px; margin-left: auto; font-size: 14px; color: var(--muted) }
+nav .links a { text-decoration: none } nav .links a:hover { color: var(--fg) }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 10px; font: 600 15px var(--f-body); text-decoration: none; border: 1px solid var(--line); background: var(--pane); color: var(--fg); cursor: pointer; transition: transform .2s, border-color .2s }
+.btn:hover { transform: translateY(-1px); border-color: var(--accent) }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: transparent }
+nav .btn { padding: 8px 14px; font-size: 14px }
+
+/* hero */
+.hero { position: relative; overflow: hidden; min-height: 680px; display: flex; align-items: center }
+#herd { position: absolute; inset: 0; width: 100%; height: 100% }
+.hero::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 60% 70% at 22% 45%, var(--bg) 10%, transparent 70%), linear-gradient(to bottom, transparent 70%, var(--bg)) }
+.hero .wrap { position: relative; z-index: 2; width: 100%; padding-block: 80px }
+.hero h1 { font-size: clamp(46px, 8vw, 104px); line-height: .92; font-weight: 800; max-width: 9.5ch }
+.hero h1 em { font-style: normal; color: var(--blocked) }
+.hero p.lede { font-size: clamp(17px, 2vw, 20px); color: var(--muted); max-width: 520px; margin: 24px 0 32px }
+.cta { display: flex; flex-wrap: wrap; gap: 12px }
+.oneliner { margin-top: 28px; display: flex; align-items: center; gap: 10px; max-width: 560px; padding: 10px 10px 10px 16px; border-radius: 12px; background: color-mix(in srgb, var(--pane) 82%, transparent); border: 1px solid var(--line); font-size: 13.5px }
+.oneliner code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; color: var(--fg) }
+.oneliner code b { color: var(--done); font-weight: 500 }
+.copy { flex: none; font: 500 12px var(--f-mono); padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--card); color: var(--muted); cursor: pointer }
+.copy:hover { color: var(--fg) } .copy.ok { color: var(--done); border-color: var(--done) }
+
+.legend { position: absolute; z-index: 3; right: max(20px, env(safe-area-inset-right, 0px)); bottom: 28px; display: grid; grid-template-columns: repeat(4, auto); gap: 4px 22px; padding: 14px 18px; border-radius: 14px; background: color-mix(in srgb, var(--chrome) 78%, transparent); border: 1px solid var(--line); backdrop-filter: blur(10px); font: 400 12px var(--f-mono); color: var(--muted) }
+.legend .k { display: flex; align-items: center; gap: 7px }
+.legend .n { font: 700 22px var(--f-display); color: var(--fg); font-variant-numeric: tabular-nums }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: currentColor }
+.s-working { color: var(--working) } .s-needs { color: var(--blocked) } .s-done { color: var(--done) } .s-idle { color: var(--idle) }
+.legend .cap { grid-column: 1 / -1; font-size: 11px; color: var(--dim); margin-top: 6px }
+
+/* app window (CSS 3D) */
+.stage { perspective: 1800px; padding-block: 40px 120px }
+.window { transform-style: preserve-3d; transform: rotateX(var(--rx, 16deg)) rotateY(var(--ry, -10deg)); transition: transform .5s cubic-bezier(.2,.7,.2,1);
+  max-width: 1020px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: var(--chrome); border: 1px solid var(--line);
+  box-shadow: 0 60px 120px -40px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.02), 0 0 120px var(--glow) }
+.titlebar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); font: 12px var(--f-mono); color: var(--dim) }
+.titlebar i { width: 11px; height: 11px; border-radius: 50%; background: var(--line) }
+.titlebar span { margin-left: 12px }
+.app { display: grid; grid-template-columns: 250px 1fr; min-height: 400px }
+.side { border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; gap: 4px; font-size: 13px }
+.side h4 { margin: 10px 8px 6px; font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim) }
+.agent { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; color: var(--muted) }
+.agent.on { background: var(--card); color: var(--fg) }
+.agent small { margin-left: auto; font: 11px var(--f-mono) }
+.agent .dot.pulse { animation: pulse 1.6s infinite }
+@keyframes pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 25%, transparent) } }
+.term { background: var(--pane); padding: 18px 22px; font: 13px/1.75 var(--f-mono); color: var(--muted); min-width: 0; overflow: hidden }
+.term .p { color: var(--accent) } .term .ok { color: var(--done) } .term .warn { color: var(--blocked) } .term .fg { color: var(--fg) }
+.term .caret { display: inline-block; width: 8px; height: 15px; background: var(--fg); vertical-align: -2px; animation: blink 1s steps(1) infinite }
+@keyframes blink { 50% { opacity: 0 } }
+.ask { margin-top: 14px; border: 1px solid color-mix(in srgb, var(--blocked) 50%, var(--line)); border-radius: 10px; padding: 12px 14px; color: var(--fg) }
+.ask b { color: var(--blocked); font-weight: 500 }
+
+/* sections */
+section.block { padding-block: 100px; border-top: 1px solid var(--line) }
+.head { display: grid; gap: 14px; margin-bottom: 44px; max-width: 640px }
+.head h2 { font-size: clamp(34px, 5vw, 56px); line-height: 1; font-weight: 700 }
+.head p { color: var(--muted); margin: 0 }
+
+/* features */
+.supports { display: grid; gap: 14px; margin-bottom: 40px }
+.sup-row { display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: center }
+.sup-lab { font: 500 12px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim) }
+.chips { display: flex; flex-wrap: wrap; gap: 8px }
+.chip { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--pane); font-size: 14px; font-weight: 500 }
+.chip.ghost { background: transparent; color: var(--muted); border-style: dashed }
+.feats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; perspective: 1200px }
+.feat { background: var(--pane); border: 1px solid var(--line); border-radius: 16px; padding: 24px; min-width: 0;
+  transform: rotateX(var(--fx, 0deg)) rotateY(var(--fy, 0deg)); transition: transform .25s ease, border-color .25s; transform-style: preserve-3d }
+.feat:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)) }
+.feat.big { grid-column: span 2; grid-row: span 2; display: flex; flex-direction: column; justify-content: flex-end;
+  background: radial-gradient(circle at 70% 25%, var(--glow), transparent 60%), var(--pane) }
+.feat h3 { font-size: 19px; font-weight: 700; margin: 14px 0 8px }
+.feat.big h3 { font-size: 30px }
+.feat p { margin: 0; color: var(--muted); font-size: 14.5px }
+.feat.big p { font-size: 16px; max-width: 44ch }
+.feat p b { font-weight: 600 }
+.fi-g { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; background: var(--card); color: var(--accent); font-size: 18px }
+.fi { display: flex; gap: 10px; margin-bottom: auto; padding-bottom: 30px }
+.fi span { width: 54px; height: 54px; border-radius: 14px; background: var(--working); transform: translateZ(30px); box-shadow: 0 18px 30px -12px currentColor; animation: hop 4s ease-in-out infinite }
+.fi span:nth-child(2) { background: var(--blocked); color: var(--blocked); animation-delay: -1.3s }
+.fi span:nth-child(3) { background: var(--done); color: var(--done); animation-delay: -2.6s }
+@keyframes hop { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-12px) } }
+
+/* install */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px }
+.tab { font: 500 14px var(--f-body); padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer }
+.tab[aria-selected="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg) }
+.panel { display: grid; grid-template-columns: 1.3fr 1fr; gap: 28px; align-items: start }
+.code { position: relative; background: var(--pane); border: 1px solid var(--line); border-radius: 14px; min-width: 0 }
+.code pre { margin: 0; padding: 22px 24px; overflow-x: auto; font-size: 13.5px; line-height: 1.8; color: var(--fg) }
+.code pre .c { color: var(--dim) } .code pre .p { color: var(--accent); user-select: none }
+.code .copy { position: absolute; top: 12px; right: 12px }
+.notes { display: grid; gap: 14px; color: var(--muted); font-size: 15px }
+.notes div { display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding-bottom: 14px; border-bottom: 1px dashed var(--line) }
+.notes dt, .notes .lab { font: 500 12px var(--f-mono); color: var(--dim); text-transform: uppercase; letter-spacing: .08em; padding-top: 3px }
+
+.panel[data-panel="win"] { grid-template-columns: 1.3fr 1fr; }
+.panel[data-panel="win"] .dl, .panel[data-panel="win"] .run { grid-column: 1 }
+.panel[data-panel="win"] .notes { grid-column: 2; grid-row: 1 / span 2 }
+.dl { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 22px 24px; border-radius: 14px; background: var(--pane); border: 1px solid var(--line); box-shadow: 0 0 60px var(--glow) }
+.dl-ico { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 12px; background: var(--card); color: var(--accent) }
+.dl-ico svg { width: 24px; height: 24px }
+.dl-txt { display: grid; gap: 2px; flex: 1; min-width: 160px }
+.dl-txt strong { font: 700 20px var(--f-display) }
+.dl-txt span { font: 12px var(--f-mono); color: var(--dim) }
+.run { margin: 0; padding: 4px 0 0 22px; display: grid; gap: 8px; color: var(--muted) }
+.run b { color: var(--fg); font-weight: 600 }
+/* guide */
+.steps { display: grid; gap: 0; counter-reset: s }
+.step { display: grid; grid-template-columns: 90px 1fr 1fr; gap: 32px; padding-block: 34px; border-top: 1px solid var(--line); align-items: start }
+.step:last-child { border-bottom: 1px solid var(--line) }
+.step .num { font: 800 54px/1 var(--f-display); color: transparent; -webkit-text-stroke: 1px var(--dim); transition: color .4s, -webkit-text-stroke-color .4s }
+.step:hover .num { color: var(--accent); -webkit-text-stroke-color: var(--accent) }
+.step h3 { font-size: 26px; font-weight: 700; margin-bottom: 8px }
+.step p { margin: 0; color: var(--muted); max-width: 46ch }
+.step .demo { background: var(--pane); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; font: 13px/1.8 var(--f-mono); color: var(--muted); min-width: 0; overflow-x: auto; white-space: pre }
+.demo .fg { color: var(--fg) } .demo .p { color: var(--accent) } .demo .ok { color: var(--done) } .demo .warn { color: var(--blocked) }
+kbd { display: inline-block; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line); border-bottom-width: 2px; background: var(--card); color: var(--fg); font-size: 12px }
+
+/* reference */
+.ref { display: grid; grid-template-columns: 1fr 1fr; gap: 24px }
+.card { background: var(--pane); border: 1px solid var(--line); border-radius: 16px; padding: 26px; min-width: 0 }
+.card h3 { font-size: 20px; margin-bottom: 16px }
+table { width: 100%; border-collapse: collapse; font-size: 14px }
+td { padding: 9px 0; border-top: 1px solid var(--line); vertical-align: top; color: var(--muted) }
+td:first-child { color: var(--fg); padding-right: 16px; white-space: nowrap }
+.exits { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px }
+.exits span { font: 12px var(--f-mono); padding: 5px 10px; border-radius: 7px; background: var(--card); color: var(--muted) }
+.exits b { color: var(--fg); font-weight: 500 }
+
+footer { border-top: 1px solid var(--line); padding-block: 40px; color: var(--dim); font-size: 13px }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between }
+
+/* phone */
+@media (max-width: 860px) {
+  nav .links { display: none } nav .btn { margin-left: auto }
+  .hero { min-height: 720px; align-items: flex-start }
+  .legend { left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); grid-template-columns: repeat(2, 1fr) }
+  .app { grid-template-columns: 1fr } .side { display: none }
+  .feats { grid-template-columns: 1fr 1fr } .feat.big { grid-row: auto }
+  .sup-row { grid-template-columns: 1fr; gap: 8px }
+  .panel, .ref, .panel[data-panel="win"] { grid-template-columns: 1fr }
+  .panel[data-panel="win"] .notes { grid-column: 1; grid-row: auto }
+  .step { grid-template-columns: 1fr; gap: 14px } .step .num { font-size: 40px }
+  .notes div { grid-template-columns: 1fr; gap: 4px }
+}
+@media (max-width: 520px) { .feats { grid-template-columns: 1fr } .feat.big { grid-column: auto } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Drover home">
+      <svg viewBox="0 0 512 512" aria-hidden="true">
+        <defs>
+          <linearGradient id="lg-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c2147"/><stop offset="1" stop-color="#0b0d1f"/></linearGradient>
+          <linearGradient id="lg-d" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#b9c2ff"/></linearGradient>
+          <linearGradient id="lg-dot" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7c8cff"/><stop offset="1" stop-color="#ffb86b"/></linearGradient>
+          <filter id="lg-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+        </defs>
+        <rect width="512" height="512" rx="116" fill="url(#lg-bg)"/>
+        <rect x="3" y="3" width="506" height="506" rx="113" fill="none" stroke="#ffffff" stroke-opacity=".08" stroke-width="2"/>
+        <path fill="url(#lg-d)" fill-rule="evenodd" d="M142 112H262C356 112 418 172 418 256S356 400 262 400H142Z M214 176V336H258C312 336 346 304 346 256S312 176 258 176Z"/>
+        <g fill="url(#lg-dot)">
+          <circle cx="246" cy="256" r="9" opacity=".55"/>
+          <circle cx="276" cy="256" r="13" opacity=".8"/>
+          <circle cx="314" cy="256" r="20" filter="url(#lg-glow)" opacity=".7"/>
+          <circle class="lead" cx="314" cy="256" r="20"/>
+        </g>
+      </svg>Drover</a>
+    <div class="links"><a href="#features">Features</a><a href="#install">Install</a><a href="#guide">Guide</a><a href="#reference">Reference</a><a href="https://github.com/doquangthanh/drover" target="_blank" rel="noopener">GitHub</a></div>
+    <a class="btn primary" href="#install">Get Drover</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <canvas id="herd" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="eyebrow">v0.1.7 · Windows · Linux · macOS</div>
+    <h1 style="margin-top:18px">Keep the whole herd <em>moving.</em></h1>
+    <p class="lede">Drover runs Claude Code, Codex, Gemini, opencode and any shell side by side. They keep working when you close the window, and Drover tells you which one needs you.</p>
+    <div class="cta"><a class="btn primary" id="hero-cta" href="#install">Install Drover</a><a class="btn" href="#guide">Read the guide</a></div>
+    <div class="oneliner"><code><b>$</b> curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/install.sh | sh</code><button class="copy" data-copy="curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/install.sh | sh">copy</button></div>
+  </div>
+  <div class="legend" aria-live="off">
+    <div><div class="k s-working"><span class="dot"></span>working</div><div class="n" id="c0">0</div></div>
+    <div><div class="k s-needs"><span class="dot"></span>needs you</div><div class="n" id="c1">0</div></div>
+    <div><div class="k s-done"><span class="dot"></span>done</div><div class="n" id="c2">0</div></div>
+    <div><div class="k s-idle"><span class="dot"></span>idle</div><div class="n" id="c3">0</div></div>
+    <div class="cap">Live simulation · move the cursor to drive the herd</div>
+  </div>
+</header>
+
+<div class="stage wrap">
+  <div class="window" id="win">
+    <div class="titlebar"><i></i><i></i><i></i><span>drover — 4 agents · 2 machines</span></div>
+    <div class="app">
+      <aside class="side">
+        <h4>This PC</h4>
+        <div class="agent on"><span class="dot s-working pulse"></span>claude · api-refactor<small class="s-working">working</small></div>
+        <div class="agent"><span class="dot s-needs pulse"></span>codex · flaky-tests<small class="s-needs">needs you</small></div>
+        <div class="agent"><span class="dot s-done"></span>gemini · docs<small class="s-done">done</small></div>
+        <h4>vps-1</h4>
+        <div class="agent"><span class="dot s-idle"></span>opencode · deploy<small class="s-idle">idle</small></div>
+      </aside>
+      <div class="term" id="term"></div>
+    </div>
+  </div>
+</div>
+
+<section class="block" id="features">
+  <div class="wrap">
+    <div class="head"><div class="eyebrow">What Drover is</div><h2>One workspace for every coding agent you run.</h2>
+      <p>Drover is a desktop app for people who run several AI coding agents at once. It keeps them running in a background server, shows each one's state at a glance, and lets you answer, review and ship their work from one window, on any of your machines.</p></div>
+
+    <div class="supports">
+      <div class="sup-row"><span class="sup-lab">Agents</span>
+        <div class="chips"><span class="chip">Claude Code</span><span class="chip">Codex CLI</span><span class="chip">Gemini CLI</span><span class="chip">opencode</span><span class="chip">Any shell</span><span class="chip ghost">+ your own TOML rules</span></div></div>
+      <div class="sup-row"><span class="sup-lab">Runs on</span>
+        <div class="chips"><span class="chip">Windows 10 / 11</span><span class="chip">Linux x64 · arm64</span><span class="chip">macOS</span><span class="chip">Phone browser</span><span class="chip">Remote servers over SSH</span></div></div>
+    </div>
+
+    <div class="feats">
+      <article class="feat big">
+        <div class="fi s-working"><span></span><span></span><span></span></div>
+        <h3>Knows who needs you</h3>
+        <p>Every agent is marked <b class="s-working">working</b>, <b class="s-needs">needs you</b>, <b class="s-done">done</b> or <b class="s-idle">idle</b>. Drover reads it from the screen with TOML rules, or the agent reports it over OSC 7501. You get a desktop notification and an Inbox of everyone waiting.</p>
+      </article>
+      <article class="feat"><div class="fi-g">⟳</div><h3>Agents keep running</h3><p>Close the window, they carry on in <code>drover-server</code>. Reopen and pick up where they are.</p></article>
+      <article class="feat"><div class="fi-g">⇄</div><h3>Agents run agents</h3><p><code>dr run</code>, <code>wait</code>, <code>read</code> and <code>send</code> work from inside any pane, so one agent can hand work to another.</p></article>
+      <article class="feat"><div class="fi-g">⌥</div><h3>Git worktree per task</h3><p>Each task gets its own worktree. The Changes view shows the diff and lets you commit, push and open a PR.</p></article>
+      <article class="feat"><div class="fi-g">✉</div><h3>Chat view for Claude Code</h3><p>Read Claude's work as a conversation with tool cards, approve permissions inline, switch model and how much it may do alone.</p></article>
+      <article class="feat"><div class="fi-g">⌂</div><h3>Every machine in one sidebar</h3><p>Add a VPS with <code>dr machine add</code>. Its agents show up next to your local ones through an SSH tunnel.</p></article>
+      <article class="feat"><div class="fi-g">▦</div><h3>Splits, search, files</h3><p>tmux-style panes and keys, search across every agent's output, a file tree and code editor built in.</p></article>
+      <article class="feat"><div class="fi-g">☐</div><h3>Works on your phone</h3><p>The same UI has a phone layout with a key strip for Esc, Tab, arrows and Ctrl+C. Open it over Tailscale.</p></article>
+      <article class="feat"><div class="fi-g">≡</div><h3>Plain-file config</h3><p>Settings, keys, machines and detection rules are TOML files you can edit inside the app. Updates install from Settings.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="install">
+  <div class="wrap">
+    <div class="head"><div class="eyebrow">Install</div><h2>One file. No Python, no Node.</h2><p>Drover ships as a single binary with the web UI built in. Pick your system.</p></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="t-linux" aria-selected="true" data-tab="linux">Linux</button>
+      <button class="tab" role="tab" id="t-win" aria-selected="false" data-tab="win">Windows</button>
+      <button class="tab" role="tab" id="t-src" aria-selected="false" data-tab="src">From source</button>
+    </div>
+    <div class="panel" data-panel="linux">
+      <div class="code"><button class="copy" data-copy="curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/install.sh | sh">copy</button>
+<pre><span class="c"># x64 or arm64, installs to ~/.local/share</span>
+<span class="p">$ </span>curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/install.sh | sh
+
+<span class="c"># pin a version</span>
+<span class="p">$ </span>DROVER_VERSION=v0.1.5 sh install.sh
+
+<span class="c"># open the window</span>
+<span class="p">$ </span>drover</pre></div>
+      <dl class="notes">
+        <div><dt>Puts</dt><dd style="margin:0"><code>dr</code> and <code>drover</code> in <code>~/.local/bin</code></dd></div>
+        <div><dt>Window</dt><dd style="margin:0">Native with GTK + WebKit. Without them, <code>dr</code> opens the UI in your browser.</dd></div>
+        <div><dt>Update</dt><dd style="margin:0">Settings → Check for updates, or run the same command again.</dd></div>
+      </dl>
+    </div>
+    <div class="panel" data-panel="win" hidden>
+      <div class="dl">
+        <div class="dl-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3zM11.5 4.3 21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg></div>
+        <div class="dl-txt"><strong>Drover for Windows</strong><span>Windows 10 and 11 · free · about 30 MB</span></div>
+        <a class="btn primary" href="https://github.com/doquangthanh/drover/releases/latest/download/drover.exe" target="_blank" rel="noopener">Download</a>
+      </div>
+      <ol class="run">
+        <li><b>Download</b> Drover and save it anywhere you like, such as your Desktop.</li>
+        <li><b>Open it.</b> Drover starts right away. There is no setup wizard and nothing else to install.</li>
+        <li>The first time, Windows may say it doesn't recognise the app. Click <b>More info</b>, then <b>Run anyway</b>.</li>
+      </ol>
+      <dl class="notes">
+        <div><dt>You need</dt><dd style="margin:0">A Windows 10 or 11 PC and the AI coding tools your team already uses, such as Claude Code or Codex.</dd></div>
+        <div><dt>Keeps working</dt><dd style="margin:0">Close the window and your agents carry on. Open Drover again to see where they are.</dd></div>
+        <div><dt>Stays private</dt><dd style="margin:0">Drover runs on your own computer. Your code and settings stay on it.</dd></div>
+        <div><dt>Updates</dt><dd style="margin:0">Download again to get the newest version. Your settings are kept.</dd></div>
+      </dl>
+    </div>
+    <div class="panel" data-panel="src" hidden>
+      <div class="code"><button class="copy" data-copy="uv sync && npm --prefix frontend ci && npm --prefix frontend run build && uv run drover">copy</button>
+<pre><span class="c"># needs uv, Python 3.12, Node 20.19+</span>
+<span class="p">$ </span>git clone https://github.com/doquangthanh/drover && cd drover
+<span class="p">$ </span>uv sync
+<span class="p">$ </span>npm --prefix frontend ci
+<span class="p">$ </span>npm --prefix frontend run build
+<span class="p">$ </span>uv run drover
+
+<span class="c"># put dr on PATH</span>
+<span class="p">$ </span>uv tool install --editable .</pre></div>
+      <dl class="notes">
+        <div><dt>UI dev</dt><dd style="margin:0"><code>npm --prefix frontend run dev</code> proxies to the running daemon.</dd></div>
+        <div><dt>Build .exe</dt><dd style="margin:0"><code>uv run pyinstaller packaging/drover.spec</code></dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="guide">
+  <div class="wrap">
+    <div class="head"><div class="eyebrow">Guide</div><h2>From install to a working herd in five steps.</h2></div>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><div><h3>Start an agent</h3><p>Press <kbd>+</kbd> in the tab bar or <kbd>Ctrl+A</kbd> <kbd>c</kbd>. Pick the agent, the folder, an optional worktree and a first prompt.</p></div>
+        <div class="demo"><span class="p">agent </span><span class="fg">claude</span>
+<span class="p">folder</span> <span class="fg">~/code/api</span>
+<span class="p">tree  </span> <span class="fg">task/auth-refactor</span>
+<span class="p">prompt</span> <span class="fg">"split the session module"</span>   <span class="ok">▶ start</span></div></div>
+      <div class="step"><div class="num">2</div><div><h3>Close the window</h3><p>Agents live in <code>drover-server</code>, not in the window. Close it, reboot the UI, come back tomorrow. They are still running.</p></div>
+        <div class="demo"><span class="p">$ </span><span class="fg">dr status</span>
+server  <span class="ok">running</span>  127.0.0.1:47213
+agents  4  <span class="s-working">●</span> 2 working  <span class="warn">●</span> 1 needs you</div></div>
+      <div class="step"><div class="num">3</div><div><h3>Answer whoever needs you</h3><p>Drover reads each screen and marks it working, needs you, done or idle. <kbd>Ctrl+A</kbd> <kbd>n</kbd> jumps straight to the next agent waiting on you.</p></div>
+        <div class="demo"><span class="warn">● codex · flaky-tests</span>
+  Allow <span class="fg">npm test -- --runInBand</span>?
+  <span class="fg">[y]</span> yes  <span class="fg">[a]</span> always  <span class="fg">[n]</span> no</div></div>
+      <div class="step"><div class="num">4</div><div><h3>Let agents run agents</h3><p>Any pane can start, wait on, read and message the others with <code>dr</code>. Add <code>dr skill</code> to AGENTS.md so your agents know how.</p></div>
+        <div class="demo"><span class="p">$ </span><span class="fg">dr run --bg --name tests -- codex</span>
+<span class="p">$ </span><span class="fg">dr wait tests --state done --timeout 900</span>
+<span class="ok">done</span> after 6m12s
+<span class="p">$ </span><span class="fg">dr read tests --lines 40</span></div></div>
+      <div class="step"><div class="num">5</div><div><h3>Bring in your other machines</h3><p>Remote daemons join the same sidebar over SSH. They listen on localhost only, and host keys are checked against known_hosts.</p></div>
+        <div class="demo"><span class="p">$ </span><span class="fg">dr machine add vps-1 deploy@vps-1 --install</span>
+installing uv + drover … <span class="ok">ok</span>
+tunnel 127.0.0.1:47213 → vps-1 <span class="ok">connected</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="reference">
+  <div class="wrap">
+    <div class="head"><div class="eyebrow">Reference</div><h2>Keys and commands.</h2><p>The prefix is <kbd>Ctrl+A</kbd>, tmux style. Press it twice to send a real Ctrl+A to the agent.</p></div>
+    <div class="ref">
+      <div class="card"><h3>Keyboard</h3><table>
+        <tr><td><kbd>Ctrl+A</kbd> <kbd>c</kbd></td><td>New agent</td></tr>
+        <tr><td><kbd>Ctrl+A</kbd> <kbd>n</kbd></td><td>Next agent that needs you</td></tr>
+        <tr><td><kbd>Ctrl+A</kbd> <kbd>/</kbd></td><td>Find any agent or text</td></tr>
+        <tr><td><kbd>Ctrl+A</kbd> <kbd>%</kbd> <kbd>"</kbd></td><td>Split side by side / stacked</td></tr>
+        <tr><td><kbd>Ctrl+A</kbd> <kbd>z</kbd> <kbd>x</kbd></td><td>Zoom / close pane</td></tr>
+        <tr><td><kbd>Ctrl+A</kbd> <kbd>:</kbd> <kbd>?</kbd></td><td>All commands / all shortcuts</td></tr>
+      </table></div>
+      <div class="card"><h3>CLI</h3><table>
+        <tr><td><code>dr run [--bg] -- claude</code></td><td>Start an agent</td></tr>
+        <tr><td><code>dr ls · dr read NAME</code></td><td>List, read a screen</td></tr>
+        <tr><td><code>dr send NAME "text"</code></td><td>Type into a pane</td></tr>
+        <tr><td><code>dr wait NAME --state done</code></td><td>Block until a state</td></tr>
+        <tr><td><code>dr attach NAME</code></td><td>Attach in a terminal, <kbd>Ctrl+\</kbd> detaches</td></tr>
+        <tr><td><code>dr worktree new TASK</code></td><td>Git worktree per task</td></tr>
+      </table>
+      <div class="exits"><span><b>2</b> timeout</span><span><b>3</b> not found</span><span><b>4</b> refused by policy</span><span><b>10</b> server unavailable</span></div></div>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap"><span>Drover · Drive your agents · Apache-2.0 · inspired by Herdr</span><span>Built on xterm.js · state rules in plain TOML</span></div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- copy buttons + tabs ---------- */
+  document.querySelectorAll('.copy').forEach(b => b.addEventListener('click', () => {
+    const done = () => { b.textContent = 'copied'; b.classList.add('ok'); setTimeout(() => { b.textContent = 'copy'; b.classList.remove('ok'); }, 1600); };
+    navigator.clipboard?.writeText(b.dataset.copy).then(done).catch(() => {
+      const r = document.createRange(); r.selectNodeContents(b.parentElement.querySelector('code, pre')); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    });
+  }));
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === t));
+    document.querySelectorAll('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== t.dataset.tab);
+  }));
+  // Windows visitors: open on the Windows download and make the hero button download it
+  if (/Windows/i.test(navigator.userAgent)) {
+    document.getElementById('t-win').click();
+    const cta = document.getElementById('hero-cta');
+    cta.textContent = 'Download';
+    cta.href = 'https://github.com/doquangthanh/drover/releases/latest/download/drover.exe';
+    cta.target = '_blank'; cta.rel = 'noopener';
+  }
+  document.querySelector('.tabs').prepend(document.getElementById('t-win'));
+
+  /* ---------- tilted window follows the pointer, flattens on scroll ---------- */
+  const win = document.getElementById('win');
+  let mx = 0, my = 0;
+  addEventListener('pointermove', e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; tilt(); });
+  addEventListener('scroll', tilt, { passive: true });
+  function tilt() {
+    if (reduce) return;
+    const r = win.getBoundingClientRect(), k = Math.min(1, Math.max(0, (r.top - innerHeight * .15) / (innerHeight * .8)));
+    win.style.setProperty('--rx', (16 * k - my * 4) + 'deg');
+    win.style.setProperty('--ry', (-10 * k + mx * 6) + 'deg');
+  }
+  tilt();
+
+  /* feature cards tilt toward the pointer */
+  if (!reduce) document.querySelectorAll('.feat').forEach(c => {
+    c.addEventListener('pointermove', e => {
+      const r = c.getBoundingClientRect();
+      c.style.setProperty('--fy', ((e.clientX - r.left) / r.width - .5) * 10 + 'deg');
+      c.style.setProperty('--fx', -((e.clientY - r.top) / r.height - .5) * 10 + 'deg');
+    });
+    c.addEventListener('pointerleave', () => { c.style.setProperty('--fx', '0deg'); c.style.setProperty('--fy', '0deg'); });
+  });
+
+  /* ---------- terminal typing loop ---------- */
+  const term = document.getElementById('term');
+  const script = [
+    ['<span class="p">~/code/api</span> <span class="fg">claude</span>', 0],
+    ['● Reading src/session/*.py (14 files)', 500],
+    ['● Splitting session.py → store.py, tokens.py, cookies.py', 900],
+    ['  <span class="ok">✓</span> 212 tests passed', 900],
+    ['● Asking codex to fix tests/test_login.py', 700],
+    ['  <span class="p">$</span> <span class="fg">dr run --bg --name flaky-tests -- codex</span>', 600],
+    ['  <span class="p">$</span> <span class="fg">dr wait flaky-tests --state done</span>', 700],
+    ['<div class="ask"><b>codex · flaky-tests needs you</b><br>Allow <span class="fg">npm test -- --runInBand</span>?  [y] yes  [a] always  [n] no</div>', 1100],
+  ];
+  function play() {
+    term.innerHTML = ''; let t = 0;
+    script.forEach(([html, d]) => { t += reduce ? 0 : d; setTimeout(() => { term.insertAdjacentHTML('beforeend', '<div>' + html + '</div>'); }, t); });
+    setTimeout(() => term.insertAdjacentHTML('beforeend', '<div><span class="caret"></span></div>'), t + 200);
+    if (!reduce) setTimeout(play, t + 6000);
+  }
+  play();
+
+  /* ---------- 3D herd ---------- */
+  if (!window.THREE) return;
+  const canvas = document.getElementById('herd');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(38, 1, .1, 120);
+  camera.position.set(0, 11, 17); camera.lookAt(2, 0, 0);
+
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const STATE = ['--working', '--blocked', '--done', '--idle'];
+  let palette = [], bgCol;
+  function readPalette() {
+    palette = STATE.map(v => new THREE.Color(css(v)));
+    bgCol = new THREE.Color(css('--bg'));
+    scene.fog = new THREE.Fog(bgCol, 14, 38);
+    grid.material.color = new THREE.Color(css('--line'));
+  }
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, .9));
+  const key = new THREE.DirectionalLight(0xffffff, .8); key.position.set(4, 10, 6); scene.add(key);
+
+  const grid = new THREE.GridHelper(80, 80); grid.material.transparent = true; grid.material.opacity = .35; grid.position.y = -.4; scene.add(grid);
+
+  const N = innerWidth < 700 ? 140 : 280;
+  const geo = new THREE.BoxGeometry(.55, .22, .55);
+  const mat = new THREE.MeshStandardMaterial({ roughness: .35, metalness: .1 });
+  const mesh = new THREE.InstancedMesh(geo, mat, N); scene.add(mesh);
+
+  // halo rings under agents that need you
+  const ringGeo = new THREE.RingGeometry(.45, .55, 32); ringGeo.rotateX(-Math.PI / 2);
+  const ringMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: .7, depthWrite: false });
+  const rings = new THREE.InstancedMesh(ringGeo, ringMat, N); scene.add(rings);
+
+  readPalette();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => setTimeout(readPalette, 50));
+  new MutationObserver(() => setTimeout(readPalette, 50)).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  const A = Array.from({ length: N }, () => ({
+    p: new THREE.Vector3((Math.random() - .5) * 26, 0, (Math.random() - .5) * 16),
+    v: new THREE.Vector3(), s: Math.random() < .55 ? 0 : Math.floor(Math.random() * 4),
+    t: Math.random() * 8, ph: Math.random() * 6.28, y: 0
+  }));
+  // working → needs you / done ; needs you → working (answered) ; done → idle ; idle → working
+  function next(a) {
+    a.s = a.s === 0 ? (Math.random() < .25 ? 1 : 2) : a.s === 1 ? 0 : a.s === 2 ? 3 : 0;
+    a.t = [7, 4, 5, 6][a.s] + Math.random() * 6;
+  }
+
+  const ray = new THREE.Raycaster(), ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), mouse = new THREE.Vector2(9, 9);
+  const cursor = new THREE.Vector3(999, 0, 999);
+  canvas.parentElement.addEventListener('pointermove', e => {
+    const r = canvas.getBoundingClientRect();
+    mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(mouse, camera); ray.ray.intersectPlane(ground, cursor);
+  });
+  canvas.parentElement.addEventListener('pointerleave', () => cursor.set(999, 0, 999));
+
+  function resize() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  addEventListener('resize', resize); resize();
+
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+  const lead = new THREE.Vector3(), tmp = new THREE.Vector3(), col = new THREE.Color();
+  const counts = [0, 0, 0, 0], cEls = [0, 1, 2, 3].map(i => document.getElementById('c' + i));
+  let last = performance.now(), acc = 0, visible = true;
+  new IntersectionObserver(([e]) => visible = e.isIntersecting).observe(canvas);
+
+  function step(dt, time) {
+    // the lead point the herd drifts after: a slow figure-eight across the right half
+    lead.set(5 + Math.sin(time * .17) * 7, 0, Math.sin(time * .34) * 4);
+    counts.fill(0);
+    for (let i = 0; i < N; i++) {
+      const a = A[i];
+      a.t -= dt; if (a.t <= 0) next(a);
+      counts[a.s]++;
+      const f = tmp.copy(lead).sub(a.p).multiplyScalar(a.s === 3 ? .02 : .06);
+      // separation
+      for (let j = 0; j < N; j++) {
+        if (i === j) continue;
+        const dx = a.p.x - A[j].p.x, dz = a.p.z - A[j].p.z, d2 = dx * dx + dz * dz;
+        if (d2 < .7 && d2 > 1e-4) { f.x += dx / d2 * .09; f.z += dz / d2 * .09; }
+      }
+      // the drover: cursor pushes the herd away
+      const cx = a.p.x - cursor.x, cz = a.p.z - cursor.z, cd = cx * cx + cz * cz;
+      if (cd < 12) { f.x += cx / (cd + .3) * 1.4; f.z += cz / (cd + .3) * 1.4; }
+      f.x += Math.sin(time * .6 + a.ph) * .05; f.z += Math.cos(time * .5 + a.ph) * .05;
+      a.v.add(f.multiplyScalar(dt * 4)).multiplyScalar(.94);
+      if (a.s === 2) a.v.multiplyScalar(.9);
+      a.p.addScaledVector(a.v, dt * 3);
+      const targetY = a.s === 1 ? 1.1 + Math.sin(time * 3 + a.ph) * .25 : a.s === 0 ? .25 + Math.sin(time * 2 + a.ph) * .08 : a.s === 2 ? .05 : -.2;
+      a.y += (targetY - a.y) * Math.min(1, dt * 3);
+      const yaw = Math.atan2(a.v.x, a.v.z);
+      q.setFromAxisAngle(up, yaw);
+      const s = a.s === 1 ? 1.15 + Math.sin(time * 6 + a.ph) * .08 : a.s === 3 ? .8 : 1;
+      m.compose(tmp.set(a.p.x, a.y, a.p.z), q, sc.set(s, s, s)); mesh.setMatrixAt(i, m);
+      col.copy(palette[a.s]); if (a.s === 3) col.lerp(bgCol, .3); mesh.setColorAt(i, col);
+      const rs = a.s === 1 ? 1 + ((time * 1.2 + a.ph) % 1) * 1.6 : 0;
+      m.compose(tmp.set(a.p.x, -.35, a.p.z), q.identity(), sc.set(rs, 1, rs)); rings.setMatrixAt(i, m);
+      rings.setColorAt(i, palette[1]);
+    }
+    mesh.instanceMatrix.needsUpdate = rings.instanceMatrix.needsUpdate = true;
+    mesh.instanceColor.needsUpdate = rings.instanceColor.needsUpdate = true;
+    camera.position.x = Math.sin(time * .05) * 1.5 + mouse.x * .6 * (mouse.x < 2);
+    camera.lookAt(2, 0, 0);
+  }
+
+  function frame(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    if (visible) {
+      step(dt, now / 1000); renderer.render(scene, camera);
+      if ((acc += dt) > .4) { acc = 0; counts.forEach((c, i) => cEls[i].textContent = c); }
+    }
+    requestAnimationFrame(frame);
+  }
+  if (reduce) { for (let k = 0; k < 240; k++) step(1 / 30, k / 30); renderer.render(scene, camera); counts.forEach((c, i) => cEls[i].textContent = c); }
+  else requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
