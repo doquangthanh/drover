@@ -56,8 +56,9 @@ npm --prefix frontend ci; npm --prefix frontend run build   # the spec refuses t
 uv run pyinstaller packaging/herd.spec --noconfirm
 ```
 
-Output: `dist\herd\` (~50 MB). Run `herd.exe` for the window; `hd.exe` is the CLI and background server.
-Copy the whole folder anywhere; agent panes get it on their PATH so `hd` works inside them.
+Output: a single `dist\herd.exe` (~30 MB). Run it for the window; `herd <cmd>` is the CLI (`herd status`, ...) and the
+background server. Agent panes get an `hd` shim on PATH.
+Copy the file anywhere.
 Needs the WebView2 runtime (built into Windows 10/11).
 
 ## Everyday use

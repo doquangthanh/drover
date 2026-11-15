@@ -9,7 +9,7 @@ import time
 
 from herd.app_paths import daemon_info_file, log_dir
 from herd.daemon import local_http
-from herd.self_command import hd_command
+from herd.self_command import hd_command, is_single_exe
 
 
 class DaemonUnavailable(Exception):
@@ -45,6 +45,8 @@ def start_background() -> None:
     cmd = [*hd_command(windowless=True), "server", "run", "--background"]
     log = open(log_dir() / "daemon-stdout.log", "ab")  # noqa: SIM115 - handed to the child
     kwargs: dict = {"stdout": log, "stderr": log, "stdin": subprocess.DEVNULL, "close_fds": True}
+    if is_single_exe():  # a onefile child must unpack its own copy, else it dies with the parent's temp dir
+        kwargs["env"] = {**os.environ, "PYINSTALLER_RESET_ENVIRONMENT": "1"}
     if sys.platform == "win32":
         kwargs["creationflags"] = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
                                    | subprocess.CREATE_NO_WINDOW)

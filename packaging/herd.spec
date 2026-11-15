@@ -1,4 +1,4 @@
-﻿# PyInstaller spec: one folder (dist/herd/) holding herd (window) + hd (CLI/daemon); *.exe on Windows.
+# PyInstaller spec. Windows: one file dist/herd.exe (window + CLI + daemon). Linux: folder dist/herd/ with herd + hd.
 # Build:  uv run pyinstaller packaging/herd.spec --noconfirm
 import os
 import sys
@@ -23,17 +23,15 @@ def analysis(script):
     return Analysis([script], pathex=["../src"], datas=datas, hiddenimports=hidden, excludes=["tkinter"])
 
 
-a_hd = analysis("hd_entry.py")
 a_app = analysis("herd_entry.py")
-pyz_hd = PYZ(a_hd.pure)
 pyz_app = PYZ(a_app.pure)
 
-exe_hd = EXE(pyz_hd, a_hd.scripts, [], exclude_binaries=True, name="hd", console=True, **ICON)
-exe_app = EXE(pyz_app, a_app.scripts, [], exclude_binaries=True, name="herd", console=False, **ICON)
-
-coll = COLLECT(
-    exe_hd, exe_app,
-    a_hd.binaries, a_hd.datas, a_app.binaries, a_app.datas,
-    name="herd",
-)
-
+if sys.platform == "win32":
+    # Single file dist/herd.exe: window with no args, `herd <cmd>` is the CLI, `herd server run` the daemon.
+    EXE(pyz_app, a_app.scripts, a_app.binaries, a_app.datas, [], name="herd", console=False, **ICON)
+else:
+    a_hd = analysis("hd_entry.py")
+    pyz_hd = PYZ(a_hd.pure)
+    exe_hd = EXE(pyz_hd, a_hd.scripts, [], exclude_binaries=True, name="hd", console=True, **ICON)
+    exe_app = EXE(pyz_app, a_app.scripts, [], exclude_binaries=True, name="herd", console=False, **ICON)
+    COLLECT(exe_hd, exe_app, a_hd.binaries, a_hd.datas, a_app.binaries, a_app.datas, name="herd")
