@@ -1,0 +1,45 @@
+name: release-linux
+
+# Builds the Linux binaries when a tag like v0.1.0 is pushed, and attaches them to the GitHub release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - { arch: x64, runner: ubuntu-22.04 }        # old glibc: the binary runs on most distros
+          - { arch: arm64, runner: ubuntu-22.04-arm }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: astral-sh/setup-uv@v5
+      - name: Build web UI
+        run: |
+          npm --prefix frontend ci
+          npm --prefix frontend run build
+      - name: Build binaries
+        run: |
+          uv sync
+          uv run pyinstaller packaging/herd.spec --noconfirm
+      - name: Smoke test
+        run: dist/herd/hd --help
+      - name: Package
+        run: tar -czf herd-linux-${{ matrix.arch }}.tar.gz -C dist herd
+      - uses: actions/upload-artifact@v4
+        with:
+          name: herd-linux-${{ matrix.arch }}
+          path: herd-linux-${{ matrix.arch }}.tar.gz
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: herd-linux-${{ matrix.arch }}.tar.gz

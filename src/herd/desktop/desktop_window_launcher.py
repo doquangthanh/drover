@@ -115,7 +115,13 @@ def main() -> None:
 
     icon = web_static_dir() / ("app-icon.ico" if sys.platform == "win32" else "favicon.png")  # WinForms needs .ico
     bridge._window.events.shown += lambda: dark_title_bar(bridge._window)
-    webview.start(follow_daemon, (bridge._window, url), private_mode=False, icon=str(icon) if icon.exists() else None)
+    try:
+        webview.start(follow_daemon, (bridge._window, url), private_mode=False, icon=str(icon) if icon.exists() else None)
+    except Exception as exc:  # noqa: BLE001 - e.g. Linux without GTK/WebKit: the web UI still works in a browser
+        import webbrowser
+
+        print(f"no native window ({exc}); opening {url} in the browser", file=sys.stderr)
+        webbrowser.open(url)
 
 
 if __name__ == "__main__":

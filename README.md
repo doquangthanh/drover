@@ -12,7 +12,17 @@ inspired by [Herdr](https://github.com/herdrdev/herdr). Python daemon + web UI i
 - **Plain-file config** (settings, keys, detection rules) editable in the app.
 - **Phone**: the same UI is responsive; open it over Tailscale or an SSH tunnel.
 
-## Install (Windows, also works on Linux/macOS)
+## Install (Linux, one line)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/doquangthanh/herd/main/scripts/install.sh | sh
+```
+
+Downloads the latest release (x64/arm64) into `~/.local/share/herd` and links `hd` and `herd` into `~/.local/bin`.
+No Python or Node needed. Without GTK/WebKit there is no native window; `hd` opens the web UI in your browser.
+Re-run the command to update. `HERD_VERSION=v0.1.0` pins a version.
+
+## Install from source (Windows, also works on Linux/macOS)
 
 ```powershell
 # once: uv + Python 3.12
