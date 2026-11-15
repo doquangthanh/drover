@@ -75,8 +75,9 @@ COMMANDS = {
 
 
 def _utf8_output() -> None:
-    """Agent screens contain box-drawing characters and emoji; a Windows console or pipe defaults to cp1252 and `dr read` crashed."""
-    for stream in (sys.stdout, sys.stderr):
+    """Agent screens contain box-drawing characters and emoji; a Windows console or pipe defaults to cp1252 and `dr read` crashed.
+    stdin too: `dr prompt <agent> -` read a piped Vietnamese prompt as cp1252 mojibake (sent to the agent and the tree log)."""
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, ValueError):  # not a text stream (captured by a test, closed)
