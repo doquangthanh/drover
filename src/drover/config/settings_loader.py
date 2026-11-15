@@ -17,6 +17,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "file_icons": "material",
     "prefix": "C-a",
     "scrollback": 5000,
+    "claude_subagent_hooks": True,  # claude panes report their sub-agents to the Flow board (per-pane --settings)
     "shell": "",  # empty = platform default
     "fs_roots": [],  # empty = home directory only
     "notify": {

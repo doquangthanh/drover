@@ -38,4 +38,9 @@ class AgentMessagesLog:
         return self.add(state, pane_id, parent or None, text)
 
     def for_tree(self, pane_ids: set[str]) -> list[dict]:
-        return [m.to_dict() for m in self.items if m.source in pane_ids or m.target in pane_ids]
+        """Messages touching the tree, including its panes' sub-agents (virtual ids `<pane>/<agent>`)."""
+
+        def inside(agent: str | None) -> bool:
+            return bool(agent) and (agent in pane_ids or agent.split("/", 1)[0] in pane_ids)
+
+        return [m.to_dict() for m in self.items if inside(m.source) or inside(m.target)]

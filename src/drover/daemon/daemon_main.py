@@ -44,6 +44,7 @@ from drover.rpc import (  # noqa: F401
     methods_git_fs,
     methods_layout,
     methods_panes,
+    methods_subagents,
     methods_system,
     methods_workspace,
 )

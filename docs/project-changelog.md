@@ -1,6 +1,12 @@
 # Changelog
 
 ## Unreleased
+### Added
+- Flow board shows Claude Code sub-agents (Task/Agent tool: planner, tester, ...) as their own lanes under the
+  `claude` pane that runs them, with "delegates" / "returned" arrows (with the sub-agent's last message) and a live
+  bar. No extra panes, no extra tokens: drover starts `claude` with `--settings <state dir>/claude-subagent-hooks.json`
+  (SubagentStart / SubagentStop hooks running the silent `dr hook claude`); `~/.claude/settings.json` is untouched.
+  Turn it off with `claude_subagent_hooks = false` in settings.toml. Panes started before the update get it on restart.
 ### Fixed
 - Agent tree Flow board: an agent that exits (a one-shot `dr run claude -p ...`, a finished command) now gets an
   "exited" event with its exit code to its parent (or you), and its activity bar ends there; before, nothing was logged.

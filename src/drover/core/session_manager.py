@@ -9,6 +9,7 @@ from typing import Any
 from drover.config.settings_loader import SettingsStore
 from drover.core import split_layout_tree as layout
 from drover.core.agent_messages_log import AgentMessagesLog
+from drover.core.claude_subagent_hooks import with_subagent_hooks
 from drover.core.event_hub import EventHub
 from drover.core.orchestration_policy import OrchestrationPolicy, PolicyError
 from drover.core.pane_session import PaneMeta, PaneSession
@@ -88,7 +89,9 @@ class SessionManager:
         pane.on_exit_hook = self._on_pane_exit
         env = {**os.environ, "TERM": "xterm-256color", "COLORTERM": "truecolor",
                "DR_PANE_ID": pane_id, "DROVER": "1", "PATH": pane_path(os.environ.get("PATH", ""))}
-        pane.start(resolve_argv(argv), env)  # may raise: create no space/tab before this succeeds
+        # claude panes report their sub-agents (Task/Agent tool) to the Flow board through per-pane hooks.
+        launch = with_subagent_hooks(argv) if self.settings.get("claude_subagent_hooks", True) else argv
+        pane.start(resolve_argv(launch), env)  # may raise: create no space/tab before this succeeds
         if tab_id and tab_id in self.tabs:
             tab = self.tabs[tab_id]
         else:

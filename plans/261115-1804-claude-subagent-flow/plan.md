@@ -1,6 +1,6 @@
 ---
 title: Claude Code sub-agents on the Agent tree Flow board
-status: proposed
+status: done
 created: 2026-11-15
 ---
 
@@ -28,9 +28,18 @@ finish (and result summary), so the user can follow the real orchestration flow 
 ## Phases
 | # | Phase | Status |
 |---|-------|--------|
-| 1 | [Research hook payloads + install strategy](phase-01-research-claude-hooks.md) | todo |
-| 2 | [Backend: hook CLI, RPC, chat emitter](phase-02-backend-subagent-events.md) | todo |
-| 3 | [Frontend: virtual lanes + tree children](phase-03-frontend-virtual-lanes.md) | todo |
+| 1 | [Research hook payloads + install strategy](phase-01-research-claude-hooks.md) | done |
+| 2 | [Backend: hook CLI, RPC, chat emitter](phase-02-backend-subagent-events.md) | done (chat emitter deferred) |
+| 3 | [Frontend: virtual lanes + tree children](phase-03-frontend-virtual-lanes.md) | done (tree children skipped) |
+
+## Outcome (2026-11-15, Claude Code 2.1.325)
+- Real payloads: tool is `Agent`; `SubagentStart` {agent_id, agent_type}; `SubagentStop` {agent_id, agent_type,
+  last_assistant_message}; hooks inherit `DR_PANE_ID`. PostToolUse fires at launch for async agents (`async_launched`)
+  → not a "finished" signal; only SubagentStart/Stop used.
+- Install: per-pane `--settings <state>/claude-subagent-hooks.json` (merged with user's hooks); kill switch
+  `claude_subagent_hooks = false`.
+- Deferred: chat panel (SDK) sub-agents (chats are not in the agent tree); sub-agents as tree children (YAGNI).
+- Unverified until released: frozen drover.exe as hook (onefile start ~1-2 s per event, timeout 10 s).
 
 ## Key decisions to confirm
 - Hook install: opt-in toggle in Settings that writes drover's hook into `~/.claude/settings.json`
