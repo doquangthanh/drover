@@ -1,12 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.1.18
 ### Changed
 - Agent tree Flow board shows every agent, not only helpers started with `dr run`: agents you start get a
   "you started" event, and a "needs you" / "finished" event to you when they block or finish.
 ### Fixed
 - Vietnamese (and other non-ASCII) prompts piped to `dr prompt <agent> -` on Windows no longer arrive as mojibake
   in the agent and the agent tree: the CLI now reads stdin as UTF-8, not cp1252.
+- Chat panel on Windows no longer opens a console window for the Agent SDK's `claude.exe` child.
 
 ## 0.1.17
 ### Fixed
