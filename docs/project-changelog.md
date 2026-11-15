@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.14
+### Changed
+- Sidebar is one tree of workspaces: each workspace lists its agents under it and collapses (chevron or ←/→,
+  remembered per device), with a dot that still shows when a collapsed agent needs you. The separate Agents list is gone.
+- Remote workspaces sit in the same list with a machine chip and its link state; "+" asks which machine when one is
+  connected.
+- A workspace with a single tab shows its name and folder in the top bar instead of a lone tab.
+- A toast names any workspace that appears without being opened from the UI (for example an agent started from the
+  CLI in a new folder), with a Rename action.
+- "Space" is now "Workspace" everywhere in the UI.
+
 ## 0.1.13
 ### Changed
 - In-app toasts redesigned: tone-coloured accent bar and badge (needs you, done, error, update, stopped), an action
