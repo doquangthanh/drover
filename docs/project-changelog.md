@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.19
 ### Added
 - Flow board shows Claude Code sub-agents (Task/Agent tool: planner, tester, ...) as their own lanes under the
   `claude` pane that runs them, with "delegates" / "returned" arrows (with the sub-agent's last message) and a live
