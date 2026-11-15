@@ -111,6 +111,8 @@ class SessionManager:
         return kind
 
     def _on_pane_exit(self, pane: PaneSession) -> None:
+        # A one-shot helper (`dr run claude -p ...`) exits instead of going "done": still report it on the Flow board.
+        self.messages.add_state(pane.meta.id, pane.meta.parent, "exited", f"exit code {pane.exit_code}")
         self.hub.emit("pane", pane.to_dict())
         self.hub.emit("status", {"pane": pane.to_dict(), "old": "working", "new": "exited"})
         if not pane.focused:

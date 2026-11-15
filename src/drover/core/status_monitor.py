@@ -69,13 +69,15 @@ class StatusMonitor:
         # Shells go idle after every command; only agents get a "done" (and its notification).
         # Start-up output (banner, spinner while loading) is not "finished work" either.
         worked_after_boot = pane.tracker.since - pane.meta.created_at > 4
-        new = pane.tracker.observe(detected, pane.last_output_at, pane.focused, now,
-                                   allow_done=pane.meta.kind != "shell" and worked_after_boot)
+        allow_done = pane.meta.kind != "shell" and worked_after_boot
+        new = pane.tracker.observe(detected, pane.last_output_at, pane.focused, now, allow_done=allow_done)
         if new is None:
             return
         if new in ("blocked", "done") and not pane.focused:
             pane.unread = True
-        self.manager.messages.add_state(pane.meta.id, pane.meta.parent, new)
+        # A focused agent finishing its turn goes working -> idle (no "done" badge), but it did finish: log it.
+        finished = allow_done and old == "working" and new == "idle"
+        self.manager.messages.add_state(pane.meta.id, pane.meta.parent, "done" if finished else new)
         self.manager.hub.emit("pane", pane.to_dict())
         self.manager.hub.emit("status", {"pane": pane.to_dict(), "old": old, "new": new})
         if not pane.focused:

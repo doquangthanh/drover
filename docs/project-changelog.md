@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+### Fixed
+- Agent tree Flow board: an agent that exits (a one-shot `dr run claude -p ...`, a finished command) now gets an
+  "exited" event with its exit code to its parent (or you), and its activity bar ends there; before, nothing was logged.
+- `dr wait <helper> --state done` hung until its timeout when the helper finished while its pane was focused (a
+  focused pane goes working → idle, never "done"); that transition now ends the wait, and the Flow board logs it as
+  "finished".
+- Agent tree events keep at most 500 characters of text, so a long prompt no longer stays in memory in full and goes
+  out in every `messages.list` reply.
+
 ## 0.1.18
 ### Changed
 - Agent tree Flow board shows every agent, not only helpers started with `dr run`: agents you start get a

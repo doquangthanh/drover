@@ -149,7 +149,11 @@ async def wait_for_state(ctx, pane, wanted: set[str], timeout: float, accept_cur
     future = asyncio.get_running_loop().create_future()
 
     def listener(name, data):
-        if name == "status" and data["pane"]["id"] == pane_id and data["new"] in wanted and not future.done():
+        if name != "status" or data["pane"]["id"] != pane_id or future.done():
+            return
+        # A pane someone is looking at goes working -> idle, never "done": that is still its turn finishing.
+        finished = "done" in wanted and data["old"] == "working" and data["new"] == "idle"
+        if data["new"] in wanted or finished:
             future.set_result(data["new"])
 
     unsubscribe = ctx.hub.subscribe(listener)

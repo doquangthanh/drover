@@ -16,6 +16,17 @@ def test_state_events_go_to_parent_or_you():
         ("blocked", "root", None), ("done", "root", None)]
 
 
+def test_exit_is_reported_with_its_code():
+    log = AgentMessagesLog()
+    m = log.add_state("helper", "root", "exited", "exit code 0")
+    assert (m.kind, m.source, m.target, m.text) == ("exited", "helper", "root", "exit code 0")
+
+
+def test_long_text_is_cut():
+    m = AgentMessagesLog().add("send", "a", "b", "x" * 2000)
+    assert len(m.text) == 501 and m.text.endswith("…")
+
+
 def test_for_tree_includes_events_with_you():
     log = AgentMessagesLog()
     log.add("spawn", None, "root")
