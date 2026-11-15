@@ -9,6 +9,7 @@ import time
 
 from herd import __version__
 from herd.app_paths import config_dir
+from herd.core import self_update
 from herd.rpc.rpc_registry import E_BAD_PARAMS, RpcError, need, registry
 from herd.rpc.target_resolver import resolve_pane
 from herd.skill.agent_skill_text import AGENT_SKILL
@@ -35,6 +36,25 @@ async def server_info(ctx, p: dict) -> dict:
 async def server_stop(ctx, p: dict) -> None:
     ctx.persistence.save_now()
     asyncio.get_running_loop().call_later(0.2, ctx.request_stop)
+
+
+@registry.method("update.check", "Is a newer release on GitHub?", "")
+async def update_check(ctx, p: dict) -> dict:
+    try:
+        return await asyncio.to_thread(self_update.check)
+    except self_update.UpdateError as exc:
+        raise RpcError(E_BAD_PARAMS, str(exc)) from exc
+
+
+@registry.method("update.apply", "Download a release, replace this install and restart the daemon", "tag")
+async def update_apply(ctx, p: dict) -> None:
+    try:
+        await asyncio.to_thread(self_update.apply, need(p, "tag"))
+    except self_update.UpdateError as exc:
+        raise RpcError(E_BAD_PARAMS, str(exc)) from exc
+    ctx.restart = True  # open windows follow the new daemon (follow_daemon)
+    ctx.persistence.save_now()
+    asyncio.get_running_loop().call_later(0.5, ctx.request_stop)
 
 
 @registry.method("schema", "This API as OpenRPC-style JSON", "")

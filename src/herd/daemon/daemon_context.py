@@ -31,6 +31,7 @@ class DaemonContext:
     remotes: Any = None  # RemoteHub, set after construction
     chats: Any = None  # ChatManager, set after construction
     stop_event: asyncio.Event = field(default_factory=asyncio.Event)
+    restart: bool = False  # start a fresh daemon once this one has shut down (self-update)
 
     def request_stop(self) -> None:
         self.stop_event.set()

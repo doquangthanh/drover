@@ -121,6 +121,10 @@ async def serve(host: str = "127.0.0.1", port: int = 0) -> None:
                 path.unlink()
         except (OSError, ValueError):
             pass
+        if ctx.restart:
+            from herd.daemon.daemon_client import start_background
+
+            start_background()  # runs the freshly installed bundle
 
 
 async def _housekeeping(ctx: DaemonContext) -> None:

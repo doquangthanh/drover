@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from herd import __version__
+
 from pathlib import Path
 
 from daemon_harness import wait_for_text
@@ -33,7 +35,7 @@ async def test_rpc_rejects_wrong_token(start_daemon):
 async def test_server_info_reports_version_and_no_agents(start_daemon):
     daemon = await start_daemon()
     _, body = await daemon.call("server.info")
-    assert body["result"]["version"] == "0.1.0"
+    assert body["result"]["version"] == __version__
     assert body["result"]["counts"] == {}
 
 
