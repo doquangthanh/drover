@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.17
+### Fixed
+- Windows in-app update no longer fails with "an older drover.exe.old is still in use" when a window or daemon from
+  an earlier update is still running: the running exe moves to drover.exe.old2, .old3... instead, and every leftover
+  .old copy is removed on the next start once nothing runs it.
+
 ## 0.1.16
 ### Changed
 - Agent tree redesigned. The tree draws real connector lines, shows each agent's title, a state badge and a name

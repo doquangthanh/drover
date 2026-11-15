@@ -119,34 +119,29 @@ def apply(tag: str) -> None:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-def old_exe_path(exe: Path) -> Path:
-    return exe.with_name(exe.name + ".old")
+MAX_OLD_EXES = 20
 
 
-def apply_windows_exe(tag: str, exe: Path) -> None:
-    """Blocking: download drover.exe for `tag` next to the running one and swap them.
+def free_old_exe_path(exe: Path) -> Path:
+    """Where to move the running exe: drover.exe.old, or drover.exe.old2, .old3... while older ones are still run
+    by a window or daemon that was never restarted (Windows can't delete a running .exe)."""
+    for n in range(1, MAX_OLD_EXES + 1):
+        candidate = exe.with_name(exe.name + (".old" if n == 1 else f".old{n}"))
+        try:
+            candidate.unlink(missing_ok=True)  # left by a previous update
+            return candidate
+        except OSError:
+            continue  # still running: try the next name
+    raise UpdateError("too many older drover.exe copies are still running; restart Drover and retry")
 
-    Windows refuses to overwrite or delete a running .exe but allows renaming it, so the running file becomes
-    drover.exe.old (removed on the next start by `remove_old_exe`) and the download takes its name.
-    """
-    staged = exe.with_name(exe.name + ".new")
+
+def swap_in_exe(staged: Path, exe: Path) -> None:
+    """Move the running exe aside and give the staged download its name; restores the old one on failure."""
     try:
-        with urllib.request.urlopen(EXE_URL.format(tag=tag), timeout=TIMEOUT) as resp, open(staged, "wb") as out:
-            shutil.copyfileobj(resp, out)
-    except OSError as exc:
+        old = free_old_exe_path(exe)
+    except UpdateError:
         staged.unlink(missing_ok=True)
-        raise UpdateError(f"download failed: {exc}") from exc
-    with open(staged, "rb") as fh:
-        head = fh.read(2)
-    if head != b"MZ" or staged.stat().st_size < MIN_EXE_BYTES:
-        staged.unlink(missing_ok=True)
-        raise UpdateError("downloaded file is not a Windows program")
-    old = old_exe_path(exe)
-    try:
-        old.unlink(missing_ok=True)  # left by the previous update
-    except OSError as exc:
-        staged.unlink(missing_ok=True)
-        raise UpdateError(f"an older drover.exe.old is still in use; restart Drover and retry ({exc})") from exc
+        raise
     try:
         exe.rename(old)
     except OSError as exc:
@@ -160,11 +155,38 @@ def apply_windows_exe(tag: str, exe: Path) -> None:
         raise UpdateError(f"could not install the new drover.exe: {exc}") from exc
 
 
-def remove_old_exe() -> None:
-    """On start-up: delete drover.exe.old from the last update once nothing runs it any more (best effort)."""
-    if not is_single_exe():
-        return
+def apply_windows_exe(tag: str, exe: Path) -> None:
+    """Blocking: download drover.exe for `tag` next to the running one and swap them.
+
+    Windows refuses to overwrite or delete a running .exe but allows renaming it, so the running file becomes
+    drover.exe.old (or .old2... if an older copy still runs; removed on the next start by `remove_old_exe`) and the
+    download takes its name.
+    """
+    staged = exe.with_name(exe.name + ".new")
     try:
-        old_exe_path(Path(sys.executable).resolve()).unlink(missing_ok=True)
-    except OSError:
-        pass  # an old window still runs it; the next start retries
+        with urllib.request.urlopen(EXE_URL.format(tag=tag), timeout=TIMEOUT) as resp, open(staged, "wb") as out:
+            shutil.copyfileobj(resp, out)
+    except OSError as exc:
+        staged.unlink(missing_ok=True)
+        raise UpdateError(f"download failed: {exc}") from exc
+    with open(staged, "rb") as fh:
+        head = fh.read(2)
+    if head != b"MZ" or staged.stat().st_size < MIN_EXE_BYTES:
+        staged.unlink(missing_ok=True)
+        raise UpdateError("downloaded file is not a Windows program")
+    swap_in_exe(staged, exe)
+
+
+def remove_old_exes(exe: Path) -> None:
+    """Delete every drover.exe.old* left by earlier updates that nothing runs any more (best effort)."""
+    for old in exe.parent.glob(exe.name + ".old*"):
+        try:
+            old.unlink()
+        except OSError:
+            pass  # an old window or daemon still runs it; the next start retries
+
+
+def remove_old_exe() -> None:
+    """On start-up: clean up after the previous in-app update."""
+    if is_single_exe():
+        remove_old_exes(Path(sys.executable).resolve())
