@@ -12,10 +12,11 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - { arch: x64, runner: ubuntu-22.04 }        # old glibc: the binary runs on most distros
-          - { arch: arm64, runner: ubuntu-22.04-arm }
+          - { arch: arm64, runner: ubuntu-24.04-arm }  # PyQt6-Qt6 aarch64 wheels need glibc >= 2.39
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
