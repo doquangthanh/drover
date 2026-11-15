@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+### Changed
+- Agent tree redesigned. The tree draws real connector lines, shows each agent's title, a state badge and a name
+  filter. The selected agent gets a header with its tree's counts (helpers, working, needs you, done), a progress
+  bar and an "Answer" banner for every helper waiting for you.
+- New Flow tab (the default): one swimlane per agent of the selected tree, an arrow per `dr run` / `dr send` /
+  `dr wait` / done / needs-you / denied event from `messages.list`, and a bar showing when each helper was active.
+  Selecting a helper dims what it was not part of. Messages and Policy stay as tabs.
+
 ## 0.1.15
 ### Changed
 - Sidebar is back to two halves, Spaces (grouped by machine) and Agents (grouped by space); the single workspace
