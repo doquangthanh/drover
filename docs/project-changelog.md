@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.21
+### Fixed
+- Desktop app (Windows): clicking a link in a terminal pane (plain URLs and Claude Code's OSC 8 links) showed
+  "Get an app to open this 'about' link" instead of opening the browser. Links now open in the default browser;
+  only http(s) links are opened.
+
 ## 0.1.20
 ### Changed
 - Windows: `dr` calls from agent panes and Claude hooks start about 2x faster (measured `dr ls`: ~390 ms -> ~190 ms).
