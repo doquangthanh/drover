@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+### Changed
+- Agent tree Flow board shows every agent, not only helpers started with `dr run`: agents you start get a
+  "you started" event, and a "needs you" / "finished" event to you when they block or finish.
+
 ## 0.1.17
 ### Fixed
 - Windows in-app update no longer fails with "an older drover.exe.old is still in use" when a window or daemon from

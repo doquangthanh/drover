@@ -75,8 +75,7 @@ class StatusMonitor:
             return
         if new in ("blocked", "done") and not pane.focused:
             pane.unread = True
-        if pane.meta.parent and new in ("done", "blocked"):
-            self.manager.messages.add(new, pane.meta.id, pane.meta.parent, "")
+        self.manager.messages.add_state(pane.meta.id, pane.meta.parent, new)
         self.manager.hub.emit("pane", pane.to_dict())
         self.manager.hub.emit("status", {"pane": pane.to_dict(), "old": old, "new": new})
         if not pane.focused:

@@ -28,5 +28,11 @@ class AgentMessagesLog:
         self.items.append(message)
         return message
 
+    def add_state(self, pane_id: str, parent: str | None, state: str) -> AgentMessage | None:
+        """A pane finished or needs an answer: tell its parent, or you (target None) for an agent you started."""
+        if state not in ("done", "blocked"):
+            return None
+        return self.add(state, pane_id, parent or None)
+
     def for_tree(self, pane_ids: set[str]) -> list[dict]:
         return [m.to_dict() for m in self.items if m.source in pane_ids or m.target in pane_ids]

@@ -97,8 +97,8 @@ class SessionManager:
         self.panes[pane_id] = pane
         tab.layout = layout.insert(tab.layout, split_from or tab.focused, pane_id, direction)
         tab.focused = pane_id
-        if parent:
-            self.messages.add("spawn", parent, pane_id, meta.command)
+        # parent None = started by you (UI / CLI), so every agent gets a lane on the Flow board.
+        self.messages.add("spawn", parent or None, pane_id, meta.command)
         self._changed()
         return pane
 
