@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+### Changed
+- Windows: `dr` calls from agent panes and Claude hooks start about 2x faster (measured `dr ls`: ~390 ms -> ~190 ms).
+  Each release now also ships `drover-cli-windows-x64.zip`, an unpacked `dr.exe`. The daemon downloads it once per
+  version in the background into `<state dir>/runtime/<version>/`, and the `dr` shim uses it as soon as it is
+  there. Offline, or if anything fails, `dr` keeps using drover.exe. `drover.exe` is still the only download.
+- Packaged builds leave out setuptools / pkg_resources: PyInstaller's setuptools start-up hook imported it (~0.5 s
+  in source Python) on every start, while nothing in drover uses it.
+### Fixed
+- The `dr.cmd` / `hd.cmd` shims were written with doubled carriage returns (`\r\r\n`) and rewritten on every
+  pane start; now byte-exact and written only when they change.
+- In-app update: a download cut off mid-way (`IncompleteRead`) now fails cleanly instead of with an unexpected error.
+
 ## 0.1.19
 ### Added
 - Flow board shows Claude Code sub-agents (Task/Agent tool: planner, tester, ...) as their own lanes under the
