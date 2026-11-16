@@ -18,7 +18,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="dr", description="drover: run and watch coding agents")
     sub = p.add_subparsers(dest="cmd")
 
-    sub.add_parser("app", help="open the drover window (default)")
+    sub.add_parser("app", help="open the drover window")
 
     run = sub.add_parser("run", help="start an agent or command in a pane")
     run.add_argument("--bg", action="store_true", help="don't attach; print the pane id")
@@ -55,7 +55,7 @@ def build_parser() -> argparse.ArgumentParser:
     kill.add_argument("target")
     kill.add_argument("--tree", action="store_true", help="also stop the helpers it started")
 
-    sub.add_parser("tui", help="terminal UI in this terminal (needs: pip install 'drover[tui]')")
+    sub.add_parser("tui", help="terminal UI in this terminal (default when Textual is installed)")
     sub.add_parser("status", help="server, machines and agent counts")
     sub.add_parser("schema", help="print the JSON-RPC API")
     sub.add_parser("skill", help="print instructions that teach an agent to use dr")
@@ -65,6 +65,12 @@ def build_parser() -> argparse.ArgumentParser:
     completion.add_completion_parser(sub)
     hook_claude.add_hook_parser(sub)
     return p
+
+
+def _textual_available() -> bool:
+    import importlib.util
+
+    return importlib.util.find_spec("textual") is not None
 
 
 def _cmd_tui(_args) -> int:
@@ -102,6 +108,8 @@ def _utf8_output() -> None:
 def main(argv: list[str] | None = None) -> None:
     _utf8_output()
     args = build_parser().parse_args(argv)
+    if args.cmd is None and _textual_available():  # plain `dr` opens the terminal UI; `dr app` the desktop window
+        sys.exit(_cmd_tui(args))
     if args.cmd in (None, "app"):
         from drover.desktop.desktop_window_launcher import main as open_app
 
