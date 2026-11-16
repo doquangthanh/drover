@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.22
+### Changed
+- Terminal and mono text in the web UI use the system default monospace font instead of the bundled JetBrains Mono.
+
 ## 0.1.21
 ### Fixed
 - Desktop app (Windows): clicking a link in a terminal pane (plain URLs and Claude Code's OSC 8 links) showed
