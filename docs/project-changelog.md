@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.27
+### Changed
+- New space works like herdr: no folder or agent picker. "+" / "New space" opens a fresh space with a shell in the
+  home folder. Run `claude`, `codex`, `gemini` or `opencode` in it and the pane shows up under Agents; plain shells
+  stay out of the Agents list.
+- `space.create`: `cwd` is optional (defaults to home); `new: true` always makes a fresh space, even for a folder
+  that already has one (named `folder-2`, `folder-3`, ...).
+
 ## 0.1.26
 ### Fixed
 - Release builds now bundle Textual (`uv sync --extra tui` in CI), so plain `dr` from `install.sh` opens the terminal
