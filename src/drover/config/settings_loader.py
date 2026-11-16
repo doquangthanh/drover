@@ -16,6 +16,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "theme": "dark",
     "file_icons": "material",
     "prefix": "C-a",
+    "tui_prefix": "C-b",  # `dr tui` only: Herdr/tmux-style prefix, so it does not clash with the web UI's
     "scrollback": 5000,
     "claude_subagent_hooks": True,  # claude panes report their sub-agents to the Flow board (per-pane --settings)
     "shell": "",  # empty = platform default
@@ -46,6 +47,8 @@ theme = "dark"
 # file_icons: material | badge | line | none  (icons in the Files tree; Settings can override per device)
 file_icons = "material"
 prefix = "C-a"
+# prefix of the terminal UI (`dr` / `dr tui`), Herdr-style
+tui_prefix = "C-b"
 scrollback = 5000
 # shell = "pwsh"
 # fs_roots = ["C:/Users/me/PROJECT"]   # folders the in-app picker may browse

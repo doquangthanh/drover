@@ -41,6 +41,7 @@ async def tab_create(ctx, p: dict) -> dict:
         raise
     if not p.get("name"):
         tab.name = pane.meta.name
+        m._changed()  # create_pane already published the tab under its placeholder name
     return {"tab": tab.to_dict(), "pane": pane.to_dict()}
 
 

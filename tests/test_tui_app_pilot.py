@@ -7,6 +7,7 @@ import asyncio
 from drover.tui.daemon_ws_connection import DaemonConnection
 from drover.tui.restore_stopped_dialog import RestoreStoppedDialog
 from drover.tui.split_layout_view import SplitLayoutView
+from drover.tui.tab_bar import TabBar
 from drover.tui.tui_app import TuiApp
 from drover.tui.workspace_sidebar import WorkspaceSidebar
 
@@ -23,7 +24,11 @@ def make_app(daemon) -> TuiApp:
 
 
 def sidebar_labels(app: TuiApp) -> str:
-    return " ".join(str(n.label) for n in app.query_one(WorkspaceSidebar)._by_id.values())
+    return app.query_one(WorkspaceSidebar).labels()
+
+
+def tabbar_text(app: TuiApp) -> str:
+    return app.query_one(TabBar).plain
 
 
 async def test_sidebar_lists_spaces_and_new_panes(start_daemon, tmp_path):
@@ -33,7 +38,7 @@ async def test_sidebar_lists_spaces_and_new_panes(start_daemon, tmp_path):
     async with app.run_test(size=(120, 40)) as pilot:
         await until(lambda: tmp_path.name in sidebar_labels(app))
         await daemon.call("pane.create", {"command": "", "cwd": str(tmp_path), "name": "second-shell"})
-        await until(lambda: "second-shell" in sidebar_labels(app))
+        await until(lambda: "second-shell" in tabbar_text(app))  # a new tab of the same space
         assert app.query_one("#root").has_class("-wide")
         await pilot.pause()
 
@@ -64,12 +69,12 @@ async def test_split_typing_zoom_and_responsive(start_daemon, tmp_path):
         await pilot.resize_terminal(120, 40)
         await until(lambda: len(layout.views) == 2 and app.query_one("#root").has_class("-wide"))
         # zoom via prefix
-        await pilot.press("ctrl+a", "z")
+        await pilot.press("ctrl+b", "z")
         await until(lambda: len(layout.views) == 1)
-        await pilot.press("ctrl+a", "z")
+        await pilot.press("ctrl+b", "z")
         await until(lambda: len(layout.views) == 2)
         # split right via prefix
-        await pilot.press("ctrl+a", "percent_sign")
+        await pilot.press("ctrl+b", "percent_sign")
         await until(lambda: len(layout.views) == 3)
 
 
@@ -109,7 +114,7 @@ async def test_pane_size_reaches_daemon_and_zoom_detaches_hidden_pane(start_daem
         await until(lambda: listeners() == 2)
         sizes = {pid: (v.size.width, v.size.height) for pid, v in layout.views.items()}
         await until(lambda: all((p.cols, p.rows) == sizes[pid] for pid, p in daemon.ctx.manager.panes.items()))
-        await pilot.press("ctrl+a", "z")
+        await pilot.press("ctrl+b", "z")
         await until(lambda: len(layout.views) == 1 and listeners() == 1)  # the hidden pane was detached
 
 
@@ -122,10 +127,37 @@ async def test_sidebar_enter_switches_tab_and_literal_prefix(start_daemon, tmp_p
         layout = app.query_one(SplitLayoutView)
         await until(lambda: len(app.state["tabs"]) == 2 and layout.tab_id)
         first = layout.tab_id
-        await pilot.press("ctrl+a", "tab")  # next tab
+        await pilot.press("ctrl+b", "tab")  # next tab
         await until(lambda: layout.tab_id not in (None, first))
-        await pilot.press("ctrl+a", "1")  # back to tab 1
+        await pilot.press("ctrl+b", "1")  # back to tab 1
         await until(lambda: layout.tab_id == app.state["tabs"][0]["id"])
-        await pilot.press("ctrl+a", "b")  # focus the sidebar
-        await until(lambda: app.query_one(WorkspaceSidebar).has_focus)
-        await pilot.press("ctrl+a", "d")  # quit
+        await pilot.press("ctrl+b", "b")  # focus the sidebar
+        await until(lambda: app.query_one("#spaces").has_focus)
+        await pilot.press("ctrl+b", "d")  # quit
+
+
+async def test_empty_session_opens_a_space_and_herdr_keys(start_daemon, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    daemon = await start_daemon()
+    app = make_app(daemon)
+    async with app.run_test(size=(120, 40)) as pilot:
+        await until(lambda: len(app.state["spaces"]) == 1 and app.focused_pane)  # opened by itself, like herdr
+        assert app.state["spaces"][0]["cwd"] == str(tmp_path.resolve())
+        await pilot.press("ctrl+b", "c")  # new tab in this space
+        await until(lambda: len(app.state["tabs"]) == 2 and app.current_tab_id == app.state["tabs"][1]["id"])
+        await pilot.press("ctrl+b", "p")  # previous tab
+        await until(lambda: app.current_tab_id == app.state["tabs"][0]["id"])
+        await pilot.press("ctrl+b", "v")  # split right
+        layout = app.query_one(SplitLayoutView)
+        await until(lambda: len(layout.views) == 2)
+        await pilot.press("ctrl+b", "N")  # new space
+        await until(lambda: len(app.state["spaces"]) == 2)
+        await until(lambda: app.current_space_id() == app.state["spaces"][1]["id"])
+        await pilot.press("ctrl+b", "W")  # rename space
+        await pilot.pause(0.2)
+        await pilot.press("ctrl+u", *"proj", "enter")
+        await until(lambda: any(s["name"] == "proj" for s in app.state["spaces"]))
+        await pilot.press("ctrl+b", "g")  # goto picker
+        await pilot.pause(0.2)
+        await pilot.press("escape")
+        await pilot.press("ctrl+b", "q")  # detach

@@ -18,8 +18,10 @@ from drover.tui.daemon_ws_connection import DaemonConnection, RpcError
 from drover.tui.prefix_key_router import PrefixKeyRouter
 from drover.tui.responsive_mode import mode_for
 from drover.tui.split_layout_view import MIN_COLS, MIN_ROWS, SplitLayoutView
+from drover.tui.tab_bar import TabBar, TabClicked
 from drover.tui.tui_app_actions import PrefixActions
 from drover.tui.tui_app_status_and_restore import StatusAndRestore
+from drover.tui.tui_app_workspace_actions import WorkspaceActions
 from drover.tui.tui_messages import ConnectionChanged, PaneChanged, PaneStatusChanged, StateChanged
 from drover.tui.tui_state_helpers import (
     default_tab_id,
@@ -27,13 +29,14 @@ from drover.tui.tui_state_helpers import (
     panes_of,
     tab_of_pane,
 )
-from drover.tui.workspace_sidebar import PaneSelected, TabSelected, WorkspaceSidebar
+from drover.tui.workspace_sidebar import PaneSelected, SpaceSelected, WorkspaceSidebar
 
 REFRESH_SECONDS = 0.1
 
 
-class TuiApp(PrefixActions, StatusAndRestore, App):
+class TuiApp(PrefixActions, WorkspaceActions, StatusAndRestore, App):
     CSS_PATH = Path(__file__).with_name("tui.tcss")
+    TITLE = "drover"
     ENABLE_COMMAND_PALETTE = False
 
     def __init__(self, conn: DaemonConnection) -> None:
@@ -53,11 +56,13 @@ class TuiApp(PrefixActions, StatusAndRestore, App):
         self._refresh_timer: Timer | None = None
         self._refresh_lock = asyncio.Lock()
         self._tasks: set[asyncio.Task] = set()
+        self._first_space_asked = False
 
     def compose(self) -> ComposeResult:
         with Container(id="root"):
             yield WorkspaceSidebar(id="sidebar")
             with Vertical(id="body"):
+                yield TabBar(id="tabbar")
                 yield SplitLayoutView(on_input=self.conn.send_input, on_size=self._pane_size,
                                       on_attach=self.conn.attach, on_detach=self.conn.detach, id="layout")
                 yield Static("", id="status")
@@ -83,7 +88,8 @@ class TuiApp(PrefixActions, StatusAndRestore, App):
     # -- events from the daemon -----------------------------------------------------
     def on_state_changed(self, msg: StateChanged) -> None:
         self.state = msg.state
-        self.router.set_prefix(msg.state.get("prefix", "C-a"))
+        self.router.set_prefix(msg.state.get("tui_prefix", "C-b"))
+        self.ensure_first_space()
         self.schedule_refresh()
 
     def on_pane_status_changed(self, msg: PaneStatusChanged) -> None:
@@ -114,6 +120,9 @@ class TuiApp(PrefixActions, StatusAndRestore, App):
         async with self._refresh_lock:
             state = self.state
             tabs = {t["id"]: t for t in state["tabs"]}
+            pending_tab = tab_of_pane(state, self._pending_focus) if self._pending_focus else None
+            if pending_tab and pending_tab["id"] != self.current_tab_id:  # new tab/space: open where it started
+                self.current_tab_id = pending_tab["id"]
             if self.current_tab_id not in tabs:
                 self.current_tab_id = default_tab_id(state)
             tab = tabs.get(self.current_tab_id)
@@ -125,7 +134,10 @@ class TuiApp(PrefixActions, StatusAndRestore, App):
             elif tab and self.focused_pane:
                 tab["focused"] = self.focused_pane
             rebuilt = await self.layout_view.show_tab(tab, state, single=self.mode == "narrow")
-            self.query_one(WorkspaceSidebar).rebuild(state)
+            space_id = tab["space_id"] if tab else None
+            self.query_one(WorkspaceSidebar).rebuild(state, space_id)
+            prefix = state.get("tui_prefix", "C-b").replace("C-", "Ctrl+").title()
+            self.query_one(TabBar).show(state, space_id, tab["id"] if tab else None, prefix)
             self.update_status()
             if rebuilt and self.focused_pane and not self.sidebar_active:
                 self.call_after_refresh(self.layout_view.focus_pane, self.focused_pane)
@@ -156,10 +168,13 @@ class TuiApp(PrefixActions, StatusAndRestore, App):
         if pane_id and pane_id != self.focused_pane:
             self.focus_pane(pane_id)
 
-    def on_tab_selected(self, msg: TabSelected) -> None:
+    def on_space_selected(self, msg: SpaceSelected) -> None:
         self.sidebar_open = self.sidebar_active = False
-        self.show_tab(msg.tab_id)
+        self.select_space(msg.space_id)
         self._apply_mode()
+
+    def on_tab_clicked(self, msg: TabClicked) -> None:
+        self.show_tab(msg.tab_id)
 
     def on_pane_selected(self, msg: PaneSelected) -> None:
         self.sidebar_open = self.sidebar_active = False

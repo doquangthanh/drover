@@ -33,7 +33,7 @@ def test_unknown_second_key_cancels_and_normal_keys_pass():
     r = PrefixKeyRouter("C-a")
     assert r.handle("e", "e", 0) is None
     r.handle("ctrl+a", None, 1)
-    assert r.handle("w", "w", 1.1) == ("cancel", "")
+    assert r.handle("y", "y", 1.1) == ("cancel", "")
 
 
 def test_custom_prefix_and_tab_numbers():

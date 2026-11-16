@@ -26,6 +26,10 @@ class StatusAndRestore:
                 text.append(f"  {index}/{len(panes)} panes")
         if self.router.armed:
             text.append("  PREFIX", style="bold reverse")
+        view = self.layout_view.widget_for(self.focused_pane or "")
+        if getattr(view, "scroll_mode", False):
+            text.append(f"  SCROLL {view.emulator.scroll}/{view.emulator.history_size}", style="bold reverse")
+            text.append("  ↑↓ PgUp/PgDn g/G move · y copy · q exit", style="dim")
         self.query_one("#status", Static).update(text)
 
     def _maybe_ask_restore(self) -> None:

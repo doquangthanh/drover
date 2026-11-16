@@ -3,11 +3,23 @@
 from __future__ import annotations
 
 ARMED_SECONDS = 2.0
+# Herdr's default map (herdr.dev/docs/keyboard). Drover extras: r restore, a next agent that needs you, ? help.
 ACTIONS = {
-    "o": "next_pane", "left": "focus_left", "right": "focus_right", "up": "focus_up", "down": "focus_down",
-    "z": "zoom", "%": "split_right", '"': "split_down", "x": "close_pane", "n": "next_blocked",
-    "tab": "next_tab", "p": "prev_tab", "b": "toggle_sidebar", "r": "restore", "d": "quit", "?": "help",
+    # panes
+    "v": "split_right", "-": "split_down", "minus": "split_down", "%": "split_right", '"': "split_down",
+    "h": "focus_left", "j": "focus_down", "k": "focus_up", "l": "focus_right",
+    "left": "focus_left", "down": "focus_down", "up": "focus_up", "right": "focus_right", "o": "next_pane",
+    "H": "swap_left", "J": "swap_down", "K": "swap_up", "L": "swap_right",
+    "z": "zoom", "x": "close_pane", "[": "scroll_mode",
+    # tabs
+    "c": "new_tab", "n": "next_tab", "p": "prev_tab", "tab": "next_tab",
+    "T": "rename_tab", "X": "close_tab",
     **{str(i): f"goto_tab_{i}" for i in range(1, 10)},
+    # workspaces (spaces)
+    "N": "new_space", "W": "rename_space", "D": "close_space", "w": "focus_sidebar", "g": "goto",
+    "b": "toggle_sidebar", "q": "quit", "d": "quit",
+    # drover
+    "a": "next_blocked", "r": "restore", "?": "help",
 }
 
 
@@ -25,7 +37,7 @@ def literal_prefix(prefix: str) -> str:
 
 
 class PrefixKeyRouter:
-    def __init__(self, prefix: str = "C-a") -> None:
+    def __init__(self, prefix: str = "C-b") -> None:
         self.set_prefix(prefix)
         self._armed_at: float | None = None
 

@@ -42,6 +42,7 @@ class DaemonContext:
         state["machines"] = self.remotes.public_state() if self.remotes else []
         state["chats"] = self.chats.snapshot() if self.chats else []
         state["prefix"] = self.settings.get("prefix", "C-a")
+        state["tui_prefix"] = self.settings.get("tui_prefix", "C-b")
         state["theme"] = self.settings.get("theme", "dark")
         state["file_icons"] = self.settings.get("file_icons", "material")
         state["notify"] = self.settings.get("notify", {})

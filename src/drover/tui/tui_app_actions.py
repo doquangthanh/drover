@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from drover.core.split_layout_tree import pane_ids
 from drover.tui.confirm_dialog import ConfirmDialog
-from drover.tui.tui_state_helpers import next_blocked_pane, tab_of_pane
+from drover.tui.tui_state_helpers import next_blocked_pane, tab_of_pane, tabs_of
 
-HELP = ("prefix o next pane, arrows move, z zoom, % split right, \" split down, x close, n next blocked,\n"
-        "tab/p next/prev tab, 1-9 tab, b sidebar, r restore/restart, d quit (agents keep running), prefix prefix = literal")
+HELP = ("Panes: v split right, - split down, h/j/k/l move, H/J/K/L swap, z zoom, x close, [ scroll/copy (y copy, q exit)\n"
+        "Tabs: c new, n/p next/prev, 1-9 go to, T rename, X close\n"
+        "Spaces: N new, W rename, D close, w/b sidebar, g go to any agent\n"
+        "a next agent that needs you, r restore, q detach (agents keep running), prefix twice = literal prefix")
 
 
 class PrefixActions:
@@ -26,12 +28,14 @@ class PrefixActions:
         return pane_ids(tab.get("layout")) if tab else []
 
     def _goto_tab(self, index: int) -> None:
-        tabs = self.state.get("tabs", [])
-        if tabs:
-            self.show_tab(tabs[index % len(tabs)]["id"])
+        """Herdr: 1-9 are the tabs of the current space."""
+        tabs = tabs_of(self.state, self.current_space_id() or "")
+        if index >= len(tabs):
+            return
+        self.show_tab(tabs[index]["id"])
 
     def _step_tab(self, step: int) -> None:
-        ids = [t["id"] for t in self.state.get("tabs", [])]
+        ids = [t["id"] for t in tabs_of(self.state, self.current_space_id() or "")]
         if self.current_tab_id in ids:
             self.show_tab(ids[(ids.index(self.current_tab_id) + step) % len(ids)])
 

@@ -30,11 +30,15 @@ class CellStyle:
     reverse: bool = False
 
 
+SCROLLBACK_LINES = 5000
+
+
 class TerminalEmulatorScreen:
     def __init__(self, cols: int, rows: int) -> None:
         self.modes = TerminalModes()
         self.app_cursor = False  # DECCKM: arrows are sent as \x1bOA instead of \x1b[A
-        self._main = pyte.Screen(cols, rows)
+        self._main = pyte.HistoryScreen(cols, rows, history=SCROLLBACK_LINES, ratio=0.5)
+        self.scroll = 0  # lines scrolled back into the main screen's history (0 = live view)
         self._alt = pyte.Screen(cols, rows)
         self._streams = {id(s): pyte.Stream(s) for s in (self._main, self._alt)}
         self._active = self._main
@@ -54,7 +58,37 @@ class TerminalEmulatorScreen:
 
     @property
     def cursor_hidden(self) -> bool:
-        return self._active.cursor.hidden
+        return self._active.cursor.hidden or self.scroll > 0
+
+    @property
+    def alt_screen(self) -> bool:
+        return self._active is self._alt
+
+    @property
+    def history_size(self) -> int:
+        return len(self._main.history.top)
+
+    def scroll_by(self, lines: int) -> None:
+        """Positive = back in time. The alternate screen (vim, less...) has no history of its own."""
+        limit = 0 if self.alt_screen else self.history_size
+        new = max(0, min(limit, self.scroll + lines))
+        if new != self.scroll:
+            self.scroll = new
+            self.version += 1
+
+    def scroll_to_bottom(self) -> None:
+        self.scroll_by(-self.scroll)
+
+    def _line(self, y: int):
+        """Row y of what is on view: history lines while scrolled back, then the live screen."""
+        if self.scroll <= 0 or self.alt_screen:
+            return self._active.buffer[y]
+        top = self._main.history.top
+        index = len(top) - self.scroll + y
+        return top[index] if index < len(top) else self._main.buffer[index - len(top)]
+
+    def visible_text(self) -> str:
+        return "\n".join("".join(t for t, _ in self.row_runs(y)).rstrip() for y in range(self.rows))
 
     def resize(self, cols: int, rows: int) -> None:
         if (cols, rows) == (self.cols, self.rows):
@@ -104,7 +138,7 @@ class TerminalEmulatorScreen:
     def row_runs(self, y: int) -> list[tuple[str, CellStyle]]:
         """One row as (text, style) runs; neighbouring cells with the same style are merged."""
         screen = self._active
-        row = screen.buffer[y]
+        row = self._line(y)
         runs: list[tuple[str, CellStyle]] = []
         for x in range(screen.columns):
             ch = row[x]

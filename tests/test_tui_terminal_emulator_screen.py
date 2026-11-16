@@ -59,3 +59,16 @@ def test_wide_char_second_cell_is_empty():
     s = TerminalEmulatorScreen(10, 2)
     s.feed("漢a")
     assert text(s, 0) == "漢a"
+
+
+def test_scrollback_shows_lines_that_left_the_screen():
+    from drover.tui.terminal_emulator_screen import TerminalEmulatorScreen
+
+    em = TerminalEmulatorScreen(20, 3)
+    em.feed("".join(f"line{i}\r\n" for i in range(10)))
+    assert "line0" not in em.visible_text()
+    em.scroll_by(100)  # clamped to the history
+    assert em.visible_text().splitlines()[0] == "line0"
+    assert em.cursor_hidden
+    em.scroll_to_bottom()
+    assert em.scroll == 0 and "line9" in em.visible_text()

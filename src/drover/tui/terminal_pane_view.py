@@ -15,6 +15,11 @@ from drover.tui.terminal_emulator_screen import CellStyle, TerminalEmulatorScree
 from drover.tui.textual_key_to_bytes import key_to_bytes
 
 FRAME_SECONDS = 1 / 30  # redraw cap
+WHEEL_LINES = 3
+# Copy mode (Herdr prefix+[): move through the history; y copies what is on view, q / Esc leaves.
+SCROLL_KEYS = {"up": 1, "k": 1, "down": -1, "j": -1, "pageup": "page", "ctrl+b": "page", "pagedown": "-page",
+               "ctrl+f": "-page", "ctrl+u": "half", "ctrl+d": "-half", "g": "top", "home": "top",
+               "G": "bottom", "end": "bottom"}
 RESIZE_DEBOUNCE = 0.15
 
 
@@ -46,6 +51,8 @@ class TerminalPaneView(Widget, can_focus=True):
         self._on_size = on_size
         self._drawn = -1
         self._resize_timer: Timer | None = None
+        self.scroll_mode = False
+        self.on_scroll_mode: Callable[[], None] = lambda: None  # the app redraws its status line
 
     def on_mount(self) -> None:
         self.set_interval(FRAME_SECONDS, self._tick)
@@ -93,12 +100,53 @@ class TerminalPaneView(Widget, can_focus=True):
             self._resize_timer.stop()
         self._resize_timer = self.set_timer(RESIZE_DEBOUNCE, lambda: self._on_size(cols, rows))
 
+    def set_scroll_mode(self, on: bool) -> None:
+        self.scroll_mode = on
+        if not on:
+            self.emulator.scroll_to_bottom()
+        self.on_scroll_mode()
+
+    def _scroll_key(self, key: str, character: str | None) -> None:
+        name = character if character in ("g", "G", "j", "k", "q", "y") else key
+        if name in ("q", "escape"):
+            return self.set_scroll_mode(False)
+        if name == "y":
+            self.app.copy_to_clipboard(self.emulator.visible_text())
+            self.app.notify("Copied the visible lines")
+            return self.set_scroll_mode(False)
+        step = SCROLL_KEYS.get(name)
+        rows = self.emulator.rows
+        lines = {"page": rows, "-page": -rows, "half": rows // 2, "-half": -(rows // 2),
+                 "top": self.emulator.history_size, "bottom": -self.emulator.scroll}.get(step, step)
+        if isinstance(lines, int):
+            self.emulator.scroll_by(lines)
+            self.on_scroll_mode()
+
     def on_key(self, event: events.Key) -> None:
-        data = key_to_bytes(event.key, event.character, self.emulator.app_cursor)
         event.stop()
         event.prevent_default()  # Tab, Ctrl+C... belong to the agent, not to Textual's focus and copy bindings
+        if self.scroll_mode:
+            return self._scroll_key(event.key, event.character)
+        data = key_to_bytes(event.key, event.character, self.emulator.app_cursor)
         if data:
+            self.emulator.scroll_to_bottom()  # typing jumps back to the live screen
             self._on_input(data)
+
+    def _wheel(self, lines: int) -> None:
+        if self.emulator.alt_screen:  # full-screen apps scroll themselves: send arrows (xterm "alternate scroll")
+            self._on_input(("\x1bOA" if self.emulator.app_cursor else "\x1b[A") * WHEEL_LINES if lines > 0
+                           else ("\x1bOB" if self.emulator.app_cursor else "\x1b[B") * WHEEL_LINES)
+            return
+        self.emulator.scroll_by(lines)
+        self.on_scroll_mode()
+
+    def on_mouse_scroll_up(self, event: events.MouseScrollUp) -> None:
+        event.stop()
+        self._wheel(WHEEL_LINES)
+
+    def on_mouse_scroll_down(self, event: events.MouseScrollDown) -> None:
+        event.stop()
+        self._wheel(-WHEEL_LINES)
 
     def on_paste(self, event: events.Paste) -> None:
         text = event.text

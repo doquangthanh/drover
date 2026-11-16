@@ -166,12 +166,23 @@ and the `dr` command are all clients of it, which is why agents survive closing 
 
 ## Terminal UI
 
-`dr tui` opens Drover inside your terminal (SSH friendly): sidebar with agent states, split panes, same prefix keys.
-Needs the optional extra: `pip install 'drover[tui]'`. Prefix `d` quits the TUI, the agents keep running.
-Sidebar: **Ctrl+A b**. Panes: **o** next, arrows move, **z** zoom, **%** / **"** split, **x** close, **r** restore,
-**n** next blocked agent, **Tab** / **p** / **1-9** tabs, **?** help.
-Known limits: agents share one terminal size with the web UI (the pane follows the last client that resized it);
-no mouse, scrollback or copy mode yet; no chat view, file tree or search.
+`dr` (or `dr tui`) opens Drover inside the terminal you already use, Herdr-style. With no space yet it opens one in
+the current folder. Run `claude`, `codex`... in any terminal and it shows up under **Agents** in the sidebar.
+Needs Textual (bundled in the Linux release, otherwise `pip install 'drover[tui]'`).
+
+The prefix is **Ctrl+B** (setting `tui_prefix`; the web UI keeps `prefix`, Ctrl+A).
+
+| Keys after the prefix | Action |
+|---|---|
+| `c` · `n` / `p` · `1`-`9` · `T` · `X` | New tab · next / previous tab · go to tab · rename · close |
+| `N` · `W` · `D` | New space · rename · close |
+| `v` / `-` · `h` `j` `k` `l` · `H` `J` `K` `L` | Split right / down · move · swap panes |
+| `z` · `x` · `[` | Zoom · close pane · scroll / copy mode (`y` copies, `q` leaves) |
+| `g` · `w` / `b` · `a` | Go to any agent or terminal · sidebar · next agent that needs you |
+| `r` · `q` · `?` | Restore a stopped pane · detach (agents keep running) · all keys |
+
+The mouse wheel scrolls a pane's history; click a pane, a tab or a sidebar row to open it.
+Known limits: agents share one terminal size with the web UI; no chat view, file tree or search in the TUI.
 
 ## Keyboard
 
