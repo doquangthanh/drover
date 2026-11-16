@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.28
+### Changed
+- Agents are detected like Herdr: from the program that holds a shell pane's terminal (foreground process group),
+  not from the terminal title. Typing `claude`, `codex`, `gemini` or `opencode` turns the pane into that agent;
+  quitting back to the prompt turns it into a shell again (and hides it from Agents). Windows keeps the title check.
+- "+" in the tab bar, `Ctrl+N` and `Ctrl+A c` open a new terminal instead of the agent picker.
+- A new space starts in the folder the focused pane is in now (home when unknown).
+- A space is named after the folder its first pane is in and follows `cd`, unless you renamed it.
+
 ## 0.1.27
 ### Changed
 - New space works like herdr: no folder or agent picker. "+" / "New space" opens a fresh space with a shell in the
