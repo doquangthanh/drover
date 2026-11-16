@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.29
+### Changed
+- The terminal UI (`dr` / `dr tui`) works like Herdr: prefix **Ctrl+B** (new setting `tui_prefix`; the web UI keeps
+  `prefix`, Ctrl+A) and Herdr's keys: `c` new tab, `n`/`p` next/previous tab, `1-9` tabs of the current space,
+  `T`/`X` rename/close tab, `N`/`W`/`D` new/rename/close space, `v`/`-` split, `h j k l` move, `H J K L` swap,
+  `g` goto picker, `w`/`b` sidebar, `[` scroll/copy mode, `q` detach. Drover extras: `a` next agent that needs you,
+  `r` restore.
+- Sidebar shows spaces on top and agents below (plain shells are hidden); a tab bar above the panes.
+- With no space yet, the TUI opens one in the current folder.
+### Added
+- Pane scrollback in the TUI: mouse wheel or copy mode (`y` copies the visible lines).
+### Fixed
+- A tab created with `tab.create` now reaches clients under its real name instead of "tab".
+
 ## 0.1.28
 ### Changed
 - Agents are detected like Herdr: from the program that holds a shell pane's terminal (foreground process group),
