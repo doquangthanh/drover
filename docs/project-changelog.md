@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.23
+### Added
+- In-app update shows a full-screen "Updating Drover..." cover until the server is back and the page reloads.
+### Fixed
+- After an in-app update the new daemon keeps the old port and token, and the page reloads once the connection
+  returns. Before, a browser tab stayed on the dead address with every agent showing "exit" and the
+  "Pick up where you left off?" dialog never appeared.
+- An agent started by typing `claude` (or another agent) inside a shell pane now remembers its resume command, so
+  "Resume" after a restart continues the conversation (`claude --continue`) instead of opening a fresh one.
+
 ## 0.1.22
 ### Changed
 - Terminal and mono text in the web UI use the system default monospace font instead of the bundled JetBrains Mono.
