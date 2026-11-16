@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.25
+### Changed
+- Plain `dr` now opens the terminal UI when Textual is installed (`pip install 'drover[tui]'`). `dr app` still opens
+  the desktop window, and `dr` falls back to it when Textual is missing.
+
 ## 0.1.24
 ### Added
 - `dr tui`: terminal UI in your own terminal (Textual). Sidebar with spaces, tabs and agent states, split panes with
