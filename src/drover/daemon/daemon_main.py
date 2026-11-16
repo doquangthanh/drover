@@ -88,14 +88,21 @@ async def serve(host: str = "127.0.0.1", port: int = 0) -> None:
     if is_alive(read_info()):
         log.info("another drover daemon is already running; exiting")
         return
-    ctx = build_context(secrets.token_urlsafe(32))
+    # A self-update restart keeps the old port and token, so open browser tabs reconnect on their own.
+    keep_token = os.environ.pop("DROVER_KEEP_TOKEN", "")
+    keep_port = int(os.environ.pop("DROVER_KEEP_PORT", "0") or 0)
+    ctx = build_context(keep_token or secrets.token_urlsafe(32))
     ctx.persistence.load_previous()
     self_update.remove_old_exe()  # drover.exe.old from the previous in-app update
     install_in_background()  # Windows: unpacked dr.exe so each `dr` call skips onefile unpacking
     runner = web.AppRunner(build_app(ctx), access_log=None)
     await runner.setup()
-    site = web.TCPSite(runner, "127.0.0.1", port)
-    await site.start()
+    site = web.TCPSite(runner, "127.0.0.1", keep_port or port)
+    try:
+        await site.start()
+    except OSError:  # the kept port was taken meanwhile
+        site = web.TCPSite(runner, "127.0.0.1", port)
+        await site.start()
     ctx.port = site._server.sockets[0].getsockname()[1]  # actual port when 0 was requested
     if host not in ("127.0.0.1", "localhost", ""):
         # Extra, opt-in address (e.g. a Tailscale IP) so a phone can open the UI. Token still required.
@@ -131,7 +138,7 @@ async def serve(host: str = "127.0.0.1", port: int = 0) -> None:
         if ctx.restart:
             from drover.daemon.daemon_client import start_background
 
-            start_background()  # runs the freshly installed bundle
+            start_background({"DROVER_KEEP_TOKEN": ctx.token, "DROVER_KEEP_PORT": str(ctx.port)})  # fresh bundle
 
 
 async def _housekeeping(ctx: DaemonContext) -> None:

@@ -39,14 +39,16 @@ def is_alive(info: dict | None) -> bool:
         return False
 
 
-def start_background() -> None:
+def start_background(extra_env: dict[str, str] | None = None) -> None:
     import subprocess  # only the cold-start path needs it; saves ~25 ms on every other command
 
     cmd = [*dr_command(windowless=True), "server", "run", "--background"]
     log = open(log_dir() / "daemon-stdout.log", "ab")  # noqa: SIM115 - handed to the child
     kwargs: dict = {"stdout": log, "stderr": log, "stdin": subprocess.DEVNULL, "close_fds": True}
+    if extra_env:
+        kwargs["env"] = {**os.environ, **extra_env}
     if is_frozen():  # a onefile child (drover.exe) must unpack its own copy, else it dies with the parent's temp dir
-        kwargs["env"] = {**os.environ, "PYINSTALLER_RESET_ENVIRONMENT": "1"}
+        kwargs["env"] = {**kwargs.get("env", os.environ), "PYINSTALLER_RESET_ENVIRONMENT": "1"}
     if sys.platform == "win32":
         kwargs["creationflags"] = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
                                    | subprocess.CREATE_NO_WINDOW)
