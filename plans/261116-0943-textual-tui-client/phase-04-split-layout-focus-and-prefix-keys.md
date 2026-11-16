@@ -7,7 +7,7 @@
 - `combined_state()["prefix"]` (setting, default `"C-a"`, verified)
 
 ## Overview
-Priority P1. Status pending. Render a tab's layout tree as nested containers; each leaf is a `TerminalPaneView`; keys go to the focused pane except after the prefix.
+Priority P1. Status done (automated checks; manual checks not run). Render a tab's layout tree as nested containers; each leaf is a `TerminalPaneView`; keys go to the focused pane except after the prefix.
 
 ## Key insights
 - Tree is binary with `ratio` -> map to Textual `Horizontal`/`Vertical` with child sizes `fr` = ratio / 1-ratio.

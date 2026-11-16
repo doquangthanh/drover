@@ -55,6 +55,7 @@ def build_parser() -> argparse.ArgumentParser:
     kill.add_argument("target")
     kill.add_argument("--tree", action="store_true", help="also stop the helpers it started")
 
+    sub.add_parser("tui", help="terminal UI in this terminal (needs: pip install 'drover[tui]')")
     sub.add_parser("status", help="server, machines and agent counts")
     sub.add_parser("schema", help="print the JSON-RPC API")
     sub.add_parser("skill", help="print instructions that teach an agent to use dr")
@@ -66,6 +67,17 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _cmd_tui(_args) -> int:
+    try:
+        from drover.tui.tui_app import main as run_tui
+    except ModuleNotFoundError as exc:
+        if exc.name != "textual":
+            raise
+        print("error: the terminal UI needs Textual. Install it with: pip install 'drover[tui]'", file=sys.stderr)
+        return 1
+    return run_tui()
+
+
 COMMANDS = {
     "run": agents.cmd_run, "ls": agents.cmd_ls, "send": agents.cmd_send, "read": agents.cmd_read,
     "wait": agents.cmd_wait, "attach": agents.cmd_attach, "kill": agents.cmd_kill,
@@ -73,7 +85,7 @@ COMMANDS = {
     "server": admin.cmd_server, "machine": admin.cmd_machine, "worktree": admin.cmd_worktree,
     "rules": admin.cmd_rules, **agent_input.COMMANDS, **layout_cmds.COMMANDS,
     "completion": lambda args: completion.cmd_completion(args, build_parser()),
-    "hook": hook_claude.cmd_hook,
+    "hook": hook_claude.cmd_hook, "tui": _cmd_tui,
 }
 
 

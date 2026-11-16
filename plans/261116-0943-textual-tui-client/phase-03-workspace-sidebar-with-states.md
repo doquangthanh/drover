@@ -7,7 +7,7 @@
 - Web reference: `frontend/src/core/store-derive.ts`
 
 ## Overview
-Priority P1. Status pending. Read-only tree + selection that drives the body.
+Priority P1. Status done (automated checks; manual checks not run). Read-only tree + selection that drives the body.
 
 ## Key insights
 - Pane dict has `space_id`, `tab_id`, `state`, `unread`, `name`, `title`, `parent` (verified `PaneSession.to_dict`).

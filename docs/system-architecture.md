@@ -13,6 +13,27 @@ drover-server (aiohttp daemon, src/drover/daemon)
   503 "UI not built" when web_dist is missing (daemon, CLI and tests still work)
 ```
 
+## TUI client (`src/drover/tui/`, Textual, optional extra `tui`)
+
+`dr tui` is one more websocket client of the daemon (same `/ws` protocol as the web UI and `dr attach`). No daemon change.
+
+```
+TuiApp
+ +- DaemonConnection (aiohttp ws, rpc futures, reconnect + re-attach)      daemon_ws_connection.py
+ +- WorkspaceSidebar (Tree: space > tab > pane + state glyph)              workspace_sidebar.py
+ +- SplitLayoutView (tab.layout -> nested Horizontal/Vertical)             split_layout_view.py
+ |    +- TerminalPaneView xN (pyte screen + Line API, keys -> {"t":"in"})   terminal_pane_view.py, terminal_emulator_screen.py
+ +- PrefixKeyRouter (Ctrl+A + key -> action)                               prefix_key_router.py, tui_app_actions.py
+ +- RestoreStoppedDialog (session.resume / session.discard)                restore_stopped_dialog.py
+```
+
+- Terminal bytes (`out`/`replay`) go straight from the connection to the pane view; structure events (`state`,
+  `status`, `pane`) become Textual messages and are coalesced into one refresh per 100 ms.
+- Visible live panes are attached, hidden ones (zoom, narrow terminal, other tab) are detached.
+- Layout modes by terminal size (`responsive_mode.py`): wide >= 100 columns (docked sidebar), medium 60-99
+  (sidebar overlay on prefix `b`), narrow (< 60 columns or < 15 rows: one pane at a time).
+- Ctrl+Q is delivered to the pane (Textual would quit); quit is prefix `d`.
+
 ## Frontend (`frontend/`, Vite + React 19 + TypeScript + Zustand)
 
 - `src/core/`: imperative, React-free modules: `connection` (ws + rpc), `store` (Zustand, structural sharing so unchanged

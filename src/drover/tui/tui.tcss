@@ -1,0 +1,8 @@
+#root { layers: base overlay; }
+#body { layer: base; width: 1fr; height: 1fr; }
+#root.-wide #body { margin-left: 30; }
+#sidebar { layer: overlay; dock: left; width: 30; height: 1fr; display: none; border-right: tall $primary-darken-2; }
+#root.-wide #sidebar, #root.-overlay #sidebar { display: block; }
+#status { height: 1; dock: bottom; padding: 0 1; background: $primary-background; }
+TerminalPaneView, StoppedPaneView { border: round $primary-darken-2; }
+TerminalPaneView:focus, StoppedPaneView:focus { border: round $accent; }

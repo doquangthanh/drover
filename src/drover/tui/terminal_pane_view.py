@@ -50,7 +50,10 @@ class TerminalPaneView(Widget, can_focus=True):
     def on_mount(self) -> None:
         self.set_interval(FRAME_SECONDS, self._tick)
 
-    def feed(self, data: str) -> None:
+    def feed(self, data: str, replay: bool = False) -> None:
+        if replay:  # the daemon sends a full replay on every (re)attach: start from a clean screen
+            self.emulator = TerminalEmulatorScreen(self.emulator.cols, self.emulator.rows)
+            self._drawn = -1
         self.emulator.feed(data)
 
     def _tick(self) -> None:
@@ -82,7 +85,7 @@ class TerminalPaneView(Widget, can_focus=True):
         return Strip(segments).adjust_cell_length(self.size.width)
 
     def on_resize(self, event: events.Resize) -> None:
-        cols, rows = event.size.width, event.size.height
+        cols, rows = self.size.width, self.size.height  # content box: the event size includes the border
         if cols < 2 or rows < 1:
             return
         self.emulator.resize(cols, rows)

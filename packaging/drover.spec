@@ -9,8 +9,14 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 if not os.path.isfile(os.path.join(SPECPATH, "..", "src", "drover", "web_dist", "index.html")):
     raise SystemExit("web_dist missing: run `npm --prefix frontend ci && npm --prefix frontend run build` first")
 
-datas = collect_data_files("drover", includes=["web/**/*", "web_dist/**/*", "status/rules/*.toml"])
+datas = collect_data_files("drover", includes=["web/**/*", "web_dist/**/*", "status/rules/*.toml", "tui/*.tcss"])
 hidden = collect_submodules("drover") + collect_submodules("desktop_notifier") + collect_submodules("claude_agent_sdk")
+try:  # `dr tui` needs Textual (optional extra): bundle it only when the build environment has it
+    import textual  # noqa: F401
+    datas += collect_data_files("textual")
+    hidden += collect_submodules("textual")
+except ImportError:
+    pass
 if sys.platform == "win32":
     datas += collect_data_files("winpty", includes=["*.exe"])  # ConPTY helpers (OpenConsole.exe, winpty-agent.exe)
     hidden += ["winpty", "win32timezone"]  # win32timezone: imported lazily (pywin32), PyInstaller can't see it

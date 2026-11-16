@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.24
+### Added
+- `dr tui`: terminal UI in your own terminal (Textual). Sidebar with spaces, tabs and agent states, split panes with
+  live terminals, tmux-style prefix keys (`Ctrl+A`, same as the web UI), a restore dialog for panes from the previous
+  session and a layout that adapts to narrow terminals. Needs the optional extra: `pip install 'drover[tui]'`.
+  The daemon and web UI are unchanged; `dr` without arguments still opens the desktop window.
+
 ## 0.1.23
 ### Added
 - In-app update shows a full-screen "Updating Drover..." cover until the server is back and the page reloads.

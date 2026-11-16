@@ -5,7 +5,7 @@
 - Phase 04 `split_layout_view.py`
 
 ## Overview
-Priority P2. Status pending. Textual already handles SIGWINCH and posts `Resize` events (Textual docs; guessed detail: event fires on app/screen) — we only decide the layout per size.
+Priority P2. Status done (automated checks; manual checks not run). Textual already handles SIGWINCH and posts `Resize` events (Textual docs; guessed detail: event fires on app/screen) — we only decide the layout per size.
 
 ## Key insights
 - Each pane PTY has one size; shrinking the TUI resizes agents (affects web viewers too). Debounce resize RPCs (150 ms, phase 01).

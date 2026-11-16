@@ -5,7 +5,7 @@
 - `docs/system-architecture.md`, `docs/project-changelog.md`, `docs/development-roadmap.md`, `docs/code-standards.md`, `README.md`
 
 ## Overview
-Priority P2. Status pending. Make `dr tui` work in the frozen build, document it, run the full suite once.
+Priority P2. Status done (automated checks; manual checks not run). Make `dr tui` work in the frozen build, document it, run the full suite once.
 
 ## Key insights
 - PyInstaller spec collects only `drover` data (`web/**`, `status/rules/*.toml`) — the `.tcss` file must be added, and Textual's own

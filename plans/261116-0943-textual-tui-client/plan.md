@@ -1,7 +1,7 @@
 ---
 title: "Textual TUI client for Drover"
 description: "Add `dr tui`: a Textual client in the user's own terminal (sidebar, split panes, live terminals, restore dialog); daemon and web UI unchanged."
-status: pending
+status: implemented (manual + frozen-build checks not run)
 priority: P2
 effort: 14h
 branch: main
@@ -34,13 +34,13 @@ dr tui ──> TuiApp (Textual)
 ## Phases
 | # | Phase | Effort | Status |
 |---|-------|--------|--------|
-| 01 | [Spike: terminal emulation in Textual (gate)](phase-01-spike-terminal-emulation-gate.md) | 3h | pending |
-| 02 | [Daemon connection + app shell + `dr tui`](phase-02-daemon-connection-and-app-shell.md) | 2h | pending |
-| 03 | [Sidebar with agent states](phase-03-workspace-sidebar-with-states.md) | 2h | pending |
-| 04 | [Split layout, focus, input, prefix keys](phase-04-split-layout-focus-and-prefix-keys.md) | 3h | pending |
-| 05 | [Responsive layout (narrow terminals)](phase-05-responsive-narrow-layout.md) | 1.5h | pending |
-| 06 | [Restore dialog for stopped panes](phase-06-restore-stopped-panes-dialog.md) | 1h | pending |
-| 07 | [Packaging, docs, final test pass](phase-07-packaging-docs-final-tests.md) | 1.5h | pending |
+| 01 | [Spike: terminal emulation in Textual (gate)](phase-01-spike-terminal-emulation-gate.md) | 3h | done |
+| 02 | [Daemon connection + app shell + `dr tui`](phase-02-daemon-connection-and-app-shell.md) | 2h | done |
+| 03 | [Sidebar with agent states](phase-03-workspace-sidebar-with-states.md) | 2h | done |
+| 04 | [Split layout, focus, input, prefix keys](phase-04-split-layout-focus-and-prefix-keys.md) | 3h | done |
+| 05 | [Responsive layout (narrow terminals)](phase-05-responsive-narrow-layout.md) | 1.5h | done |
+| 06 | [Restore dialog for stopped panes](phase-06-restore-stopped-panes-dialog.md) | 1h | done |
+| 07 | [Packaging, docs, final test pass](phase-07-packaging-docs-final-tests.md) | 1.5h | done |
 
 Order is strict (each phase builds on the previous). No parallel work.
 

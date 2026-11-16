@@ -6,7 +6,7 @@
 - `frontend/src/overlays/restore-logic.ts` (`unaskedStopped`: ask once per pane per session), `frontend/src/actions/pane-actions.ts` (resume/discard calls)
 
 ## Overview
-Priority P1 (in the minimum slice). Status pending. Modal listing stopped panes on first state that contains any; resume or discard.
+Priority P1 (in the minimum slice). Status done (automated checks; manual checks not run). Modal listing stopped panes on first state that contains any; resume or discard.
 
 ## Key insights (verified from code)
 - Stopped entry: `{id, name, kind, command, cwd, space_id, tab_id, parent, resume}`.

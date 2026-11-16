@@ -164,6 +164,15 @@ flowchart LR
 The server owns every terminal, reads each screen to work out its state and serves the UI. The window, your phone
 and the `dr` command are all clients of it, which is why agents survive closing the window.
 
+## Terminal UI
+
+`dr tui` opens Drover inside your terminal (SSH friendly): sidebar with agent states, split panes, same prefix keys.
+Needs the optional extra: `pip install 'drover[tui]'`. Prefix `d` quits the TUI, the agents keep running.
+Sidebar: **Ctrl+A b**. Panes: **o** next, arrows move, **z** zoom, **%** / **"** split, **x** close, **r** restore,
+**n** next blocked agent, **Tab** / **p** / **1-9** tabs, **?** help.
+Known limits: agents share one terminal size with the web UI (the pane follows the last client that resized it);
+no mouse, scrollback or copy mode yet; no chat view, file tree or search.
+
 ## Keyboard
 
 The prefix is **Ctrl+A**, tmux style. Press it twice to send a real Ctrl+A to the agent.

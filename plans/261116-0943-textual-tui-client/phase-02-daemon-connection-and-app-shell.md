@@ -7,7 +7,7 @@
 - `tests/daemon_harness.py` (real daemon in test loop)
 
 ## Overview
-Priority P1. Status pending. One async ws connection object shared by all widgets + an empty App shell started by `dr tui`.
+Priority P1. Status done (automated checks; manual checks not run). One async ws connection object shared by all widgets + an empty App shell started by `dr tui`.
 
 ## Key insights
 - Server pushes `{"t":"ev","name":"state","data":combined_state}` on connect and on every structure change (verified: `run()`, `_on_event`).
