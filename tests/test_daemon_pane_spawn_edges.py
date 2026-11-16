@@ -35,3 +35,22 @@ async def test_quoted_executable_path_with_spaces_spawns(start_daemon, drover_di
     _, body = await daemon.call("pane.create", {"command": f'"{tool}" arg1', "cwd": str(drover_dirs)})
     assert "result" in body, body
     await wait_for_text(daemon, body["result"]["id"], "quoted-path-ok")
+
+
+async def test_space_create_new_always_makes_a_fresh_space(start_daemon, drover_dirs: Path):
+    daemon = await start_daemon()
+    _, first = await daemon.call("space.create", {"cwd": str(drover_dirs), "new": True})
+    _, second = await daemon.call("space.create", {"cwd": str(drover_dirs), "new": True})
+    _, reused = await daemon.call("space.create", {"cwd": str(drover_dirs)})
+    assert first["result"]["space_id"] != second["result"]["space_id"]
+    assert reused["result"]["space_id"] == first["result"]["space_id"]
+    _, state = await daemon.call("state.get")
+    names = sorted(s["name"] for s in state["result"]["spaces"])
+    assert names == sorted([drover_dirs.name, f"{drover_dirs.name}-2"])
+
+
+async def test_space_create_without_cwd_opens_home(start_daemon):
+    daemon = await start_daemon()
+    _, body = await daemon.call("space.create", {"new": True})
+    assert "result" in body, body
+    assert Path(body["result"]["pane"]["cwd"]) == Path.home()

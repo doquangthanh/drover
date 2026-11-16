@@ -43,6 +43,16 @@ class SessionManager:
         self.spaces[space.id] = space
         return space
 
+    def add_space(self, cwd: str) -> Space:
+        """Always a new space, even when another space already has this folder (`space.create` with new)."""
+        space = Space.for_folder(str(Path(cwd).resolve()), color=len(self.spaces) % 8)
+        names = {s.name for s in self.spaces.values()}
+        base, n = space.name, 2
+        while space.name in names:
+            space.name, n = f"{base}-{n}", n + 1
+        self.spaces[space.id] = space
+        return space
+
     def create_tab(self, space_id: str, name: str) -> Tab:
         tab = Tab(id=new_id("t"), space_id=space_id, name=name)
         self.tabs[tab.id] = tab
@@ -70,7 +80,7 @@ class SessionManager:
 
     def create_pane(self, command: str = "", cwd: str = "", name: str = "", *, tab_id: str | None = None,
                     split_from: str | None = None, direction: str = "row", parent: str | None = None,
-                    cols: int = 120, rows: int = 32) -> PaneSession:
+                    cols: int = 120, rows: int = 32, new_space: bool = False) -> PaneSession:
         policy = OrchestrationPolicy.from_settings(self.settings.get("orchestration", {}))
         live = sum(1 for p in self.panes.values() if p.alive)
         policy.check_spawn(live, self.depth_of(parent) if parent else None)
@@ -95,7 +105,8 @@ class SessionManager:
         if tab_id and tab_id in self.tabs:
             tab = self.tabs[tab_id]
         else:
-            tab = self.create_tab(self.ensure_space(cwd).id, name)
+            space = self.add_space(cwd) if new_space else self.ensure_space(cwd)
+            tab = self.create_tab(space.id, name)
         meta.space_id, meta.tab_id = tab.space_id, tab.id
         self.panes[pane_id] = pane
         tab.layout = layout.insert(tab.layout, split_from or tab.focused, pane_id, direction)

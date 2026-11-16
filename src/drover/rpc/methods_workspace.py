@@ -13,9 +13,10 @@ async def state_get(ctx, p: dict) -> dict:
     return ctx.manager.snapshot()
 
 
-@registry.method("space.create", "Open a folder as a space (starts a shell)", "cwd, command?")
+@registry.method("space.create", "Open a folder as a space (starts a shell); new: always a fresh space",
+                 "cwd?, command?, new?")
 async def space_create(ctx, p: dict) -> dict:
-    pane = ctx.manager.create_pane(p.get("command", ""), need(p, "cwd"))
+    pane = ctx.manager.create_pane(p.get("command", ""), p.get("cwd", ""), new_space=bool(p.get("new")))
     return {"space_id": pane.meta.space_id, "pane": pane.to_dict()}
 
 
