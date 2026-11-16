@@ -20,6 +20,7 @@ class PtyBackend(ABC):
         self.on_output = on_output
         self.on_exit = on_exit
         self.pid: int | None = None
+        self.tty_fd: int | None = None  # pty master (POSIX): foreground process group lookups
 
     @abstractmethod
     def spawn(self, argv: list[str], cwd: str, env: dict[str, str], cols: int, rows: int) -> None: ...

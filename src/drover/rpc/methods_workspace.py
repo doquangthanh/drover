@@ -13,16 +13,21 @@ async def state_get(ctx, p: dict) -> dict:
     return ctx.manager.snapshot()
 
 
-@registry.method("space.create", "Open a folder as a space (starts a shell); new: always a fresh space",
-                 "cwd?, command?, new?")
+@registry.method("space.create", "Open a folder as a space (starts a shell); new: always a fresh space; "
+                 "from: start in the folder that pane is in now", "cwd?, command?, new?, from?")
 async def space_create(ctx, p: dict) -> dict:
-    pane = ctx.manager.create_pane(p.get("command", ""), p.get("cwd", ""), new_space=bool(p.get("new")))
+    cwd = p.get("cwd", "")
+    src = ctx.manager.panes.get(p.get("from") or "")
+    if not cwd and src:
+        cwd = ctx.manager.pane_follow_cwd(src) or src.meta.cwd
+    pane = ctx.manager.create_pane(p.get("command", ""), cwd, new_space=bool(p.get("new")))
     return {"space_id": pane.meta.space_id, "pane": pane.to_dict()}
 
 
 @registry.method("space.rename", "Rename a space", "space, name")
 async def space_rename(ctx, p: dict) -> None:
-    ctx.manager.spaces[need(p, "space")].name = need(p, "name")[:60]
+    space = ctx.manager.spaces[need(p, "space")]
+    space.name, space.custom_name = need(p, "name")[:60], True
     ctx.manager._changed()
 
 

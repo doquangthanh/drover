@@ -25,6 +25,7 @@ class PosixPtyBackend(PtyBackend):
 
         self._proc = PtyProcess.spawn(argv, cwd=cwd, env=env, dimensions=(rows, cols))
         self.pid = self._proc.pid
+        self.tty_fd = self._proc.fd
         os.set_blocking(self._proc.fd, False)
         self._loop.add_reader(self._proc.fd, self._on_readable)
 

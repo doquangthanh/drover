@@ -58,6 +58,9 @@ class PaneSession:
         self._pending_screen: list[str] = []
         self._screen_flush_scheduled = False
         self.on_exit_hook: Callable[[PaneSession], None] | None = None
+        self.shell_launched = False  # started as a shell: its kind follows the foreground program
+        self.fg_pgid: int | None = None
+        self.fg_checked_at = 0.0
 
     # -- lifecycle -----------------------------------------------------------------
     def start(self, argv: list[str], env: dict[str, str]) -> None:

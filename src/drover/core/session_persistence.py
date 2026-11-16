@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from pathlib import Path
 
 from drover.core import split_layout_tree as layout
 from drover.core.session_manager import SessionManager
@@ -47,6 +48,8 @@ class SessionPersistence:
             return
         m = self.manager
         for raw in data.get("spaces", []):
+            # Older files: a name that is not the folder's own name was set by hand.
+            raw.setdefault("custom_name", raw.get("name") != (Path(raw.get("cwd", "")).name or raw.get("cwd")))
             m.spaces[raw["id"]] = Space(**raw)
         for raw in data.get("tabs", []):
             tab = Tab(**{k: raw.get(k) for k in ("id", "space_id", "name", "layout", "focused")})

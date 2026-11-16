@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,7 @@ from drover.core import split_layout_tree as layout
 from drover.core.agent_messages_log import AgentMessagesLog
 from drover.core.claude_subagent_hooks import with_subagent_hooks
 from drover.core.event_hub import EventHub
+from drover.core.foreground_process_probe import follow_cwd
 from drover.core.orchestration_policy import OrchestrationPolicy, PolicyError
 from drover.core.pane_session import PaneMeta, PaneSession
 from drover.core.workspace_models import Space, Tab, new_id
@@ -97,6 +99,7 @@ class SessionManager:
                         resume=rule_set.resume if rule_set else "")
         pane = PaneSession(meta, cols, rows, int(self.settings.get("scrollback", 5000)))
         pane.on_exit_hook = self._on_pane_exit
+        pane.shell_launched = kind == "shell"
         env = {**os.environ, "TERM": "xterm-256color", "COLORTERM": "truecolor",
                "DR_PANE_ID": pane_id, "DROVER": "1", "PATH": pane_path(os.environ.get("PATH", ""))}
         # claude panes report their sub-agents (Task/Agent tool) to the Flow board through per-pane hooks.
@@ -115,6 +118,43 @@ class SessionManager:
         self.messages.add("spawn", parent or None, pane_id, meta.command)
         self._changed()
         return pane
+
+    def set_pane_kind(self, pane: PaneSession, kind: str) -> None:
+        """A shell pane started or left an agent: switch kind, resume command and an auto-given name."""
+        old = pane.meta.kind
+        if kind == old:
+            return
+        pane.meta.kind = kind
+        rule_set = self.rule_sets.get(kind)
+        pane.meta.resume = rule_set.resume if rule_set else ""
+        if re.fullmatch(rf"{re.escape(old)}(-\d+)?", pane.meta.name):
+            pane.meta.name = self._default_name(kind)
+        self.hub.emit("pane", pane.to_dict())
+        self.on_structure_change()
+
+    def pane_follow_cwd(self, pane: PaneSession) -> str | None:
+        """Folder the pane is in now (foreground program, else shell); None when unknown (Windows)."""
+        b = pane.backend
+        if not b or b.tty_fd is None or not pane.alive:
+            return None
+        return follow_cwd(b.pid, b.tty_fd)
+
+    def follow_space_folders(self) -> None:
+        """Herdr-style: a space is named after the folder its first pane is in, unless renamed by hand."""
+        changed = False
+        for space in self.spaces.values():
+            if space.custom_name:
+                continue
+            tab = next((t for t in self.tabs.values() if t.space_id == space.id and t.layout), None)
+            ids = layout.pane_ids(tab.layout) if tab else []
+            root = self.panes.get(ids[0]) if ids else None
+            cwd = self.pane_follow_cwd(root) if root else None
+            if not cwd or cwd == space.cwd:
+                continue
+            space.cwd, space.name = cwd, Path(cwd).name or cwd
+            changed = True
+        if changed:
+            self._changed()
 
     def _default_name(self, kind: str) -> str:
         taken = {p.meta.name for p in self.panes.values()}

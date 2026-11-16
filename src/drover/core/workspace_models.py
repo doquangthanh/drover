@@ -27,6 +27,7 @@ class Space:
     name: str
     cwd: str
     color: int = 0
+    custom_name: bool = False  # renamed by hand: stop naming it after the folder its first pane is in
 
     @staticmethod
     def for_folder(cwd: str, color: int) -> Space:

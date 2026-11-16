@@ -7,6 +7,7 @@ import logging
 import time
 
 from drover.app_paths import bundled_rules_dir, user_rules_dir
+from drover.core.foreground_process_probe import foreground_agent_kind, foreground_pgid
 from drover.core.session_manager import SessionManager
 from drover.notify.desktop_notifier_service import DesktopNotifierService
 from drover.status.detection_rule_loader import load_rule_sets
@@ -31,7 +32,9 @@ class StatusMonitor:
                 if now - last_config_check > 2:
                     last_config_check = now
                     self.reload_config()
+                    self.manager.follow_space_folders()
                 for pane in list(self.manager.panes.values()):
+                    self.probe_foreground(pane, now)
                     self.check_pane(pane, now)
             except Exception:
                 log.exception("status monitor tick failed")
@@ -48,6 +51,19 @@ class StatusMonitor:
             self.manager.rule_sets.update(sets)
             self.rule_errors = errors
 
+    def probe_foreground(self, pane, now: float) -> None:
+        """Herdr-style: a shell pane is an agent while that agent holds its terminal (Linux/macOS)."""
+        b = pane.backend
+        if not pane.shell_launched or not b or b.tty_fd is None or not pane.alive:
+            return
+        pgid = foreground_pgid(b.pid, b.tty_fd)
+        if pgid is None or (pgid == pane.fg_pgid and now - pane.fg_checked_at < 5):
+            return
+        pane.fg_pgid, pane.fg_checked_at = pgid, now
+        kinds = set(self.manager.rule_sets)
+        kind = "shell" if pgid == b.pid else (foreground_agent_kind(pgid, kinds) or "shell")
+        self.manager.set_pane_kind(pane, kind)
+
     def check_pane(self, pane, now: float) -> None:
         recent = now - pane.last_output_at < 3
         # New input holds "working" for a few seconds; a quick command can go quiet before the hold ends, so keep
@@ -59,7 +75,8 @@ class StatusMonitor:
         if not (pane.dirty or recent or settling or pane.tracker._candidate != pane.tracker.state):
             return
         pane.dirty = False
-        if pane.meta.kind == "shell" and pane.screen.title:
+        title_fallback = pane.backend is None or pane.backend.tty_fd is None  # Windows: no process groups
+        if title_fallback and pane.meta.kind == "shell" and pane.screen.title:
             guessed = detect_kind_from_title(pane.screen.title, self.manager.rule_sets)
             if guessed and guessed != "shell":
                 pane.meta.kind = guessed
