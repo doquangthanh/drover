@@ -63,6 +63,7 @@ class StatusMonitor:
             guessed = detect_kind_from_title(pane.screen.title, self.manager.rule_sets)
             if guessed and guessed != "shell":
                 pane.meta.kind = guessed
+                pane.meta.resume = self.manager.rule_sets[guessed].resume  # so a restart can resume it
         rule_set = self.manager.rule_sets.get(pane.meta.kind)
         detected, _ = evaluate(rule_set, pane.screen.title, pane.screen.visible_lines())
         old = pane.state
