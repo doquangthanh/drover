@@ -32,7 +32,7 @@ jobs:
           npm --prefix frontend run build
       - name: Build binaries
         run: |
-          uv sync
+          uv sync --extra tui  # bundle Textual so plain `dr` opens the terminal UI
           uv run pyinstaller packaging/drover.spec --noconfirm
       - name: Smoke test
         run: dist/drover/dr --help

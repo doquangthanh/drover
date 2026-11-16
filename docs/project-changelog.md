@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.26
+### Fixed
+- Release builds now bundle Textual (`uv sync --extra tui` in CI), so plain `dr` from `install.sh` opens the terminal
+  UI instead of the desktop window.
+
 ## 0.1.25
 ### Changed
 - Plain `dr` now opens the terminal UI when Textual is installed (`pip install 'drover[tui]'`). `dr app` still opens
