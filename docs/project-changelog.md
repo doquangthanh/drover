@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.32
+### Changed
+- No limit on how many panes and agents run at once, like Herdr: `max_panes` now defaults to `0` (no limit). Set a
+  number under `[orchestration]` in `settings.toml` to cap them again. `max_depth` (agents starting agents, 3 levels)
+  stays. Existing `settings.toml` files keep their own `max_panes`; change it to `0` to lift the old default of 12.
+
 ## 0.1.31
 ### Changed
 - The terminal UI (`dr`) looks like Herdr's: sidebar entries are two lines (state and name; branch, `↑` commits
