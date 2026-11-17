@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 
+from textual.widgets import OptionList
+
 from drover.tui.daemon_ws_connection import DaemonConnection
 from drover.tui.restore_stopped_dialog import RestoreStoppedDialog
 from drover.tui.split_layout_view import SplitLayoutView
@@ -36,7 +38,11 @@ async def test_sidebar_lists_spaces_and_new_panes(start_daemon, tmp_path):
     await daemon.call("space.create", {"cwd": str(tmp_path)})
     app = make_app(daemon)
     async with app.run_test(size=(120, 40)) as pilot:
-        await until(lambda: tmp_path.name in sidebar_labels(app))
+        # pytest's folder name is longer than the sidebar: the row ends in '…' on one line.
+        await until(lambda: tmp_path.name[:12] in sidebar_labels(app) and "…" in sidebar_labels(app))
+        spaces = app.query_one("#spaces", OptionList)  # out of focus, the highlight marks the open space
+        await until(lambda: spaces.highlighted is not None
+                    and spaces.get_option_at_index(spaces.highlighted).id == app.current_space_id())
         await daemon.call("pane.create", {"command": "", "cwd": str(tmp_path), "name": "second-shell"})
         await until(lambda: "second-shell" in tabbar_text(app))  # a new tab of the same space
         assert app.query_one("#root").has_class("-wide")

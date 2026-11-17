@@ -18,7 +18,7 @@ from drover.tui.daemon_ws_connection import DaemonConnection, RpcError
 from drover.tui.prefix_key_router import PrefixKeyRouter
 from drover.tui.responsive_mode import mode_for
 from drover.tui.split_layout_view import MIN_COLS, MIN_ROWS, SplitLayoutView
-from drover.tui.tab_bar import TabBar, TabClicked
+from drover.tui.tab_bar import NewTabClicked, TabBar, TabClicked
 from drover.tui.tui_app_actions import PrefixActions
 from drover.tui.tui_app_status_and_restore import StatusAndRestore
 from drover.tui.tui_app_workspace_actions import WorkspaceActions
@@ -135,7 +135,7 @@ class TuiApp(PrefixActions, WorkspaceActions, StatusAndRestore, App):
                 tab["focused"] = self.focused_pane
             rebuilt = await self.layout_view.show_tab(tab, state, single=self.mode == "narrow")
             space_id = tab["space_id"] if tab else None
-            self.query_one(WorkspaceSidebar).rebuild(state, space_id)
+            self.query_one(WorkspaceSidebar).rebuild(state, space_id, self.focused_pane, self.sidebar_active)
             prefix = state.get("tui_prefix", "C-b").replace("C-", "Ctrl+").title()
             self.query_one(TabBar).show(state, space_id, tab["id"] if tab else None, prefix)
             self.update_status()
@@ -176,6 +176,9 @@ class TuiApp(PrefixActions, WorkspaceActions, StatusAndRestore, App):
     def on_tab_clicked(self, msg: TabClicked) -> None:
         self.show_tab(msg.tab_id)
 
+    def on_new_tab_clicked(self, _msg: NewTabClicked) -> None:
+        self._act_new_tab()
+
     def on_pane_selected(self, msg: PaneSelected) -> None:
         self.sidebar_open = self.sidebar_active = False
         self.show_tab(msg.tab_id, pane=msg.pane_id)
@@ -202,6 +205,7 @@ class TuiApp(PrefixActions, WorkspaceActions, StatusAndRestore, App):
             self.sidebar_hidden = self.mode == "wide"
             if self.focused_pane:
                 self.layout_view.focus_pane(self.focused_pane)
+            self.schedule_refresh()  # the sidebar highlight goes back from your cursor to the open rows
         else:
             self.sidebar_hidden = False
             self.sidebar_open = self.mode != "wide"

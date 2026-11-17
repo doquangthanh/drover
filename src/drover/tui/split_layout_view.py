@@ -6,6 +6,7 @@ import json
 from collections.abc import Callable
 
 from textual.containers import Container, Horizontal, Vertical
+from textual.markup import escape
 from textual.widget import Widget
 from textual.widgets import Static
 
@@ -14,6 +15,12 @@ from drover.tui.terminal_pane_view import TerminalPaneView
 from drover.tui.tui_state_helpers import focused_pane_id, panes_by_id, state_glyph, stopped_by_id
 
 MIN_COLS, MIN_ROWS = 10, 3  # the daemon clamps below this; never ask for less
+
+
+def pane_title(state: str, name: str) -> str:
+    """Border title markup: the state glyph in its app colour, then the (escaped) pane name."""
+    glyph, style = state_glyph(state)
+    return f"[{style}]{glyph}[/] {escape(name)}"
 
 
 class StoppedPaneView(Static, can_focus=True):
@@ -76,6 +83,8 @@ class SplitLayoutView(Container):
             self._signature = signature
             await self._rebuild(tab, state, only)
         self.tab_id = tab["id"]
+        # Herdr's "auto" borders: a lone pane fills the area; a frame (with its title) only tells split panes apart.
+        self.set_class(len(self.visible_ids) == 1, "-single")
         self.refresh_titles(state)
         return rebuilt
 
@@ -117,14 +126,13 @@ class SplitLayoutView(Container):
             self._on_attach(pid)
 
     def refresh_titles(self, state: dict) -> None:
-        live = panes_by_id(state)
+        live, stopped = panes_by_id(state), stopped_by_id(state)
         for pid, view in self.views.items():
             pane = live.get(pid)
             if pane:
-                glyph, _ = state_glyph(pane["state"])
-                view.border_title = f"{glyph} {pane['name'] or pid}"
+                view.border_title = pane_title(pane["state"], pane["name"] or pid)
         for pid, view in self.stopped_views.items():
-            view.border_title = f"× {pid}"
+            view.border_title = pane_title("stopped", stopped.get(pid, {}).get("name") or pid)
 
     def route_output(self, pane_id: str, data: str, replay: bool) -> None:
         view = self.views.get(pane_id)

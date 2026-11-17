@@ -8,8 +8,12 @@ from drover.core.split_layout_tree import pane_ids
 
 # worst first: what the user must look at beats what is merely running
 STATE_PRIORITY = ["blocked", "done", "working", "idle", "exited", "stopped"]
-GLYPHS = {"working": ("●", "yellow"), "blocked": ("!", "bold red"), "done": ("✓", "green"),
+# Same colours as the app's state dots (web UI dark theme: --working, --blocked, --done).
+GLYPHS = {"working": ("●", "#76a8ff"), "blocked": ("!", "bold #f2a33c"), "done": ("✓", "bold #4cc48c"),
           "idle": ("○", "dim"), "exited": ("×", "dim"), "stopped": ("×", "dim")}
+# The app's accent (--accent / --on-accent, dark theme): open tab, open space, mode markers (PREFIX, SCROLL).
+ACCENT = "#96b2d7"
+ACCENT_CHIP = f"bold #101114 on {ACCENT}"
 
 
 def worst_state(states: list[str]) -> str:
@@ -18,7 +22,7 @@ def worst_state(states: list[str]) -> str:
 
 
 def state_glyph(state: str) -> tuple[str, str]:
-    """(character, Rich style). Named ANSI colours, so the user's terminal palette is used."""
+    """(character, Rich style)."""
     return GLYPHS.get(state, GLYPHS["idle"])
 
 
