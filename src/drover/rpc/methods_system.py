@@ -9,6 +9,7 @@ import time
 
 from drover import __version__
 from drover.app_paths import config_dir
+from drover.config.system_terminal_font import installed_monospace_fonts
 from drover.core import self_update
 from drover.rpc.rpc_registry import E_BAD_PARAMS, RpcError, need, registry
 from drover.rpc.target_resolver import resolve_pane
@@ -30,6 +31,11 @@ async def server_info(ctx, p: dict) -> dict:
         "config_dir": str(config_dir()), "session_saved": ctx.persistence.store.path.exists(),
         "rule_errors": ctx.monitor.rule_errors, "settings_errors": ctx.settings.errors,
     }
+
+
+@registry.method("fonts.list", "Installed monospace font families (for the terminal font picker)", "")
+async def fonts_list(ctx, p: dict) -> list[str]:
+    return list(await asyncio.to_thread(installed_monospace_fonts))
 
 
 @registry.method("server.stop", "Save state and stop the daemon", "")

@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from drover.config.settings_loader import SettingsStore
+from drover.config.system_terminal_font import default_terminal_font
 from drover.core.event_hub import EventHub
 from drover.core.session_manager import SessionManager
 from drover.core.session_persistence import SessionPersistence
@@ -45,6 +46,7 @@ class DaemonContext:
         state["tui_prefix"] = self.settings.get("tui_prefix", "C-b")
         state["theme"] = self.settings.get("theme", "dark")
         state["file_icons"] = self.settings.get("file_icons", "material")
+        state["terminal_font"] = default_terminal_font()
         state["notify"] = self.settings.get("notify", {})
         state["orchestration"] = self.settings.get("orchestration", {})
         state["policy_pending"] = [
