@@ -15,6 +15,13 @@ if sys.platform == "win32" and len(sys.argv) > 1:
                 stream = open(name, mode, encoding="utf-8", buffering=1)  # noqa: SIM115
                 setattr(sys, "stdout" if fd == 1 else "stderr", stream)
 
-from drover.cli.cli_main import main
+if len(sys.argv) > 1:
+    from drover.cli.cli_main import main
 
-main()
+    main()
+else:
+    # Not cli_main: with Textual bundled, a bare `dr` opens the terminal UI, which has no terminal to draw in
+    # when the menu or desktop icon starts drover, so the app seemed not to open at all.
+    from drover.desktop.desktop_window_launcher import main as open_app
+
+    open_app()

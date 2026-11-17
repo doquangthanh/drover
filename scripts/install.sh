@@ -59,7 +59,7 @@ cat > "$apps/drover.desktop" <<EOF
 Type=Application
 Name=Drover
 Comment=Workspace for running coding agents
-Exec=$DROVER_HOME/drover
+Exec=$DROVER_HOME/drover app
 Icon=$icon
 Terminal=false
 Categories=Development;
