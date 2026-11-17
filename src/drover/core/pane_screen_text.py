@@ -24,14 +24,14 @@ class PaneScreen:
         self.screen.dirty.clear()
         try:
             self.stream.feed(data)
-        except Exception as exc:  # pyte can trip over unusual sequences; never kill the pane
+        except Exception as exc:  # noqa: BLE001 - pyte can trip over unusual sequences; never kill the pane
             log.debug("pyte feed error: %s", exc)
         return bool(self.screen.dirty)
 
     def resize(self, cols: int, rows: int) -> None:
         try:
             self.screen.resize(rows, cols)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - pyte can raise anything
             log.debug("pyte resize error: %s", exc)
 
     @property

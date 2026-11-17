@@ -1,6 +1,7 @@
 """Claude Code sub-agents on the Flow board: hook payload mapping, agent.subagent RPC, tree filter, claude argv."""
 
 import asyncio
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -82,4 +83,5 @@ def test_claude_argv_gets_settings_file(tmp_path, monkeypatch):
     assert "SubagentStart" in body and "SubagentStop" in body and "hook claude" in body
     assert hooks.with_subagent_hooks(["codex"]) == ["codex"]
     assert hooks.with_subagent_hooks(["claude", "--settings", "mine.json"]) == ["claude", "--settings", "mine.json"]
-    assert hooks.with_subagent_hooks([r"C:\npm\claude.cmd"])[1] == "--settings"
+    installed = r"C:\npm\claude.cmd" if sys.platform == "win32" else "/usr/local/lib/npm/bin/claude"
+    assert hooks.with_subagent_hooks([installed])[1] == "--settings"

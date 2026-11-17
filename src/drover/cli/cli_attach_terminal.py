@@ -107,6 +107,6 @@ async def _pump_output(ws, pane_id: str) -> None:
         if data.get("t") in ("out", "replay") and data.get("pane") == pane_id:
             out.write(data["data"])
             out.flush()
-        elif data.get("t") == "ev" and data.get("name") == "status" and data["data"]["pane"]["id"] == pane_id:
-            if data["data"]["new"] == "exited":
-                return
+        elif (data.get("t") == "ev" and data.get("name") == "status" and data["data"]["pane"]["id"] == pane_id
+              and data["data"]["new"] == "exited"):
+            return

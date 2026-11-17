@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import secrets
+import sys
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -16,6 +17,28 @@ from aiohttp.test_utils import TestClient, TestServer
 
 from drover.daemon.daemon_main import build_context
 from drover.daemon.web_server import build_app
+
+# Shell commands for real panes: cmd.exe on Windows, sh elsewhere.
+WINDOWS = sys.platform == "win32"
+SHELL = "cmd /k" if WINDOWS else "sh"
+PROMPT_MARK = ">" if WINDOWS else "$"
+# A program that holds the terminal and never reads (or echoes) what is typed.
+DEAF = "cmd /c ping -n 40 127.0.0.1 >nul" if WINDOWS else "sh -c 'stty -echo; sleep 40'"
+
+
+def shell_line(text: str) -> str:
+    """Make 'echo ty^ped' print 'typed' only when the shell runs it, not while it echoes the typing.
+
+    cmd takes ^ as is; for sh the ^ becomes ''.
+    """
+    return text if WINDOWS else text.replace("^", "''")
+
+
+def echo_and_exit(text: str, linger: int = 0) -> str:
+    """A command that prints `text`, optionally waits `linger` seconds, then exits."""
+    if WINDOWS:
+        return f"cmd /c echo {text}" + (f" & ping -n {linger + 1} 127.0.0.1 >nul" if linger else "")
+    return f"sh -c 'echo {text}" + (f"; sleep {linger}" if linger else "") + "'"
 
 
 @dataclass

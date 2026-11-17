@@ -48,7 +48,7 @@ class RemoteLink:
                 await self._connect_once()
             except asyncio.CancelledError:
                 raise
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - any network/SSH failure: retry later
                 self.status, self.error = "error", str(exc) or exc.__class__.__name__
                 log.info("remote %s: %s", self.alias, self.error)
             self.attempt += 1
@@ -107,7 +107,7 @@ class RemoteLink:
                 self.info.update(await self.call("server.info", {}))
                 self.latency_ms = int((time.time() - started) * 1000)
                 self.emit("machines", None)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - any network/SSH failure: retry later
                 log.debug("ping %s failed: %s", self.alias, exc)
             await asyncio.sleep(15)
 

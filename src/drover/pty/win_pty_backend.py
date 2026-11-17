@@ -32,7 +32,7 @@ class WinPtyBackend(PtyBackend):
                 data = proc.read(65536)
             except EOFError:
                 break
-            except Exception as exc:  # pywinpty raises various errors on close
+            except Exception as exc:  # noqa: BLE001 - pywinpty raises various errors on close
                 log.debug("pty read ended: %s", exc)
                 break
             if data:
@@ -41,8 +41,8 @@ class WinPtyBackend(PtyBackend):
         try:
             proc.wait()
             code = proc.exitstatus
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001 - pywinpty errors on a closed pty
+            log.debug("pty exit status unavailable: %s", exc)
         self._loop.call_soon_threadsafe(self.on_exit, code)
 
     def write(self, data: str) -> None:
@@ -51,22 +51,22 @@ class WinPtyBackend(PtyBackend):
         with self._lock:
             try:
                 self._proc.write(data)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - pywinpty errors on a closed pty
                 log.debug("pty write failed: %s", exc)
 
     def resize(self, cols: int, rows: int) -> None:
         if self._proc is not None and self._proc.isalive():
             try:
                 self._proc.setwinsize(rows, cols)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - pywinpty errors on a closed pty
                 log.debug("resize failed: %s", exc)
 
     def kill(self) -> None:
         if self._proc is not None:
             try:
                 self._proc.terminate(force=True)
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001 - pywinpty errors on a closed pty
+                log.debug("pty kill failed: %s", exc)
 
     def is_alive(self) -> bool:
         return bool(self._proc and self._proc.isalive())

@@ -60,7 +60,7 @@ class DesktopNotifierService:
             from desktop_notifier import DesktopNotifier
 
             self._notifier = DesktopNotifier(app_name="drover")
-        except Exception as exc:  # missing platform support must never break the daemon
+        except Exception as exc:  # noqa: BLE001 - missing platform support must never break the daemon
             log.info("desktop notifications unavailable: %s", exc)
 
     def notify_state(self, name: str, kind: str, state: str, settings, detail: str = "") -> None:
@@ -85,12 +85,12 @@ class DesktopNotifierService:
             task = asyncio.get_running_loop().create_task(self._safe(coro))
             self._tasks.add(task)
             task.add_done_callback(self._tasks.discard)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - notifier backend errors vary by OS
             log.debug("notification failed: %s", exc)
 
     @staticmethod
     async def _safe(coro) -> None:
         try:
             await coro
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - notifier backend errors vary by OS
             log.debug("notification failed: %s", exc)

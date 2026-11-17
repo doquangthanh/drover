@@ -130,6 +130,6 @@ async def machine_test(ctx, p: dict) -> dict:
             steps.append("ssh ok")
             info = await ensure_remote_daemon(conn)
             steps.append(f"dr {info.get('version') or ''} running")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - report any SSH failure to the user
         return {"ok": False, "steps": steps, "error": str(exc)}
     return {"ok": True, "steps": steps}

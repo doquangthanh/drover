@@ -52,8 +52,8 @@ class PosixPtyBackend(PtyBackend):
         try:
             self._proc.wait()
             code = self._proc.exitstatus
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001 - ptyprocess errors on a dead child
+            log.debug("pty exit status unavailable: %s", exc)
         self.on_exit(code)
 
     def write(self, data: str) -> None:
@@ -74,8 +74,8 @@ class PosixPtyBackend(PtyBackend):
         if self._proc is not None:
             try:
                 self._proc.terminate(force=True)
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001 - ptyprocess errors on a dead child
+                log.debug("pty kill failed: %s", exc)
 
     def is_alive(self) -> bool:
         return bool(self._proc and not self._closed and self._proc.isalive())

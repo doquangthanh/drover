@@ -1,7 +1,8 @@
-"""Daemon pane spawn edge cases: failed launches and quoted executable paths on Windows."""
+"""Daemon pane spawn edge cases: failed launches and quoted executable paths with spaces."""
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from daemon_harness import wait_for_text
@@ -24,13 +25,16 @@ async def test_failed_spawn_leaves_no_empty_tab(start_daemon, drover_dirs: Path)
 
 
 async def test_quoted_executable_path_with_spaces_spawns(start_daemon, drover_dirs: Path):
-    # Expected to FAIL: split_command() on Windows (shlex posix=False) keeps the literal quotes, so
-    # shutil.which and winpty both receive '"...\my tools\hello tool.cmd"' and cannot find it.
-    # Source: drover/pty/pty_backend_factory.py:36 (split_command), used by session_manager.py:73.
+    # split_command() must drop the quotes so the path with spaces reaches the PTY as one argument.
     tools = drover_dirs / "my tools"
     tools.mkdir()
-    tool = tools / "hello tool.cmd"
-    tool.write_text("@echo off\r\necho quoted-path-ok %1\r\n", encoding="utf-8")
+    if sys.platform == "win32":
+        tool = tools / "hello tool.cmd"
+        tool.write_text("@echo off\r\necho quoted-path-ok %1\r\n", encoding="utf-8")
+    else:
+        tool = tools / "hello tool"
+        tool.write_text('#!/bin/sh\necho quoted-path-ok "$1"\n', encoding="utf-8")
+        tool.chmod(0o755)
     daemon = await start_daemon()
     _, body = await daemon.call("pane.create", {"command": f'"{tool}" arg1', "cwd": str(drover_dirs)})
     assert "result" in body, body

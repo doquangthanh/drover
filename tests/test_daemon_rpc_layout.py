@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from daemon_harness import SHELL
+
 from drover.core import split_layout_tree as layout
 
 
 async def _pane(daemon, cwd: Path, name: str) -> dict:
-    _, created = await daemon.call("pane.create", {"command": "cmd /k", "cwd": str(cwd), "name": name})
+    _, created = await daemon.call("pane.create", {"command": SHELL, "cwd": str(cwd), "name": name})
     return created["result"]
 
 
