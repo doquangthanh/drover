@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.31
+### Changed
+- The terminal UI (`dr`) looks like Herdr's: sidebar entries are two lines (state and name; branch, `↑` commits
+  ahead, `±` changed files), long names end in "…", and the open space and focused agent are highlighted (the
+  cursor shows only while you move through the sidebar). Tabs are blocks with the open one in the accent colour, a
+  clickable `+` and the key hint on the right. A tab's only pane fills it without a frame; split panes get frames.
+  State colours match the web UI.
+### Fixed
+- Linux desktop window: terminal text no longer looks letter-spaced. In Qt WebEngine xterm's WebGL renderer drew a
+  small fallback font whatever the terminal font; the window now uses the DOM renderer (browsers keep WebGL).
+- After a restart each Claude pane resumes its own conversation (`claude --resume <id>`, read from Claude Code's
+  session file) instead of the folder's newest one (`--continue`), so two Claude panes in one repo no longer come
+  back as the same conversation. Linux/macOS; elsewhere `--continue` as before.
+
 ## 0.1.30
 ### Added
 - Terminal font like a terminal app: by default Drover's terminals use your system terminal's font (on Linux the
