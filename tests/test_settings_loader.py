@@ -46,7 +46,7 @@ def test_first_run_writes_default_files_and_defaults_apply():
     store = SettingsStore()
     assert _settings_path().exists()
     assert (_settings_path().parent / "AGENTS.md").exists()
-    assert store.get("orchestration.max_panes") == 12
+    assert store.get("orchestration.max_panes") == 0  # no limit
     assert store.get("notify.blocked") == ["toast", "desktop", "sound"]
     assert store.errors == []
 

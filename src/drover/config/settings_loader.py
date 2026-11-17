@@ -28,7 +28,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
         "quiet_hours": "",  # e.g. "23:00-07:00"
     },
     "orchestration": {
-        "max_panes": 12,
+        "max_panes": 0,  # 0 = no limit
         "max_depth": 3,
         "agents_may_answer_permission_prompts": "ask-user",  # never | ask-user | always
         "kill_children_on_parent_exit": False,
@@ -60,7 +60,7 @@ exited = ["toast", "desktop"]
 quiet_hours = ""
 
 [orchestration]
-max_panes = 12
+max_panes = 0                     # live panes at once; 0 = no limit
 max_depth = 3
 agents_may_answer_permission_prompts = "ask-user"   # never | ask-user | always
 kill_children_on_parent_exit = false

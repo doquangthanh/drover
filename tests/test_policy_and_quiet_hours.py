@@ -12,7 +12,14 @@ from drover.notify.desktop_notifier_service import in_quiet_hours
 
 def test_defaults_when_settings_section_is_empty():
     policy = OrchestrationPolicy.from_settings({})
-    assert (policy.max_panes, policy.max_depth, policy.answer_prompts) == (12, 3, "ask-user")
+    assert (policy.max_panes, policy.max_depth, policy.answer_prompts) == (0, 3, "ask-user")
+
+
+def test_no_pane_limit_by_default_but_depth_stays_capped():
+    policy = OrchestrationPolicy.from_settings({})
+    policy.check_spawn(500, None)  # 0 = no limit on live panes, like Herdr
+    with pytest.raises(PolicyError, match="nest"):
+        policy.check_spawn(500, 3)
 
 
 def test_from_settings_reads_and_coerces_values():

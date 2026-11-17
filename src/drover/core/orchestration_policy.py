@@ -11,20 +11,20 @@ class PolicyError(Exception):
 
 @dataclass
 class OrchestrationPolicy:
-    max_panes: int = 12
-    max_depth: int = 3
+    max_panes: int = 0  # 0 (or less) = no limit, like Herdr; set one in settings to cap live panes
+    max_depth: int = 3  # still capped: agents starting agents must not recurse without end
     answer_prompts: str = "ask-user"  # never | ask-user | always
 
     @staticmethod
     def from_settings(section: dict) -> OrchestrationPolicy:
         return OrchestrationPolicy(
-            max_panes=int(section.get("max_panes", 12)),
+            max_panes=int(section.get("max_panes", 0)),
             max_depth=int(section.get("max_depth", 3)),
             answer_prompts=str(section.get("agents_may_answer_permission_prompts", "ask-user")),
         )
 
     def check_spawn(self, live_panes: int, parent_depth: int | None) -> None:
-        if live_panes >= self.max_panes:
+        if self.max_panes > 0 and live_panes >= self.max_panes:
             raise PolicyError(f"pane limit reached ({self.max_panes}); close something or raise max_panes")
         if parent_depth is not None and parent_depth + 1 > self.max_depth:
             raise PolicyError(f"agents may only nest {self.max_depth} levels deep")
