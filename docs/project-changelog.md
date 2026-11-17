@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.30
+### Added
+- Terminal font like a terminal app: by default Drover's terminals use your system terminal's font (on Linux the
+  GNOME Terminal profile font, else the desktop monospace font, e.g. Ubuntu Mono 13 pt = 17 px) instead of the
+  browser's monospace. Pick another font and size in Settings > Appearance > Terminal font (installed monospace fonts
+  are listed; kept per device). New RPC `fonts.list`.
+
 ## 0.1.29
 ### Changed
 - The terminal UI (`dr` / `dr tui`) works like Herdr: prefix **Ctrl+B** (new setting `tui_prefix`; the web UI keeps
