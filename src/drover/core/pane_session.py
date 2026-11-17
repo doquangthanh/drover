@@ -61,6 +61,7 @@ class PaneSession:
         self.shell_launched = False  # started as a shell: its kind follows the foreground program
         self.fg_pgid: int | None = None
         self.fg_checked_at = 0.0
+        self.claude_checked_at = 0.0
 
     # -- lifecycle -----------------------------------------------------------------
     def start(self, argv: list[str], env: dict[str, str]) -> None:

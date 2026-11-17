@@ -7,6 +7,7 @@ import logging
 import time
 
 from drover.app_paths import bundled_rules_dir, user_rules_dir
+from drover.core.claude_session_id_probe import has_transcript, resume_command, running_session_id
 from drover.core.foreground_process_probe import foreground_agent_kind, foreground_pgid
 from drover.core.session_manager import SessionManager
 from drover.notify.desktop_notifier_service import DesktopNotifierService
@@ -15,6 +16,7 @@ from drover.status.status_detector import detect_kind_from_title, evaluate
 
 log = logging.getLogger(__name__)
 TICK = 0.25
+CLAUDE_SESSION_EVERY = 5.0  # seconds; /clear or /resume inside Claude switches the conversation
 
 
 class StatusMonitor:
@@ -35,6 +37,7 @@ class StatusMonitor:
                     self.manager.follow_space_folders()
                 for pane in list(self.manager.panes.values()):
                     self.probe_foreground(pane, now)
+                    self.probe_claude_session(pane, now)
                     self.check_pane(pane, now)
             except Exception:
                 log.exception("status monitor tick failed")
@@ -63,6 +66,21 @@ class StatusMonitor:
         kinds = set(self.manager.rule_sets)
         kind = "shell" if pgid == b.pid else (foreground_agent_kind(pgid, kinds) or "shell")
         self.manager.set_pane_kind(pane, kind)
+
+    def probe_claude_session(self, pane, now: float) -> None:
+        """Resume a claude pane into its own conversation, not the folder's newest (Linux/macOS; else --continue)."""
+        b = pane.backend
+        if pane.meta.kind != "claude" or not b or b.tty_fd is None or not pane.alive:
+            return
+        if now - pane.claude_checked_at < CLAUDE_SESSION_EVERY:
+            return
+        pane.claude_checked_at = now
+        # Typed in a shell, claude leads the foreground group; started by drover, it is the pane's own process.
+        sid = running_session_id(p for p in (foreground_pgid(b.pid, b.tty_fd), b.pid) if p)
+        if not sid or resume_command(sid) == pane.meta.resume or not has_transcript(sid):
+            return
+        pane.meta.resume = resume_command(sid)
+        self.manager.on_structure_change()  # save it, so a daemon or computer restart resumes this conversation
 
     def check_pane(self, pane, now: float) -> None:
         recent = now - pane.last_output_at < 3
