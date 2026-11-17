@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.33
+### Fixed
+- The app opens again from the menu or desktop icon. Since 0.1.29 the packaged `drover` started the terminal UI
+  when run without arguments, which has nowhere to draw when launched from the menu, so no window appeared.
+  `drover` with no arguments opens the desktop window again; the installer's menu entry runs `drover app`.
+  Already on 0.1.32 and the app will not open? Run `~/.local/share/drover/drover app` once, then update.
+
 ## 0.1.32
 ### Changed
 - No limit on how many panes and agents run at once, like Herdr: `max_panes` now defaults to `0` (no limit). Set a
