@@ -66,6 +66,10 @@ impl PaneScreen {
         self.term.resize(Size(cols, rows));
     }
 
+    pub(crate) fn term(&self) -> &Term<ScreenEvents> {
+        &self.term
+    }
+
     pub fn title(&self) -> String {
         self.events.title.lock().unwrap().clone()
     }

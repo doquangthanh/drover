@@ -10,6 +10,7 @@ pub mod pane_session;
 pub mod pane_state;
 pub mod pty;
 pub mod screen;
+mod screen_snapshot;
 pub mod status_detector;
 pub mod status_tracker;
 pub mod terminal_keys;

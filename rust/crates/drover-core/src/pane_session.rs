@@ -91,6 +91,7 @@ impl PaneSession {
         while st.replay_size > REPLAY_LIMIT && st.replay.len() > 1 {
             let dropped = st.replay.pop_front().map(|s| s.len()).unwrap_or(0);
             st.replay_size -= dropped;
+            st.replay_truncated = true;
         }
         if data.contains("\x1b]7501;")
             && let Some(report) = parse_osc7501(data)
@@ -148,17 +149,15 @@ impl PaneSession {
         }
     }
 
-    pub fn add_output_listener(&self, listener: impl Fn(&str, &str) + Send + Sync + 'static) -> u64 {
-        let id = self.next_listener.fetch_add(1, Ordering::Relaxed);
-        self.listeners.lock().unwrap().push((id, Arc::new(listener)));
-        id
-    }
-
     /// Hand the replay text to `on_replay`, then add `listener`, atomically: every chunk reaches the viewer exactly
     /// once and after the replay. `on_replay` runs under the listener lock, so it must only queue work.
+    /// The replay is the raw output while it is complete, else a snapshot rebuilt from the emulator (full history).
     pub fn attach(&self, on_replay: impl FnOnce(&str), listener: impl Fn(&str, &str) + Send + Sync + 'static) -> u64 {
         let mut listeners = self.listeners.lock().unwrap();
-        let replay: String = self.state.lock().unwrap().replay.iter().map(String::as_str).collect();
+        let replay: String = {
+            let st = self.state.lock().unwrap();
+            if st.replay_truncated { st.screen.snapshot() } else { st.replay.iter().map(String::as_str).collect() }
+        };
         on_replay(&replay);
         let id = self.next_listener.fetch_add(1, Ordering::Relaxed);
         listeners.push((id, Arc::new(listener)));
@@ -167,10 +166,6 @@ impl PaneSession {
 
     pub fn remove_output_listener(&self, id: u64) {
         self.listeners.lock().unwrap().retain(|(i, _)| *i != id);
-    }
-
-    pub fn replay_text(&self) -> String {
-        self.state.lock().unwrap().replay.iter().map(String::as_str).collect()
     }
 
     pub fn alive(&self) -> bool {

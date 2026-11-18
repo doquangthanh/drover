@@ -28,6 +28,8 @@ pub struct PaneState {
     pub tracker: StatusTracker,
     pub(crate) replay: VecDeque<String>,
     pub(crate) replay_size: usize,
+    /// The replay buffer has dropped its oldest output: viewers get a snapshot of the emulator instead.
+    pub(crate) replay_truncated: bool,
     pub last_output_at: f64,
     /// Last output that changed visible text (not just terminal modes).
     pub screen_changed_at: f64,
@@ -53,6 +55,7 @@ impl PaneState {
             tracker: StatusTracker::default(),
             replay: VecDeque::new(),
             replay_size: 0,
+            replay_truncated: false,
             last_output_at: 0.0,
             screen_changed_at: 0.0,
             dirty: false,

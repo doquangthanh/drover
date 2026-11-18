@@ -27,7 +27,7 @@ fn output_reaches_listener_replay_and_screen() {
     let p = pane("%1");
     let (tx, rx) = mpsc::channel::<(String, String)>();
     let tx = Mutex::new(tx);
-    p.add_output_listener(move |id, data| {
+    p.attach(|_| {}, move |id, data| {
         let _ = tx.lock().unwrap().send((id.into(), data.into()));
     });
     let argv = ["sh".to_string(), "-c".into(), "printf 'hello pane\\n'; sleep 0.2".into()];
@@ -35,7 +35,9 @@ fn output_reaches_listener_replay_and_screen() {
     wait_until("exit", || !p.alive() && p.state.lock().unwrap().exit_code.is_some());
     let (id, _) = rx.recv_timeout(Duration::from_secs(5)).unwrap();
     assert_eq!(id, "%1");
-    assert!(p.replay_text().contains("hello pane"));
+    let mut replay = String::new();
+    p.attach(|r| replay = r.to_string(), |_, _| {});
+    assert!(replay.contains("hello pane"));
     assert!(p.state.lock().unwrap().screen.read_text(None).contains("hello pane"));
     assert_eq!(p.state_name(), "exited");
     assert_eq!(p.to_json()["exit_code"], 0);
@@ -81,4 +83,24 @@ fn foreground_pgid_follows_the_running_program() {
     p.write("sleep 5\r");
     wait_until("sleep in foreground", || p.foreground_pgid().is_some() && p.foreground_pgid() != shell);
     p.kill(true);
+}
+
+#[test]
+fn attach_replays_raw_output_until_it_is_trimmed_then_a_snapshot() {
+    let p = pane("%9");
+    p.on_output("first line\r\n");
+    let mut got = String::new();
+    p.attach(|r| got = r.to_string(), |_, _| {});
+    assert_eq!(got, "first line\r\n", "complete output is replayed as is");
+    let chunk = format!("{}\r\n", "x".repeat(1000));
+    for _ in 0..(REPLAY_LIMIT / chunk.len() + 10) {
+        p.on_output(&chunk);
+    }
+    p.on_output("last line");
+    p.attach(|r| got = r.to_string(), |_, _| {});
+    assert!(got.starts_with("\x1b[0m"), "trimmed output: snapshot instead");
+    assert!(got.contains("last line"));
+    let mut fresh = crate::screen::PaneScreen::new(80, 24, 1000);
+    fresh.feed(got.as_bytes());
+    assert_eq!(fresh.all_lines(), p.state.lock().unwrap().screen.all_lines());
 }
