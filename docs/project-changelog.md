@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.34
 ### Changed
 - Linux: the daemon and the window are now Rust (`drover-server`, Tauri `drover`); `dr` stays Python. The daemon
   idles at ~5–8 MB instead of ~106 MB, the install shrinks from ~630 MB to ~100 MB (no Qt), and only one window
