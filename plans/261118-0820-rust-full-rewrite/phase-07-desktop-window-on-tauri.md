@@ -38,7 +38,12 @@ drover (Tauri) ── ensure daemon (same lib as dr) ── WebView -> http://12
 - [x] single instance (second launch exits in 0.09 s, focuses the first)
 - [x] memory measured: [reports/phase-07-tauri-window-memory.md](reports/phase-07-tauri-window-memory.md) — not lighter than Qt on Linux; win is single instance
 - [ ] trim the UI's ~75 MB runtime memory (frontend heap profiling)
-- [ ] clipboard / IME (ibus) / fonts / folder picker / title bar theme checked by hand
+- [x] ibus (Telex) input fixed (`frontend/src/terminals/webkit-ime-guard.ts`): `echo tiếng việt` clean; Ctrl+A ? opens help,
+  `?` not sent to the shell, Escape closes it (checked with xdotool, 2026-11-18)
+- [ ] Ctrl+A + a letter Telex holds (e.g. `t`) then typing: no stray letter — not run, check by hand
+- [x] copy/paste works; burst output renders as fast as Qt
+- [x] desktop bridge fixed (ACL for remote origin) and dark title bar fixed (GTK prefer-dark)
+- [ ] native folder picker and light title bar (blocked by the ibus bug for now)
 
 ## Success Criteria
 - ~~Window total RSS < 120 MB~~ not reachable with WebKitGTK (floor ~180 MB PSS); target now: no worse than Qt, one window only, no visible lag.
