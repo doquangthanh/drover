@@ -101,19 +101,25 @@ pub fn build_context(token: String) -> Arc<Ctx> {
 
 /// `dr server run`: blocks until the daemon stops.
 pub fn serve(host: &str, port: u16, foreground: bool) -> std::io::Result<()> {
+    // A self-update restart keeps the old port and token, so open browser tabs reconnect on their own. Taken out
+    // of the environment so panes (agents) never inherit the token; done before any thread starts.
+    let keep = (std::env::var("DROVER_KEEP_TOKEN").unwrap_or_default(),
+                std::env::var("DROVER_KEEP_PORT").ok().and_then(|p| p.parse::<u16>().ok()).unwrap_or(0));
+    // SAFETY: still single-threaded here (no runtime, no logger thread yet).
+    unsafe {
+        std::env::remove_var("DROVER_KEEP_TOKEN");
+        std::env::remove_var("DROVER_KEEP_PORT");
+    }
     log::init(foreground);
     if is_alive(read_info().as_ref()) {
         log::info("another drover daemon is already running; exiting");
         return Ok(());
     }
     let rt = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
-    rt.block_on(serve_async(host.to_string(), port))
+    rt.block_on(serve_async(host.to_string(), port, keep))
 }
 
-async fn serve_async(host: String, port: u16) -> std::io::Result<()> {
-    // A self-update restart keeps the old port and token, so open browser tabs reconnect on their own.
-    let keep_token = std::env::var("DROVER_KEEP_TOKEN").unwrap_or_default();
-    let keep_port: u16 = std::env::var("DROVER_KEEP_PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(0);
+async fn serve_async(host: String, port: u16, (keep_token, keep_port): (String, u16)) -> std::io::Result<()> {
     let ctx = build_context(if keep_token.is_empty() { new_token() } else { keep_token });
     persistence::load_previous(&mut ctx.manager.lock().unwrap(), &ctx.store);
     let listener = match tokio::net::TcpListener::bind(("127.0.0.1", if keep_port > 0 { keep_port } else { port })).await {
