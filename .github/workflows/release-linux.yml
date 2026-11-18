@@ -73,6 +73,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          prerelease: ${{ contains(github.ref_name, '-') }}  # v1.2.3-rc.1: test build, not offered as an update
           files: |
             drover-linux-${{ matrix.arch }}.tar.gz
             drover-linux-${{ matrix.arch }}.tar.gz.sha256
