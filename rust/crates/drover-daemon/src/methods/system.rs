@@ -1,5 +1,5 @@
 //! RPC methods for the server itself, detection rules and config files. Port of `methods_system.py`
-//! (update.*, notify.test and skill.text come with phases 05/06).
+//! update.* / notify.test / skill.text: phase 05.
 
 use std::sync::Arc;
 
@@ -23,6 +23,10 @@ pub fn methods() -> Vec<MethodSpec> {
         method!("rules.test", "Run detection rules against a pane and explain the result", "pane, kind?", rules_test),
         method!("settings.files", "Config files with their contents", "", settings_files),
         method!("settings.write", "Save a config file (validated TOML)", "name, text", settings_write),
+        method!("update.check", "Is a newer release on GitHub?", "", update_check),
+        method!("update.apply", "Download a release, replace this install and restart the daemon", "tag", update_apply),
+        method!("skill.text", "Instructions that teach an agent to use dr", "", skill_text),
+        method!("notify.test", "Send a test desktop notification", "", notify_test),
     ]
 }
 
@@ -43,6 +47,30 @@ async fn server_info(ctx: Arc<Ctx>, _p: Value) -> RpcResult {
         "rule_errors": *ctx.rule_errors.lock().unwrap(), "settings_errors": settings_errors,
         "engine": "rust",
     }))
+}
+
+async fn update_check(_ctx: Arc<Ctx>, _p: Value) -> RpcResult {
+    crate::self_update::check().await.map_err(bad)
+}
+
+async fn update_apply(ctx: Arc<Ctx>, p: Value) -> RpcResult {
+    crate::self_update::apply(&need_str(&p, "tag")?).await.map_err(bad)?;
+    ctx.restart.store(true, std::sync::atomic::Ordering::SeqCst); // open windows follow the new daemon
+    ctx.save_now();
+    tokio::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        ctx.request_stop();
+    });
+    Ok(Value::Null)
+}
+
+async fn skill_text(_ctx: Arc<Ctx>, _p: Value) -> RpcResult {
+    Ok(json!({"text": include_str!(concat!(env!("OUT_DIR"), "/agent_skill.md"))}))
+}
+
+async fn notify_test(_ctx: Arc<Ctx>, _p: Value) -> RpcResult {
+    crate::notify::send("Drover notifications are on", "You'll see one like this when an agent needs you or finishes.", true, "normal");
+    Ok(Value::Null)
 }
 
 async fn server_stop(ctx: Arc<Ctx>, _p: Value) -> RpcResult {

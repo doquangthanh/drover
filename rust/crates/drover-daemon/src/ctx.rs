@@ -18,6 +18,8 @@ use crate::state_store::StateStore;
 pub struct Ctx {
     pub settings: Arc<Mutex<Settings>>,
     pub hub: Arc<EventHub>,
+    pub chats: Arc<crate::chat::manager::ChatManager>,
+    pub remotes: Arc<crate::remote::hub::RemoteHub>,
     pub manager: SharedManager,
     pub store: StateStore,
     pub rule_errors: Mutex<Vec<String>>,
@@ -69,13 +71,13 @@ impl Ctx {
         self.store.save(&data);
     }
 
-    /// Local snapshot plus settings the UI needs (remote machines and chats come in later phases).
+    /// Local snapshot plus remote machines, chats and the settings the UI needs.
     pub fn combined_state(&self) -> Value {
         let mut state = self.manager.lock().unwrap().snapshot();
         let s = self.settings.lock().unwrap();
         let obj = state.as_object_mut().expect("snapshot is an object");
-        obj.insert("machines".into(), json!([]));
-        obj.insert("chats".into(), json!([]));
+        obj.insert("machines".into(), self.remotes.public_state());
+        obj.insert("chats".into(), self.chats.snapshot());
         obj.insert("prefix".into(), json!(s.str("prefix", "C-a")));
         obj.insert("tui_prefix".into(), json!(s.str("tui_prefix", "C-b")));
         obj.insert("theme".into(), json!(s.str("theme", "dark")));

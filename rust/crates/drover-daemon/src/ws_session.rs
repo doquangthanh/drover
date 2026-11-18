@@ -20,6 +20,7 @@ static CLIENT_IDS: AtomicU64 = AtomicU64::new(1);
 
 struct Session {
     ctx: Arc<Ctx>,
+    client: crate::remote::link::ClientHandle,
     out: Arc<BoundedQueue>,
     /// pane id -> output listener id
     attached: Mutex<HashMap<String, u64>>,
@@ -29,7 +30,8 @@ pub async fn run(ctx: Arc<Ctx>, socket: WebSocket, label: String) {
     let id = CLIENT_IDS.fetch_add(1, Ordering::Relaxed);
     ctx.clients.lock().unwrap().insert(id, json!({"id": id, "label": label}));
     let out = Arc::new(BoundedQueue::new(2000));
-    let session = Arc::new(Session { ctx: ctx.clone(), out: out.clone(), attached: Mutex::new(HashMap::new()) });
+    let client = crate::remote::link::ClientHandle { id, out: out.clone() };
+    let session = Arc::new(Session { ctx: ctx.clone(), client, out: out.clone(), attached: Mutex::new(HashMap::new()) });
     let q = out.clone();
     let sub = ctx.hub.subscribe(move |name, data| {
         q.put(if name == "state" { Outgoing::State } else { Outgoing::Message(json!({"t": "ev", "name": name, "data": data})) });
@@ -64,12 +66,16 @@ pub async fn run(ctx: Arc<Ctx>, socket: WebSocket, label: String) {
     for pane_id in panes {
         session.detach(&pane_id);
     }
+    ctx.remotes.drop_client(id);
     sender.abort();
     ctx.clients.lock().unwrap().shift_remove(&id);
 }
 
 impl Session {
     fn handle(self: &Arc<Self>, msg: Value) {
+        if self.ctx.remotes.route_client(&self.client, &msg) {
+            return; // a remote machine's pane, tab or space
+        }
         let pane_id = match msg.get("pane") {
             Some(Value::String(s)) => s.clone(),
             Some(Value::Null) | None => String::new(),

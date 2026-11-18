@@ -69,7 +69,11 @@ async fn rpc_handler(State(ctx): State<Arc<Ctx>>, headers: HeaderMap, body: Byte
         None | Some(Value::Null) => "None".into(),
         Some(other) => other.to_string(),
     };
-    let reply = match crate::methods::call(ctx, &method, params).await {
+    let result = match ctx.remotes.call_remote(&method, &params).await {
+        Some(remote) => remote,
+        None => crate::methods::call(ctx, &method, params).await,
+    };
+    let reply = match result {
         Ok(result) => json!({"result": result}),
         Err(e) => json!({"error": e.to_json()}),
     };

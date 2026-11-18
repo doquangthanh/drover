@@ -4,7 +4,7 @@
 - `src/drover/chat/*`, `src/drover/rpc/methods_chat.py`, `tests/test_chat_*.py`, `tests/test_daemon_rpc_chat.py`
 
 ## Overview
-- Priority: P2. Status: todo. Effort: 14h.
+- Priority: P2. Status: done (2026-11-18; chat view in the real UI not clicked through yet). Effort: 14h.
 - `chat.*` methods without claude_agent_sdk: spawn `claude` and speak its stream-json protocol directly.
 
 ## Key Insights
@@ -38,11 +38,17 @@ chat.answer ──────────────── stdin (control_resp
 4. Run `test_daemon_rpc_chat.py` against the binary.
 
 ## Todo List
-- [ ] traffic fixtures captured
-- [ ] stream-json + control protocol
-- [ ] transcript builder parity
-- [ ] chat store compatible
-- [ ] conformance file green
+- [x] protocol taken from the installed claude_agent_sdk 0.2.182 source (flags, initialize, can_use_tool,
+  control_cancel_request, interrupt/set_model/set_permission_mode) instead of captured traffic;
+  `src/chat/fake_claude.py` speaks it for tests
+- [x] stream-json + control protocol (`chat/cli_process.rs`), session + permissions (`chat/session*.rs`)
+- [x] transcript builder parity: all `test_chat_transcript_builder.py` cases ported (`chat/transcript_tests.rs`)
+- [x] chat store compatible (same `<id>.json` + `<id>.jsonl`), file search, claude locator
+- [x] `test_daemon_rpc_chat.py` green against the release `dr` (3/3); 17 Rust unit tests incl. a full turn on the fake CLI
+- [x] real claude 2.1.327 through `/rpc`: options (130 commands, 5 models), Bash tool turn, Write permission asked and
+  allowed (working -> blocked -> idle), interrupt while blocked denies and stops, session_id saved, no claude left
+  after the daemon stops
+- [ ] chat view clicked through in the window (send, stream, permission buttons, model picker)
 
 ## Success Criteria
 - Chat view works end to end (send, stream, permission prompt, interrupt, model switch) with the Rust daemon.

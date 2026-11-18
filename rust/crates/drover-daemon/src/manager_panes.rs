@@ -141,7 +141,11 @@ impl Manager {
         let data = pane.to_json();
         self.hub.emit("pane", data.clone());
         self.hub.emit("status", json!({"pane": data, "old": "working", "new": "exited"}));
-        // Desktop notification for an unfocused pane: phase 05 (notify).
+        let (focused, title) = { let st = pane.state.lock().unwrap(); (st.focused, st.screen.title()) };
+        if !focused {
+            let (name, kind) = { let m = pane.meta.lock().unwrap(); (m.name.clone(), m.kind.clone()) };
+            crate::notify::notify_state(&self.settings.lock().unwrap(), &name, &kind, "exited", &title);
+        }
         let kill_children = self.settings.lock().unwrap().bool("orchestration.kill_children_on_parent_exit", false);
         if kill_children {
             for child in self.children_of(&id) {

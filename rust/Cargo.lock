@@ -1016,6 +1016,7 @@ version = "0.2.0-dev"
 dependencies = [
  "axum",
  "base64 0.23.1",
+ "chrono",
  "dirs",
  "drover-core",
  "futures-util",
@@ -1025,8 +1026,10 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "shlex",
  "tokio",
+ "tokio-tungstenite",
  "toml 1.2.1+spec-1.1.0",
 ]
 
@@ -1035,6 +1038,7 @@ name = "drover-desktop"
 version = "0.2.0-dev"
 dependencies = [
  "drover-daemon",
+ "gtk",
  "serde_json",
  "tauri",
  "tauri-build",

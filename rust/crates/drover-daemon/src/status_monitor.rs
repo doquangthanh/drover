@@ -148,5 +148,8 @@ fn check_pane(m: &mut Manager, pane: &Arc<PaneSession>, now: f64) {
     let data = pane.to_json();
     m.hub.emit("pane", data.clone());
     m.hub.emit("status", json!({"pane": data, "old": old, "new": new}));
-    // Desktop notification for an unfocused pane: phase 05 (notify).
+    if !focused {
+        let name = pane.meta.lock().unwrap().name.clone();
+        crate::notify::notify_state(&m.settings.lock().unwrap(), &name, &kind, &new, &title);
+    }
 }

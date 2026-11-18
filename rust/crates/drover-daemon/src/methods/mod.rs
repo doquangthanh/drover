@@ -1,8 +1,10 @@
 //! The RPC method table (shared by the websocket UI and the HTTP CLI) and target resolution.
 
 pub mod agent_input;
+pub mod chat;
 pub mod files_git;
 pub mod layout;
+pub mod machines;
 pub mod panes;
 pub mod subagents;
 pub mod system;
@@ -18,7 +20,7 @@ use crate::manager::Manager;
 use crate::rpc::{E_BAD_PARAMS, E_NO_METHOD, E_NOT_FOUND, MethodSpec, RpcError, RpcResult};
 
 static TABLE: LazyLock<HashMap<&'static str, MethodSpec>> = LazyLock::new(|| {
-    [system::methods(), workspace::methods(), panes::methods(), layout::methods(), agent_input::methods(), files_git::methods(), subagents::methods()]
+    [system::methods(), workspace::methods(), panes::methods(), layout::methods(), agent_input::methods(), files_git::methods(), subagents::methods(), chat::methods(), machines::methods()]
         .into_iter()
         .flatten()
         .map(|m| (m.name, m))

@@ -51,7 +51,8 @@ pub fn user_rules_dir() -> PathBuf {
 }
 
 /// Root of the web assets: `DROVER_WEB_DIR`, else the repo's `src/drover` next to the source tree (dev builds),
-/// else the folder of the executable. Holds `web/` (static runtime files) and `web_dist/` (built React UI).
+/// else `_internal/drover` of the release bundle the executable sits in (shared with the Python `dr`), else the
+/// folder of the executable. Holds `web/` (static runtime files) and `web_dist/` (built React UI).
 pub fn web_root() -> PathBuf {
     if let Some(dir) = std::env::var_os("DROVER_WEB_DIR") {
         return PathBuf::from(dir);
@@ -60,7 +61,9 @@ pub fn web_root() -> PathBuf {
     if dev.join("web").is_dir() {
         return dev;
     }
-    std::env::current_exe().ok().and_then(|p| p.parent().map(Path::to_path_buf)).unwrap_or_default()
+    let exe_dir = std::env::current_exe().ok().and_then(|p| p.parent().map(Path::to_path_buf)).unwrap_or_default();
+    let bundled = exe_dir.join("_internal").join("drover");
+    if bundled.join("web").is_dir() { bundled } else { exe_dir }
 }
 
 /// Make a secret file readable by the current user only (best effort).

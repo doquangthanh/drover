@@ -1,5 +1,6 @@
 //! Drover daemon: owns the panes, serves the UI, `/ws` and `/rpc`. Port of `drover/daemon`.
 
+pub mod chat;
 pub mod claude_session;
 pub mod ctx;
 pub mod event_hub;
@@ -13,9 +14,13 @@ pub mod manager;
 pub mod manager_panes;
 pub mod messages_log;
 pub mod methods;
+pub mod notify;
 pub mod paths;
 pub mod persistence;
+pub mod remote;
 pub mod rpc;
+pub mod self_update;
+pub mod self_update_apply;
 pub mod settings;
 pub mod state_store;
 pub mod status_monitor;
@@ -84,6 +89,8 @@ pub fn build_context(token: String) -> Arc<Ctx> {
     let save = Arc::new(Notify::new());
     let manager = Manager::new(settings.clone(), hub.clone(), rule_sets, save);
     Arc::new(Ctx {
+        chats: crate::chat::manager::ChatManager::new(paths::state_dir().join("chats"), hub.clone()),
+        remotes: Arc::new(crate::remote::hub::RemoteHub::new(hub.clone(), settings.clone())),
         settings, hub, manager, store: StateStore { path: paths::session_file() },
         rule_errors: Mutex::new(rule_errors), token, port: AtomicU16::new(0), started_at: now_secs(),
         clients: Mutex::new(Default::default()), pending_answers: Mutex::new(Default::default()),
@@ -128,6 +135,7 @@ async fn serve_async(host: String, port: u16) -> std::io::Result<()> {
     write_info(&info)?;
     log::info(&format!("drover daemon {} (rust) listening on {host}:{bound}", env!("DROVER_VERSION")));
 
+    ctx.remotes.sync_from_file(); // links to machines.toml start now
     let tasks = [
         tokio::spawn(status_monitor::run(ctx.clone())),
         tokio::spawn(save_loop(ctx.clone())),
@@ -142,6 +150,8 @@ async fn serve_async(host: String, port: u16) -> std::io::Result<()> {
         }
     }).await;
     ctx.save_now();
+    ctx.chats.shutdown().await; // kill the claude processes of chats
+    ctx.remotes.stop_all();
     for t in tasks {
         t.abort();
     }
@@ -152,7 +162,25 @@ async fn serve_async(host: String, port: u16) -> std::io::Result<()> {
     if read_info().and_then(|i| i["pid"].as_u64()) == Some(std::process::id() as u64) {
         let _ = std::fs::remove_file(paths::daemon_info_file());
     }
+    if ctx.restart.load(std::sync::atomic::Ordering::SeqCst) {
+        restart_after_update(&ctx);
+    }
     Ok(())
+}
+
+/// Start the (just replaced) daemon binary at the same path, keeping port and token so open windows reconnect.
+fn restart_after_update(ctx: &Ctx) {
+    let Ok(exe) = std::env::current_exe() else { return };
+    let mut cmd = std::process::Command::new(exe);
+    cmd.args(["server", "run", "--background"]).env("DROVER_KEEP_TOKEN", &ctx.token).env("DROVER_KEEP_PORT", ctx.port().to_string())
+        .stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
+    #[cfg(unix)]
+    std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
+    #[cfg(windows)]
+    std::os::windows::process::CommandExt::creation_flags(&mut cmd, 0x0800_0000 | 0x0000_0200);
+    if let Err(e) = cmd.spawn() {
+        log::warn(&format!("restart after update failed: {e}"));
+    }
 }
 
 /// Debounced save: one write ~1 s after the last structure change.
@@ -168,6 +196,7 @@ async fn save_loop(ctx: Arc<Ctx>) {
 async fn housekeeping(ctx: Arc<Ctx>) {
     loop {
         tokio::time::sleep(Duration::from_secs(30)).await;
+        ctx.remotes.sync_from_file();
         ctx.save_now();
     }
 }

@@ -47,7 +47,8 @@ Ctx { SessionManager, EventHub (broadcast), StateStore, Settings, GitWatcher }
 - [x] http + ws + token (axum; constant-time token; traversal-safe static)
 - [x] state/event hub (state built at send time, so no listener ever re-locks the manager)
 - [x] system, workspace, panes, layout, agent input, files/fs, git/worktree, subagents ported: 61 conformance tests pass, 15 skip (in-process only); `dr hook claude` in the Rust CLI
-- [ ] notify.test, update.*, skill.text (phases 05/06); chat.* (phase 04)
+- [x] chat.* (phase 04)
+- [x] notify.test, update.*, skill.text, machine.* (phase 05)
 - [x] session.json in the Python format (written by Rust, read back; Python->Rust load not yet tested by hand)
 - [x] PSS measured (release): 5.1 MB idle, 5.9 MB with 5 shell panes (Python: ~106 MB idle)
 - [ ] daily-drive the Rust daemon with the real web UI / window

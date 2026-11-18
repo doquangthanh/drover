@@ -72,7 +72,7 @@ pub fn pane_path(current: &str) -> String {
 /// Variables that belong to one running Claude Code session. A daemon started from inside an agent (e.g. `dr`
 /// autostarting it) would otherwise hand them to every pane, and claude there believes it is a child session
 /// (transcripts off, hooks talking to the other session's socket). User config such as CLAUDE_CONFIG_DIR stays.
-fn is_session_var(key: &str) -> bool {
+pub(crate) fn is_session_var(key: &str) -> bool {
     key == "CLAUDECODE" || key == "CLAUDE_PID" || key == "CLAUDE_EFFORT" || key.starts_with("CLAUDE_CODE_")
 }
 
