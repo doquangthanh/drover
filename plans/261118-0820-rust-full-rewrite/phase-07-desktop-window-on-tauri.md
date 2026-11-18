@@ -4,7 +4,7 @@
 - `src/drover/desktop/*`, `packaging/drover_entry.py`, `frontend/` (unchanged code), `frontend/daemon-target.ts`
 
 ## Overview
-- Priority: P1. Status: todo. Effort: 14h.
+- Priority: P1. Status: in progress (window works; memory result in reports/phase-07-tauri-window-memory.md). Effort: 14h.
 - Replace pywebview + PyQt6/QtWebEngine with Tauri v2 (system webview: WebKitGTK on Linux, WebView2 on Windows).
 
 ## Key Insights
@@ -34,13 +34,14 @@ drover (Tauri) ── ensure daemon (same lib as dr) ── WebView -> http://12
 4. Check clipboard, IME (ibus is running on this machine), font list, file drop.
 
 ## Todo List
-- [ ] window loads UI
-- [ ] single instance
-- [ ] RSS + render measurement written to `reports/`
-- [ ] clipboard / IME / fonts checked
+- [x] window loads UI (screenshot checked: sidebar, git branch, agents, terminal)
+- [x] single instance (second launch exits in 0.09 s, focuses the first)
+- [x] memory measured: [reports/phase-07-tauri-window-memory.md](reports/phase-07-tauri-window-memory.md) — not lighter than Qt on Linux; win is single instance
+- [ ] trim the UI's ~75 MB runtime memory (frontend heap profiling)
+- [ ] clipboard / IME (ibus) / fonts / folder picker / title bar theme checked by hand
 
 ## Success Criteria
-- Window total RSS < 120 MB with UI open; no visible lag vs Qt window.
+- ~~Window total RSS < 120 MB~~ not reachable with WebKitGTK (floor ~180 MB PSS); target now: no worse than Qt, one window only, no visible lag.
 
 ## Risk Assessment
 - WebKitGTK version differences across distros; needs `libwebkit2gtk-4.1` installed (document it, or ship AppImage).

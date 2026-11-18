@@ -19,6 +19,7 @@ from typing import Any
 
 import aiohttp
 import pytest
+from yarl import URL
 
 BIN_ENV = "DROVER_TEST_DAEMON_BIN"
 START_TIMEOUT = 20.0
@@ -29,10 +30,30 @@ def external_bin() -> list[str] | None:
     return shlex.split(raw) if raw else None
 
 
+class ExternalClient:
+    """The bits of aiohttp's TestClient the tests use (get, post, make_url, close), over a real session."""
+
+    def __init__(self, base_url: str) -> None:
+        self.base_url = base_url
+        self.session = aiohttp.ClientSession(base_url=base_url)
+
+    def get(self, path: str, **kwargs):
+        return self.session.get(path, **kwargs)
+
+    def post(self, path: str, **kwargs):
+        return self.session.post(path, **kwargs)
+
+    def make_url(self, path: str) -> URL:
+        return URL(self.base_url).join(URL(path))
+
+    async def close(self) -> None:
+        await self.session.close()
+
+
 class ExternalDaemon:
     """Same surface as daemon_harness.Daemon (call, client, token, shutdown), minus the in-process ctx."""
 
-    def __init__(self, proc: subprocess.Popen, client: aiohttp.ClientSession, token: str) -> None:
+    def __init__(self, proc: subprocess.Popen, client: ExternalClient, token: str) -> None:
         self.proc, self.client, self.token = proc, client, token
 
     @property
@@ -71,7 +92,7 @@ async def boot_external_daemon(cmd: list[str]) -> ExternalDaemon:
             raise AssertionError(f"daemon exited with {proc.returncode}; see {state_dir / 'external-daemon.log'}")
         info = _read_info(info_path)
         if info and info.get("pid") == proc.pid:
-            client = aiohttp.ClientSession(base_url=f"http://127.0.0.1:{info['port']}")
+            client = ExternalClient(f"http://127.0.0.1:{info['port']}")
             return ExternalDaemon(proc, client, info["token"])
         await asyncio.sleep(0.1)
     proc.kill()

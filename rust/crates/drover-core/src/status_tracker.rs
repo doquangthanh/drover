@@ -92,6 +92,19 @@ impl StatusTracker {
         Some(target)
     }
 
+    /// A detection differs from the committed state and is still debouncing (`_candidate != state` in Python).
+    pub fn has_pending_candidate(&self) -> bool {
+        self.candidate.as_deref() != Some(self.state.as_str())
+    }
+
+    /// New input = new turn: go working now and hold it for `hold` seconds (`mark_busy` in Python).
+    pub fn force_working(&mut self, now: f64, hold: f64) {
+        self.state = "working".into();
+        self.since = now;
+        self.candidate = None;
+        self.hold_until = now + hold;
+    }
+
     /// User looked at the pane: done -> idle.
     pub fn acknowledge(&mut self) -> Option<String> {
         if self.state == "done" {

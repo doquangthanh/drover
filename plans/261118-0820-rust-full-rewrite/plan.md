@@ -45,11 +45,11 @@ includes `server run` and `tui`), `drover-tui`, `drover-desktop` (bin `drover`).
 |---|-------|--------|--------|
 | 01 | [Toolchain, workspace, conformance harness](phase-01-toolchain-workspace-and-conformance-harness.md) | 6h | done |
 | 02 | [Pane core: PTY, terminal emulation, status detection (gate)](phase-02-pane-core-pty-emulation-and-status.md) | 24h | done (gate: GO) |
-| 03 | [Daemon server and RPC methods](phase-03-daemon-server-and-rpc-methods.md) | 30h | todo |
+| 03 | [Daemon server and RPC methods](phase-03-daemon-server-and-rpc-methods.md) | 30h | in progress |
 | 04 | [Chat over the claude CLI](phase-04-chat-over-claude-cli.md) | 14h | todo |
 | 05 | [Remote, notify, policy, self-update](phase-05-remote-notify-policy-and-self-update.md) | 18h | todo |
 | 06 | [CLI `dr`](phase-06-cli-dr.md) | 12h | todo |
-| 07 | [Desktop window on Tauri](phase-07-desktop-window-on-tauri.md) | 14h | todo |
+| 07 | [Desktop window on Tauri](phase-07-desktop-window-on-tauri.md) | 14h | in progress |
 | 08 | [TUI on ratatui](phase-08-tui-on-ratatui.md) | 18h | todo |
 | 09 | [Packaging, cutover, remove Python](phase-09-packaging-cutover-and-python-removal.md) | 14h | todo |
 

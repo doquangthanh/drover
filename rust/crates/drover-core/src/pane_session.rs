@@ -12,7 +12,7 @@ pub use crate::pane_state::{PaneMeta, PaneState, REPLAY_LIMIT};
 use crate::pty::{Pty, SpawnSpec};
 use crate::status_tracker::now_secs;
 
-type OutputListener = Arc<dyn Fn(&str, &str) + Send + Sync>;
+type OutputListener = Arc<dyn Fn(&str, &str) + Send + Sync>; // (pane id, text)
 type ExitHook = Box<dyn Fn(&Arc<PaneSession>) + Send + Sync>;
 
 pub struct PaneSession {
@@ -77,8 +77,10 @@ impl PaneSession {
     fn on_output(&self, data: &str) {
         // Hot path: hand text to viewers first so typing feels instant.
         let id = self.id();
-        let listeners: Vec<OutputListener> = self.listeners.lock().unwrap().iter().map(|(_, l)| l.clone()).collect();
-        for l in listeners {
+        // The listener lock is held until the chunk is in the replay buffer, so `attach` sees every chunk exactly
+        // once: either in the replay it returns or through the listener it adds. Listeners only queue work.
+        let listeners = self.listeners.lock().unwrap();
+        for (_, l) in listeners.iter() {
             l(&id, data);
         }
         let now = now_secs();
@@ -95,6 +97,7 @@ impl PaneSession {
         {
             st.tracker.report_at(&report["state"], now);
         }
+        drop(listeners);
         if st.screen.feed(data.as_bytes()) {
             st.screen_changed_at = now;
         }
@@ -148,6 +151,17 @@ impl PaneSession {
     pub fn add_output_listener(&self, listener: impl Fn(&str, &str) + Send + Sync + 'static) -> u64 {
         let id = self.next_listener.fetch_add(1, Ordering::Relaxed);
         self.listeners.lock().unwrap().push((id, Arc::new(listener)));
+        id
+    }
+
+    /// Hand the replay text to `on_replay`, then add `listener`, atomically: every chunk reaches the viewer exactly
+    /// once and after the replay. `on_replay` runs under the listener lock, so it must only queue work.
+    pub fn attach(&self, on_replay: impl FnOnce(&str), listener: impl Fn(&str, &str) + Send + Sync + 'static) -> u64 {
+        let mut listeners = self.listeners.lock().unwrap();
+        let replay: String = self.state.lock().unwrap().replay.iter().map(String::as_str).collect();
+        on_replay(&replay);
+        let id = self.next_listener.fetch_add(1, Ordering::Relaxed);
+        listeners.push((id, Arc::new(listener)));
         id
     }
 

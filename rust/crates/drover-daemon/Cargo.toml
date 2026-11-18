@@ -5,3 +5,17 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+axum = { version = "0.8.9", features = ["ws"] }
+base64 = "0.23.1"
+dirs = "7.0.0"
+drover-core = { version = "0.2.0-dev", path = "../drover-core" }
+futures-util = "0.3.34"
+getrandom = "0.4.3"
+indexmap = { version = "2.14.2", features = ["serde"] }
+mime_guess = "2.0.5"
+regex = "1.13.1"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
+shlex = "2.0.1"
+tokio = { version = "1.54.1", features = ["rt", "macros", "net", "time", "sync", "signal", "process", "fs"] }
+toml = "1.2.1"

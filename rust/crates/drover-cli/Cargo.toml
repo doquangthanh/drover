@@ -9,3 +9,5 @@ name = "dr"
 path = "src/main.rs"
 
 [dependencies]
+drover-daemon = { version = "0.2.0-dev", path = "../drover-daemon" }
+serde_json = "1.0.154"

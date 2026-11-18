@@ -6,7 +6,7 @@
   `src/drover/config/settings_loader.py`
 
 ## Overview
-- Priority: P1. Status: todo. Effort: 30h.
+- Priority: P1. Status: in progress (all groups ported except chat/notify/update/skill; daily-drive not done). Effort: 30h.
 - Rust `dr server run` that the current React UI and Python CLI can use unchanged.
 
 ## Key Insights
@@ -44,11 +44,13 @@ Ctx { SessionManager, EventHub (broadcast), StateStore, Settings, GitWatcher }
 5. Daily-drive: use the Rust daemon with the current window for a day; log gaps.
 
 ## Todo List
-- [ ] http + ws + token
-- [ ] state/event hub
-- [ ] each methods_* group ported + its conformance file green
-- [ ] session.json round-trip
-- [ ] RSS measured idle and with 10 panes
+- [x] http + ws + token (axum; constant-time token; traversal-safe static)
+- [x] state/event hub (state built at send time, so no listener ever re-locks the manager)
+- [x] system, workspace, panes, layout, agent input, files/fs, git/worktree, subagents ported: 61 conformance tests pass, 15 skip (in-process only); `dr hook claude` in the Rust CLI
+- [ ] notify.test, update.*, skill.text (phases 05/06); chat.* (phase 04)
+- [x] session.json in the Python format (written by Rust, read back; Python->Rust load not yet tested by hand)
+- [x] PSS measured (release): 5.1 MB idle, 5.9 MB with 5 shell panes (Python: ~106 MB idle)
+- [ ] daily-drive the Rust daemon with the real web UI / window
 
 ## Success Criteria
 - All `test_daemon_rpc_*` files (except tagged in-process ones) green against Rust; UI works with no frontend change;
