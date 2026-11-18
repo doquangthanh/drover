@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.35
+### Fixed
+- A pane with long output (or a reloaded window) shows its whole history again, up to the `scrollback` setting, with
+  colours, links and the cursor in place. Before, only the last 512 KB of raw output came back, so the history was
+  short and its first lines could be garbled.
+### Security
+- After an in-app update, the daemon token no longer leaks into the environment of panes (agents could read it).
+
 ## 0.1.34
 ### Changed
 - Linux: the daemon and the window are now Rust (`drover-server`, Tauri `drover`); `dr` stays Python. The daemon
