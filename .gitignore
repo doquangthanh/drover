@@ -15,3 +15,6 @@ session.json
 # frontend (React/Vite)
 frontend/node_modules/
 src/drover/web_dist/
+
+# rust build output
+rust/target/

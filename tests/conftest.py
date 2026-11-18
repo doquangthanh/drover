@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 from daemon_harness import Daemon, boot_daemon
+from external_daemon_harness import boot_external_daemon, external_bin
 from git_helpers import run_git
 
 
@@ -50,7 +51,8 @@ async def start_daemon(drover_dirs: Path) -> AsyncIterator[Callable[..., object]
         if settings_toml:
             config = Path(drover_dirs / "drover-config")
             (config / "settings.toml").write_text(settings_toml, encoding="utf-8")
-        daemon = await boot_daemon()
+        cmd = external_bin()
+        daemon = await (boot_external_daemon(cmd) if cmd else boot_daemon())
         running.append(daemon)
         return daemon
 

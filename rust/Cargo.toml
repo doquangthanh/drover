@@ -1,0 +1,16 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.2.0-dev"
+edition = "2024"
+license = "Apache-2.0"
+
+# Small, fast binaries: the whole point of the rewrite is low RAM and quick startup.
+[profile.release]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"

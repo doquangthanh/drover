@@ -1,0 +1,3 @@
+# Raw PTY captures and their expected screens must stay byte-exact (no CRLF conversion).
+*.raw binary
+*.expected.txt -text

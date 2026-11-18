@@ -1,0 +1,40 @@
+-rwxr-xr-x  1 root root       35336 Thg 8  25 22:12 basename
+-rwxr-xr-x  1 root root       47624 Thg 8  25 22:12 basenc
+-rwxr-xr-x  1 root root     1396520 Thg 3  14  2024 bash
+-rwxr-xr-x  1 root root        6818 Thg 3  14  2024 bashbug
+-rwxr-xr-x  1 root root       93000 Thg 3  23  2022 bc
+-rwxr-xr-x  1 root root       43272 Thg 3  25  2022 bdftopcf
+-rwxr-xr-x  1 root root       14488 Thg 3  25  2022 bdftruncate
+-rwxr-xr-x  1 root root       14360 Thg 2   8  2021 bioradtopgm
+-rwxr-xr-x  1 root root      108864 Thg 3  25  2022 bitmap
+-rwxr-xr-x  1 root root       39144 Thg 10 13 17:28 bluemoon
+-rwxr-xr-x  1 root root      281392 Thg 10 13 17:28 bluetoothctl
+-rwxr-xr-x  1 root root       35224 Thg 4   9  2022 bluetooth-sendto
+-rwxr-xr-x  1 root root       18488 Thg 2   8  2021 bmptopnm
+lrwxrwxrwx  1 root root           8 Thg 2   8  2021 bmptoppm -> bmptopnm
+-rwxr-xr-x  1 root root       14664 Thg 3  25  2022 bmtoa
+-rwxr-xr-x  1 root root      125936 Thg 2   7  2022 boltctl
+-rwxr-xr-x  1 root root       72184 Thg 10 12 14:44 bootctl
+-rwxr-xr-x  1 root root     1036328 Thg 6  28  2022 brltty
+-rwxr-xr-x  1 root root      293608 Thg 6  28  2022 brltty-ctb
+-rwxr-xr-x  1 root root      244344 Thg 6  28  2022 brltty-trtxt
+-rwxr-xr-x  1 root root      277312 Thg 6  28  2022 brltty-ttb
+-rwxr-xr-x  1 root root      121144 Thg 7  15  2024 broadwayd
+lrwxrwxrwx  1 root root           8 Thg 7  23 11:02 browse -> xdg-open
+-rwxr-xr-x  1 root root       14360 Thg 2   8  2021 brushtopbm
+-rwxr-xr-x  1 root root       30952 Thg 10 13 17:28 btattach
+-rwxr-xr-x  1 root root      168960 Thg 10 13 17:28 btmgmt
+-rwxr-xr-x  1 root root      870712 Thg 10 13 17:28 btmon
+-rwxr-xr-x  3 root root       39296 Thg 8  27 11:06 bunzip2
+-rwxr-xr-x  1 root root       92664 Thg 10 12 14:44 busctl
+-rwxr-xr-x  1 root root     2193272 Thg 8  13  2024 busybox
+-rwxr-xr-x  1 root root       72160 Thg 9  18 03:13 bwrap
+-rwxr-xr-x  3 root root       39296 Thg 8  27 11:06 bzcat
+lrwxrwxrwx  1 root root           6 Thg 8  27 11:06 bzcmp -> bzdiff
+-rwxr-xr-x  1 root root        2225 Thg 8  27 11:06 bzdiff
+lrwxrwxrwx  1 root root           6 Thg 8  27 11:06 bzegrep -> bzgrep
+-rwxr-xr-x  1 root root        4893 Thg 11 27  2021 bzexe
+lrwxrwxrwx  1 root root           6 Thg 8  27 11:06 bzfgrep -> bzgrep
+fatal: not a git repository (or any of the parent directories): .git
+bold red tiếng Việt 日本語 emoji 🎉
+

@@ -1,0 +1,122 @@
+total 337896
+drwxr-xr-x  2 root root       65536 Thg 11 18 08:36 [0m[01;34m.[0m
+drwxr-xr-x 14 root root        4096 Thg 2  23  2023 [01;34m..[0m
+-rwxr-xr-x  1 root root       51648 Thg 8  25 22:12 [01;32m[[0m
+-rwxr-xr-x  1 root root       18456 Thg 2   8  2021 [01;32m411toppm[0m
+-rwxr-xr-x  1 root root       35344 Thg 8  15  2025 [01;32maa-enabled[0m
+-rwxr-xr-x  1 root root       35344 Thg 8  15  2025 [01;32maa-exec[0m
+-rwxr-xr-x  1 root root       31248 Thg 8  15  2025 [01;32maa-features-abi[0m
+-rwxr-xr-x  1 root root       59832 Thg 11 12 20:00 [01;32mab[0m
+-rwxr-xr-x  1 root root       22912 Thg 1  12  2022 [01;32maconnect[0m
+-rwxr-xr-x  1 root root        1622 Thg 10 23 19:46 [01;32macpidbg[0m
+-rwxr-xr-x  1 root root       19016 Thg 1  25  2022 [01;32macpi_listen[0m
+-rwxr-xr-x  1 root root       14478 Thg 10 24  2023 [01;32madd-apt-repository[0m
+-rwxr-xr-x  1 root root       14720 Thg 8  20 00:43 [01;32maddpart[0m
+lrwxrwxrwx  1 root root          26 Thg 12  3  2025 [01;36maddr2line[0m -> x86_64-linux-gnu-addr2line
+-rwxr-xr-x  1 root root      150376 Thg 3  25  2022 [01;32mairscan-discover[0m
+-rwxr-xr-x  1 root root       43456 Thg 1  12  2022 [01;32malsabat[0m
+-rwxr-xr-x  1 root root       85328 Thg 1  12  2022 [01;32malsaloop[0m
+-rwxr-xr-x  1 root root       86312 Thg 1  12  2022 [01;32malsamixer[0m
+-rwxr-xr-x  1 root root       76160 Thg 1  12  2022 [01;32malsatplg[0m
+-rwxr-xr-x  1 root root       31576 Thg 1  12  2022 [01;32malsaucm[0m
+-rwxr-xr-x  1 root root       31112 Thg 1  12  2022 [01;32mamidi[0m
+-rwxr-xr-x  1 root root       63952 Thg 1  12  2022 [01;32mamixer[0m
+lrwxrwxrwx  1 root root          25 Thg 7  26 10:39 [01;36manimate[0m -> /etc/alternatives/animate
+lrwxrwxrwx  1 root root          29 Thg 7  26 10:39 [01;36manimate-im6[0m -> /etc/alternatives/animate-im6
+-rwxr-xr-x  1 root root       14488 Thg 7  20  2024 [01;32manimate-im6.q16[0m
+-rwxr-xr-x  1 root root    42825832 Thg 6  29 22:21 [01;32manydesk[0m
+-rwxr-xr-x  1 root root          54 Thg 6  29 22:17 [01;32manydesk-global-settings[0m
+-rwxr-xr-x  1 root root        5680 Thg 2   8  2021 [01;32manytopnm[0m
+-rwxr-xr-x  1 root root         274 Thg 3  23  2022 [01;32mapg[0m
+-rwxr-xr-x  1 root root       26784 Thg 3  23  2022 [01;32mapgbfm[0m
+-rwxr-xr-x  1 root root       84400 Thg 1  12  2022 [01;32maplay[0m
+-rwxr-xr-x  1 root root       27016 Thg 1  12  2022 [01;32maplaymidi[0m
+-rwxr-xr-x  1 root root        2568 Thg 7  10  2024 [01;32mapport-bug[0m
+-rwxr-xr-x  1 root root       13360 Thg 7  29  2025 [01;32mapport-cli[0m
+lrwxrwxrwx  1 root root          10 Thg 7  29  2025 [01;36mapport-collect[0m -> apport-bug
+-rwxr-xr-x  1 root root        2070 Thg 7  29  2025 [01;32mapport-unpack[0m
+-rwxr-xr-x  1 root root       14648 Thg 3  25  2022 [01;32mappres[0m
+-rwxr-xr-x  1 root root      121064 Thg 2  24  2022 [01;32mappstreamcli[0m
+lrwxrwxrwx  1 root root           6 Thg 7  23 11:02 [01;36mapropos[0m -> whatis
+-rwxr-xr-x  1 root root       18824 Thg 11  2 19:56 [01;32mapt[0m
+lrwxrwxrwx  1 root root          18 Thg 10 24  2023 [01;36mapt-add-repository[0m -> add-apt-repository
+-rwxr-xr-x  1 root root       84448 Thg 11  2 19:56 [01;32mapt-cache[0m
+-rwxr-xr-x  1 root root       27104 Thg 11  2 19:56 [01;32mapt-cdrom[0m
+-rwxr-xr-x  1 root root       27024 Thg 11  2 19:56 [01;32mapt-config[0m
+-rwxr-xr-x  1 root root        1039 Thg 3  17  2022 [01;32maptdcon[0m
+-rwxr-xr-x  1 root root       23008 Thg 11  2 19:56 [01;32mapt-extracttemplates[0m
+-rwxr-xr-x  1 root root      236008 Thg 11  2 19:56 [01;32mapt-ftparchive[0m
+-rwxr-xr-x  1 root root       51680 Thg 11  2 19:56 [01;32mapt-get[0m
+-rwxr-xr-x  1 root root       28173 Thg 11  2 19:56 [01;32mapt-key[0m
+-rwxr-xr-x  1 root root       51680 Thg 11  2 19:56 [01;32mapt-mark[0m
+-rwxr-xr-x  1 root root       39320 Thg 11  2 19:56 [01;32mapt-sortpkgs[0m
+-rwxr-xr-x  1 root root         273 Thg 5  20  2016 [01;32mapturl[0m
+-rwxr-xr-x  1 root root        1544 Thg 3  23  2022 [01;32mapturl-gtk[0m
+lrwxrwxrwx  1 root root          19 Thg 12  3  2025 [01;36mar[0m -> x86_64-linux-gnu-ar
+-rwxr-xr-x  1 root root       31240 Thg 8  25 22:12 [01;32march[0m
+lrwxrwxrwx  1 root root           5 Thg 7  23 11:02 [01;36marecord[0m -> aplay
+-rwxr-xr-x  1 root root       31120 Thg 1  12  2022 [01;32marecordmidi[0m
+-rwxr-xr-x  1 root root       14656 Thg 3  20  2023 [01;32marm2hpdl[0m
+lrwxrwxrwx  1 root root          19 Thg 12  3  2025 [01;36mas[0m -> x86_64-linux-gnu-as
+-rwxr-xr-x  1 root root       14360 Thg 2   8  2021 [01;32masciitopgm[0m
+-rwxr-xr-x  1 root root       27008 Thg 1  12  2022 [01;32maseqdump[0m
+-rwxr-xr-x  1 root root       22968 Thg 1  12  2022 [01;32maseqnet[0m
+-rwxr-xr-x  1 root root      145904 Thg 3  23  2022 [01;32maspell[0m
+-rwxr-xr-x  1 root root        2044 Thg 3  23  2022 [01;32maspell-import[0m
+-rwxr-xr-x  1 root root       14360 Thg 2   8  2021 [01;32matktopbm[0m
+-rwxr-xr-x  1 root root       14640 Thg 3  25  2022 [01;32matobm[0m
+-rwxr-xr-x  1 root root       31120 Thg 5   5  2026 [01;32mavahi-browse[0m
+lrwxrwxrwx  1 root root          12 Thg 5   5  2026 [01;36mavahi-browse-domains[0m -> avahi-browse
+-rwxr-xr-x  1 root root       27016 Thg 5   5  2026 [01;32mavahi-publish[0m
+lrwxrwxrwx  1 root root          13 Thg 5   5  2026 [01;36mavahi-publish-address[0m -> avahi-publish
+lrwxrwxrwx  1 root root          13 Thg 5   5  2026 [01;36mavahi-publish-service[0m -> avahi-publish
+-rwxr-xr-x  1 root root       22920 Thg 5   5  2026 [01;32mavahi-resolve[0m
+lrwxrwxrwx  1 root root          13 Thg 5   5  2026 [01;36mavahi-resolve-address[0m -> avahi-resolve
+lrwxrwxrwx  1 root root          13 Thg 5   5  2026 [01;36mavahi-resolve-host-name[0m -> avahi-resolve
+-rwxr-xr-x  1 root root       14728 Thg 5   5  2026 [01;32mavahi-set-host-name[0m
+-rwxr-xr-x  1 root root       22792 Thg 10 13 17:28 [01;32mavinfo[0m
+lrwxrwxrwx  1 root root          21 Thg 7  23 11:02 [01;36mawk[0m -> /etc/alternatives/awk
+-rwxr-xr-x  1 root root       92544 Thg 1  12  2022 [01;32maxfer[0m
+-rwxr-xr-x  1 root root         141 Thg 8  10 08:13 [01;32maz[0m
+-rwxr-xr-x  1 root root       51728 Thg 8  25 22:12 [01;32mb2sum[0m
+-rwxr-xr-x  1 root root       35336 Thg 8  25 22:12 [01;32mbase32[0m
+-rwxr-xr-x  1 root root       35336 Thg 8  25 22:12 [01;32mbase64[0m
+-rwxr-xr-x  1 root root       35336 Thg 8  25 22:12 [01;32mbasename[0m
+-rwxr-xr-x  1 root root       47624 Thg 8  25 22:12 [01;32mbasenc[0m
+-rwxr-xr-x  1 root root     1396520 Thg 3  14  2024 [01;32mbash[0m
+-rwxr-xr-x  1 root root        6818 Thg 3  14  2024 [01;32mbashbug[0m
+-rwxr-xr-x  1 root root       93000 Thg 3  23  2022 [01;32mbc[0m
+-rwxr-xr-x  1 root root       43272 Thg 3  25  2022 [01;32mbdftopcf[0m
+-rwxr-xr-x  1 root root       14488 Thg 3  25  2022 [01;32mbdftruncate[0m
+-rwxr-xr-x  1 root root       14360 Thg 2   8  2021 [01;32mbioradtopgm[0m
+-rwxr-xr-x  1 root root      108864 Thg 3  25  2022 [01;32mbitmap[0m
+-rwxr-xr-x  1 root root       39144 Thg 10 13 17:28 [01;32mbluemoon[0m
+-rwxr-xr-x  1 root root      281392 Thg 10 13 17:28 [01;32mbluetoothctl[0m
+-rwxr-xr-x  1 root root       35224 Thg 4   9  2022 [01;32mbluetooth-sendto[0m
+-rwxr-xr-x  1 root root       18488 Thg 2   8  2021 [01;32mbmptopnm[0m
+lrwxrwxrwx  1 root root           8 Thg 2   8  2021 [01;36mbmptoppm[0m -> bmptopnm
+-rwxr-xr-x  1 root root       14664 Thg 3  25  2022 [01;32mbmtoa[0m
+-rwxr-xr-x  1 root root      125936 Thg 2   7  2022 [01;32mboltctl[0m
+-rwxr-xr-x  1 root root       72184 Thg 10 12 14:44 [01;32mbootctl[0m
+-rwxr-xr-x  1 root root     1036328 Thg 6  28  2022 [01;32mbrltty[0m
+-rwxr-xr-x  1 root root      293608 Thg 6  28  2022 [01;32mbrltty-ctb[0m
+-rwxr-xr-x  1 root root      244344 Thg 6  28  2022 [01;32mbrltty-trtxt[0m
+-rwxr-xr-x  1 root root      277312 Thg 6  28  2022 [01;32mbrltty-ttb[0m
+-rwxr-xr-x  1 root root      121144 Thg 7  15  2024 [01;32mbroadwayd[0m
+lrwxrwxrwx  1 root root           8 Thg 7  23 11:02 [01;36mbrowse[0m -> xdg-open
+-rwxr-xr-x  1 root root       14360 Thg 2   8  2021 [01;32mbrushtopbm[0m
+-rwxr-xr-x  1 root root       30952 Thg 10 13 17:28 [01;32mbtattach[0m
+-rwxr-xr-x  1 root root      168960 Thg 10 13 17:28 [01;32mbtmgmt[0m
+-rwxr-xr-x  1 root root      870712 Thg 10 13 17:28 [01;32mbtmon[0m
+-rwxr-xr-x  3 root root       39296 Thg 8  27 11:06 [01;32mbunzip2[0m
+-rwxr-xr-x  1 root root       92664 Thg 10 12 14:44 [01;32mbusctl[0m
+-rwxr-xr-x  1 root root     2193272 Thg 8  13  2024 [01;32mbusybox[0m
+-rwxr-xr-x  1 root root       72160 Thg 9  18 03:13 [01;32mbwrap[0m
+-rwxr-xr-x  3 root root       39296 Thg 8  27 11:06 [01;32mbzcat[0m
+lrwxrwxrwx  1 root root           6 Thg 8  27 11:06 [01;36mbzcmp[0m -> bzdiff
+-rwxr-xr-x  1 root root        2225 Thg 8  27 11:06 [01;32mbzdiff[0m
+lrwxrwxrwx  1 root root           6 Thg 8  27 11:06 [01;36mbzegrep[0m -> bzgrep
+-rwxr-xr-x  1 root root        4893 Thg 11 27  2021 [01;32mbzexe[0m
+lrwxrwxrwx  1 root root           6 Thg 8  27 11:06 [01;36mbzfgrep[0m -> bzgrep
+fatal: not a git repository (or any of the parent directories): .git
+[1;31mbold red[0m tiếng Việt 日本語 emoji 🎉

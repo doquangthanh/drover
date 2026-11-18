@@ -1,0 +1,17 @@
+//! Drover core: pane model, terminal emulation, agent status detection, layout tree.
+
+pub mod alt_screen_pages;
+pub mod detection_rules;
+pub mod foreground_probe;
+pub mod launch_command;
+pub mod layout_tree;
+pub mod osc7501;
+pub mod pane_session;
+pub mod pane_state;
+pub mod pty;
+pub mod screen;
+pub mod status_detector;
+pub mod status_tracker;
+pub mod terminal_keys;
+pub mod utf8_stream;
+pub mod workspace_models;
