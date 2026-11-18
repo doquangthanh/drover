@@ -42,10 +42,7 @@ jobs:
           npm --prefix frontend run build
       - name: Build Python dr
         run: |
-          # Textual so plain `dr` opens the terminal UI. Qt is left out: the Linux bundle uses the Rust window
-          # (packaging/drover.spec excludes it), and PyQt6 has no aarch64 wheel for this glibc.
-          uv sync --extra tui --no-install-package pyqt6 --no-install-package pyqt6-qt6 --no-install-package pyqt6-sip \
-            --no-install-package pyqt6-webengine --no-install-package pyqt6-webengine-qt6 --no-install-package qtpy
+          uv sync --extra tui  # bundle Textual so plain `dr` opens the terminal UI
           uv run pyinstaller packaging/drover.spec --noconfirm
       - name: Build Rust window and daemon
         run: cargo build --release --locked -p drover-cli -p drover-desktop
