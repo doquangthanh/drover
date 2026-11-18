@@ -1,10 +1,16 @@
 # System architecture
 
+Linux release bundle (`~/.local/share/drover`): Python `dr` (CLI + TUI, PyInstaller) + Rust `drover` (Tauri window,
+`rust/crates/drover-desktop`) + Rust `drover-server` (daemon, `rust/crates/drover-daemon`, binary of `drover-cli`).
+`dr server run` execs `drover-server` when it sits next to `dr` (`DROVER_ENGINE=python` keeps the Python daemon).
+Both daemons speak the same `/ws` + `/rpc` protocol and share `daemon.json`, `session.json`, `chats/`, so either can
+take over the other's session. Windows still ships the all-Python `drover.exe`.
+
 ```
-drover.exe (pywebview window) / browser
+drover (Tauri window) / drover.exe (pywebview, Windows) / browser
         |  http://127.0.0.1:<port>/?token=...
         v
-drover-server (aiohttp daemon, src/drover/daemon)
+drover-server (Rust: tokio + axum; Python fallback: aiohttp, src/drover/daemon)
   /            index.html of the React build (no-store)      src/drover/web_dist/   (built, gitignored)
   /ui/         same index (kept so old links and the dev server path work)
   /ui/assets/  hashed JS/CSS/fonts, `immutable` cache

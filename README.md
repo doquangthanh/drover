@@ -122,8 +122,10 @@ curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/in
 ```
 
 Installs the latest release (x64 or arm64) into `~/.local/share/drover`, links `dr` and `drover` into
-`~/.local/bin` and adds Drover to your app menu. No Python or Node needed. Run the same command again to update, or
-use **Settings → Check for updates**. Pin a version with `DROVER_VERSION=v0.1.8`.
+`~/.local/bin` and adds Drover to your app menu. No Python or Node needed. The window uses the system WebKitGTK 4.1
+(Debian/Ubuntu: `libwebkit2gtk-4.1-0`, present on most desktops); without it `dr app` opens the UI in your browser.
+Downloads are checked against the release's SHA-256. Run the same command again to update, or use
+**Settings → Check for updates**. Pin a version with `DROVER_VERSION=v0.1.8`.
 
 ### First five minutes
 
@@ -275,8 +277,11 @@ For UI work run the server, then `npm --prefix frontend run dev`: the dev server
 | Lint | `uv run ruff check src tests` |
 | UI types / tests | `npm --prefix frontend run typecheck` · `npm --prefix frontend test` |
 | Windows app | `uv run pyinstaller packaging/drover.spec --noconfirm` → `dist\drover.exe` |
+| Rust daemon / window | `scripts/cargo-capped.sh build --release -p drover-cli -p drover-desktop` (in `rust/`) |
+| Rust tests | `scripts/cargo-capped.sh test -p drover-daemon` · Python suite on the Rust daemon: `DROVER_TEST_DAEMON_BIN=rust/target/release/dr uv run pytest` |
 
-Tagging `v*` builds the Windows app and the Linux bundles in CI and attaches them to the GitHub release.
+Tagging `v*` builds the Windows app and the Linux bundles in CI and attaches them to the GitHub release. The Linux
+bundle is hybrid: Python `dr` (CLI, TUI) plus the Rust `drover` window (Tauri) and `drover-server` daemon.
 
 </details>
 

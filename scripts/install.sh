@@ -1,7 +1,8 @@
 #!/bin/sh
 # Install drover from the latest GitHub release (Linux x64/arm64). No root needed.
 #   curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/install.sh | sh
-# Env: DROVER_VERSION=v0.1.0 (default: latest), DROVER_HOME=~/.local/share/drover, DROVER_BIN=~/.local/bin
+# Env: DROVER_VERSION=v0.1.0 (default: latest), DROVER_HOME=~/.local/share/drover, DROVER_BIN=~/.local/bin,
+#      DROVER_ARCHIVE=/path/drover-linux-x64.tar.gz (install a local build, no download, no checksum)
 set -eu
 
 REPO="doquangthanh/drover"
@@ -25,8 +26,19 @@ fi
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-echo "drover: downloading $url"
-curl -fSL --proto '=https' "$url" -o "$tmp/$asset"
+if [ -n "${DROVER_ARCHIVE:-}" ]; then
+  cp "$DROVER_ARCHIVE" "$tmp/$asset"
+else
+  echo "drover: downloading $url"
+  curl -fSL --proto '=https' "$url" -o "$tmp/$asset"
+  # Releases from the Rust move on carry a SHA-256; older ones don't, so a missing file only skips the check.
+  if curl -fsSL --proto '=https' "$url.sha256" -o "$tmp/sum" 2>/dev/null; then
+    want="$(cut -d' ' -f1 "$tmp/sum")"
+    got="$(sha256sum "$tmp/$asset" | cut -d' ' -f1)"
+    [ "$want" = "$got" ] || { echo "drover: checksum mismatch, not installing" >&2; exit 1; }
+    echo "drover: checksum ok"
+  fi
+fi
 
 # Unpack next to the old copy, then swap, so a failed download never breaks a working install.
 mkdir -p "$tmp/unpack"
@@ -59,7 +71,7 @@ cat > "$apps/drover.desktop" <<EOF
 Type=Application
 Name=Drover
 Comment=Workspace for running coding agents
-Exec=$DROVER_HOME/drover app
+Exec=$DROVER_HOME/dr app
 Icon=$icon
 Terminal=false
 Categories=Development;
@@ -71,4 +83,4 @@ case ":$PATH:" in
   *":$DROVER_BIN:"*) ;;
   *) echo "drover: add $DROVER_BIN to PATH:  export PATH=\"$DROVER_BIN:\$PATH\"" ;;
 esac
-echo "drover: run 'dr' to start. Without GTK/WebKit it opens the web UI in your browser."
+echo "drover: run 'dr' to start. The window needs WebKitGTK 4.1 (Debian/Ubuntu: libwebkit2gtk-4.1-0); without it 'dr app' opens the web UI in your browser."

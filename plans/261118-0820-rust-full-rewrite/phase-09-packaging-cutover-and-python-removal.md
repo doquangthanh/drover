@@ -1,11 +1,13 @@
-# Phase 09: Packaging, cutover, remove Python
+# Phase 09: Packaging, cutover (hybrid: Python CLI/TUI stay)
 
 ## Context Links
 - `packaging/*`, `pyproject.toml`, `README.md`, `docs/*`, self-update code (phase 05)
 
 ## Overview
-- Priority: P1. Status: todo. Effort: 14h.
-- Ship Rust builds for Linux + Windows, move existing users over through self-update, delete the Python code.
+- Priority: P1. Status: Linux done locally (CI not run yet); Windows not started. Effort: 14h.
+- Decision 2026-11-18 (user): hybrid. Phases 06 and 08 are dropped; the Python `dr` (CLI + TUI) stays. Python code
+  is NOT removed. Linux ships one bundle: Python `dr` + Rust `drover` (Tauri) + Rust `drover-server` (daemon).
+  Windows keeps the all-Python `drover.exe` until its Rust build is tested on a real Windows machine.
 
 ## Key Insights
 - Users today have a PyInstaller bundle in `~/.local/share/drover` or a `uv tool` install. Self-update must replace
@@ -38,11 +40,21 @@ old Python drover ── self-update ──> Rust binaries (state dir untouched)
 5. Delete Python code; update docs.
 
 ## Todo List
-- [ ] CI builds
-- [ ] Windows pass
-- [ ] bridge update tested
-- [ ] final measurements
-- [ ] Python removed, docs updated
+- [x] Linux bundle: `drover.spec` builds only `dr` on Linux (no Qt/pywebview); `release-linux.yml` adds the Rust
+  binaries, a smoke test (Python `dr server start` -> Rust daemon) and a `.sha256` per tarball
+- [x] Python `dr server run` execs `drover-server` in the bundle (`DROVER_ENGINE=python` opts out); `dr app` opens
+  the Tauri window, falls back to the browser without WebKitGTK; Tauri starts `drover-server`
+- [x] Rust update.apply: download + SHA-256 check + folder swap with rollback + restart keeping port/token
+- [x] install.sh: SHA-256 check, `DROVER_ARCHIVE` for local builds, menu entry runs `dr app`
+- [x] built and installed locally (PyInstaller + cargo, capped) into temp dirs: daemon engine=rust, 7.6 MB RSS,
+  UI 200, `dr --help` 67 ms, `dr app` window loaded the UI (ws client "ui"; screen was locked, so no screenshot),
+  second `dr app` focused the first. Bundle 627 MB -> ~101 MB (tarball 40 MB)
+- [ ] CI run on GitHub (needs a push/tag: not done)
+- [ ] update.apply against a real release (needs a release with .sha256) — not run; swap/checksum unit-tested
+- [ ] bridge from the installed 0.1.33: its updater swaps in the new tarball and restarts via `dr server run`,
+  which now execs drover-server (same path as the tested `dr server start`); not run end to end
+- [ ] Windows: Rust build + test on a real machine
+- [x] docs: README, system-architecture, code-standards (Rust), changelog Unreleased
 
 ## Success Criteria
 - Fresh install and upgrade both work on Linux and Windows; targets in plan.md met.

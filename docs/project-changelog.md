@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+### Changed
+- Linux: the daemon and the window are now Rust (`drover-server`, Tauri `drover`); `dr` stays Python. The daemon
+  idles at ~5–8 MB instead of ~106 MB, the install shrinks from ~630 MB to ~100 MB (no Qt), and only one window
+  runs at a time. Same files and settings: an update keeps your session. The window needs WebKitGTK 4.1; without
+  it `dr app` opens the browser. `DROVER_ENGINE=python` brings back the Python daemon.
+- Chat agents talk to the `claude` CLI directly (no Python SDK in the daemon).
+- Remote machines use your system `ssh` (so `~/.ssh/config`, ProxyJump and ssh-agent work as in a terminal).
+### Fixed
+- Vietnamese (ibus Telex) typing in the window: words no longer repeat; Ctrl+A shortcuts work while it is on.
+### Security
+- Updates and `install.sh` check the release's SHA-256 before installing.
+
 ## 0.1.33
 ### Fixed
 - The app opens again from the menu or desktop icon. Since 0.1.29 the packaged `drover` started the terminal UI

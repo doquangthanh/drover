@@ -6,6 +6,14 @@ General: YAGNI/KISS/DRY, kebab-case file names, files under ~200 lines, real cod
 - aiohttp daemon; RPC methods register in `rpc/`; every data channel needs the daemon token.
 - Tests: `.venv/Scripts/python.exe -m pytest -q`. `tests/daemon_harness.py` boots the real app.
 
+## Rust (`rust/`)
+- Cargo workspace: `drover-core` (panes, detection), `drover-daemon` (server, RPC in `methods/`, chat, remote),
+  `drover-cli` (bin `dr` = release `drover-server`), `drover-desktop` (Tauri window). Edition 2024.
+- The wire protocol is the contract: keep `/ws`, `/rpc`, state files byte-compatible with the Python daemon; the
+  Python suite runs against the binary with `DROVER_TEST_DAEMON_BIN`.
+- Prefer system tools over heavy crates where the OS has them (`ssh`, `curl`, `notify-send`, `tar`).
+- Every cargo run goes through `scripts/cargo-capped.sh` (memory cap); one heavy build at a time.
+
 ## Frontend (`frontend/`)
 - TypeScript strict; run `npm --prefix frontend run typecheck`, `test` (Vitest, pure logic only) and `build` before pushing.
 - State lives in the Zustand store (`core/store.ts`); never mutate it from components, call `actions/` or `connection.rpc`.

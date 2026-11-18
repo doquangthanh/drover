@@ -73,9 +73,23 @@ def cmd_skill(args) -> int:
     return 0
 
 
+def _bundled_rust_daemon() -> str | None:
+    """`drover-server` next to a packaged Linux `dr`, unless DROVER_ENGINE=python asks for the Python daemon."""
+    from drover.self_command import bundle_dir, is_frozen
+
+    if not is_frozen() or sys.platform == "win32" or os.environ.get("DROVER_ENGINE") == "python":
+        return None
+    exe = bundle_dir() / "drover-server"
+    return str(exe) if exe.is_file() and os.access(exe, os.X_OK) else None
+
+
 def cmd_server(args) -> int:
     action = args.action
     if action == "run":
+        rust_daemon = _bundled_rust_daemon()
+        if rust_daemon:  # release bundle: the daemon is the Rust drover-server next to dr
+            os.execv(rust_daemon, [rust_daemon, "server", "run", "--listen", args.listen]
+                     + (["--background"] if args.background else []))
         from drover.daemon.daemon_main import main as run_daemon
 
         if args.listen in ("0.0.0.0", "::", "*"):

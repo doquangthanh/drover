@@ -111,7 +111,11 @@ def main(argv: list[str] | None = None) -> None:
     if args.cmd is None and _textual_available():  # plain `dr` opens the terminal UI; `dr app` the desktop window
         sys.exit(_cmd_tui(args))
     if args.cmd in (None, "app"):
+        from drover.desktop.bundled_rust_window import open_bundled_window
         from drover.desktop.desktop_window_launcher import main as open_app
+
+        if open_bundled_window():
+            return
 
         open_app()
         return
