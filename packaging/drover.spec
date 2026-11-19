@@ -1,5 +1,4 @@
-# PyInstaller spec. Windows: one file dist/drover.exe (window + CLI + daemon). Linux: folder dist/drover/ with the
-# Python `dr` (CLI + TUI); CI adds the Rust window `drover` and daemon `drover-server` (hybrid bundle, no Qt).
+# PyInstaller spec: folder dist/drover/ with the Python CLI `dr-py` (CLI + TUI) on every OS; see the end of the file.
 # Build:  uv run pyinstaller packaging/drover.spec --noconfirm
 import os
 import sys
@@ -33,20 +32,13 @@ def analysis(script):
                     excludes=["tkinter", "setuptools", "pkg_resources", "_distutils_hack", *LINUX_EXCLUDES])
 
 
+# Every OS: folder dist/drover/ with the Python CLI dr-py. CI adds the Rust dr (fast agent commands + the daemon,
+# runs dr-py for the rest), the Tauri window drover and the GPUI preview drover-native: one layout everywhere.
+a_dr = analysis("dr_entry.py")
+exe_dr = EXE(PYZ(a_dr.pure), a_dr.scripts, [], exclude_binaries=True, name="dr-py", console=True, **ICON)
+COLLECT(exe_dr, a_dr.binaries, a_dr.datas, name="drover")
 if sys.platform == "win32":
+    # Old one-file app dist/drover.exe (window + CLI + daemon), still the download for installs up to 0.1.4x until
+    # the Tauri drover.exe installs the folder itself (plans/261119-2253-windows-linux-full-parity, phase 02).
     a_app = analysis("drover_entry.py")
-    pyz_app = PYZ(a_app.pure)
-    # Single file dist/drover.exe: window with no args, `drover <cmd>` is the CLI, `drover server run` the daemon.
-    EXE(pyz_app, a_app.scripts, a_app.binaries, a_app.datas, [], name="drover", console=False, **ICON)
-    # Plus folder dist/drover-cli/ (no onefile unpacking per call): zipped as drover-cli-windows-x64.zip, installed
-    # by the daemon into <state>/runtime/<version>/ (windows_cli_runtime_installer). The Python CLI is dr-py.exe;
-    # CI adds the Rust dr.exe next to it, which answers agent commands itself and runs dr-py.exe for the rest.
-    a_cli = analysis("dr_entry.py")
-    exe_cli = EXE(PYZ(a_cli.pure), a_cli.scripts, [], exclude_binaries=True, name="dr-py", console=True, **ICON)
-    COLLECT(exe_cli, a_cli.binaries, a_cli.datas, name="drover-cli")
-else:
-    # Same names as the Windows runtime: the Python CLI is dr-py; CI puts the Rust dr next to it (fast agent
-    # commands + the daemon), which runs dr-py for the commands it doesn't answer itself.
-    a_dr = analysis("dr_entry.py")
-    exe_dr = EXE(PYZ(a_dr.pure), a_dr.scripts, [], exclude_binaries=True, name="dr-py", console=True, **ICON)
-    COLLECT(exe_dr, a_dr.binaries, a_dr.datas, name="drover")
+    EXE(PYZ(a_app.pure), a_app.scripts, a_app.binaries, a_app.datas, [], name="drover", console=False, **ICON)
