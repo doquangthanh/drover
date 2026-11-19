@@ -131,9 +131,9 @@ Downloads are checked against the release's SHA-256. Run the same command again 
 
 | Step | Do this |
 |---|---|
-| 1. Start an agent | Click **+** in the tab bar or press **Ctrl+A c**. Pick the agent, a folder, an optional worktree and a first prompt. |
+| 1. Start an agent | Click **+** in the tab bar or press **Ctrl+Shift+&#96;**. Pick the agent, a folder, an optional worktree and a first prompt. |
 | 2. Walk away | Close the window if you like. The agent keeps going. |
-| 3. Answer whoever needs you | Press **Ctrl+A n** to jump to the next agent waiting on you, or open the Inbox. |
+| 3. Answer whoever needs you | Press **F8** to jump to the next agent waiting on you, or open the Inbox. |
 | 4. Let agents help each other | Run `dr skill >> AGENTS.md` in your project so your agents know how to use `dr`. |
 | 5. Add another machine | `dr machine add vps-1 deploy@vps-1 --install` |
 
@@ -172,7 +172,7 @@ and the `dr` command are all clients of it, which is why agents survive closing 
 the current folder. Run `claude`, `codex`... in any terminal and it shows up under **Agents** in the sidebar.
 Needs Textual (bundled in the Linux release, otherwise `pip install 'drover[tui]'`).
 
-The prefix is **Ctrl+B** (setting `tui_prefix`; the web UI keeps `prefix`, Ctrl+A).
+The prefix is **Ctrl+B** (setting `tui_prefix`; the app and web UI use VS Code keys instead).
 
 | Keys after the prefix | Action |
 |---|---|
@@ -188,16 +188,22 @@ Known limits: agents share one terminal size with the web UI; no chat view, file
 
 ## Keyboard
 
-The prefix is **Ctrl+A**, tmux style. Press it twice to send a real Ctrl+A to the agent.
+The app and the web UI use VS Code's default keys. **Ctrl+K W** means press Ctrl+K, let go, then W.
 
 | Keys | Action |
 |---|---|
-| **Ctrl+A c** | New agent |
-| **Ctrl+A n** | Next agent that needs you |
-| **Ctrl+A /** | Find any agent or text |
-| **Ctrl+A %** / **Ctrl+A "** | Split side by side / stacked |
-| **Ctrl+A z** / **Ctrl+A x** | Zoom / close pane |
-| **Ctrl+A :** / **Ctrl+A ?** | All commands / all shortcuts |
+| **Ctrl+Shift+P** / **F1** | All commands |
+| **Ctrl+P** | Jump to a terminal |
+| **Ctrl+Shift+&#96;** / **Ctrl+N** | New terminal / new tab |
+| **Ctrl+\\** / **Ctrl+K Ctrl+\\** | Split side by side / stacked |
+| **Ctrl+W** / **Ctrl+K W** | Close tab / close pane |
+| **Ctrl+1-9** / **Alt+1-9** | Focus pane / go to tab |
+| **Ctrl+K Ctrl+M** | Zoom pane |
+| **F8** / **Shift+F8** | Next agent that needs you / next finished agent |
+| **Ctrl+B** | Toggle sidebar |
+| **Ctrl+K Ctrl+S** | All shortcuts |
+
+These keys go to Drover even inside a terminal, as in VS Code (Ctrl+W no longer deletes a word in the shell).
 
 <details>
 <summary><b>CLI reference (<code>dr</code>)</b></summary>

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+### Changed
+- Keyboard works like VS Code in the app and web UI: the Ctrl+A prefix is gone. New keys include Ctrl+Shift+backtick new
+  terminal, Ctrl+N new tab, Ctrl+K Ctrl+\ split down, Ctrl+K W close pane, Ctrl+1-9 focus pane, Alt+1-9 go to tab,
+  Ctrl+K Ctrl+arrows focus by direction, Ctrl+K Ctrl+M zoom, F8 / Shift+F8 next agent that needs you / is done,
+  Ctrl+K Ctrl+S shortcuts. Send Esc, restart, broadcast and the other agent actions are in the command palette.
+  The `prefix` setting is no longer used by the UI; the TUI keeps `tui_prefix` (Ctrl+B).
+
 ## 0.1.35
 ### Fixed
 - A pane with long output (or a reloaded window) shows its whole history again, up to the `scrollback` setting, with
