@@ -66,8 +66,13 @@ impl PaneScreen {
         self.term.resize(Size(cols, rows));
     }
 
-    pub(crate) fn term(&self) -> &Term<ScreenEvents> {
+    pub fn term(&self) -> &Term<ScreenEvents> {
         &self.term
+    }
+
+    /// For viewers: scroll the display through history, read modes.
+    pub fn term_mut(&mut self) -> &mut Term<ScreenEvents> {
+        &mut self.term
     }
 
     pub fn title(&self) -> String {

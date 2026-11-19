@@ -3,5 +3,11 @@ name = "drover-proto"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Client side of the drover daemon protocol: wire types, a state store and a reconnecting /ws client"
 
 [dependencies]
+dirs = "7.0.0"
+drover-core = { version = "0.2.0-dev", path = "../drover-core" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tungstenite = "0.28.0"

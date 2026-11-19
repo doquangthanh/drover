@@ -52,6 +52,7 @@ mv "$tmp/unpack/drover" "$DROVER_HOME"
 
 ln -sf "$DROVER_HOME/dr" "$DROVER_BIN/dr"
 ln -sf "$DROVER_HOME/drover" "$DROVER_BIN/drover"
+[ -x "$DROVER_HOME/drover-native" ] && ln -sf "$DROVER_HOME/drover-native" "$DROVER_BIN/drover-native"  # native window (preview)
 ln -sf "$DROVER_HOME/dr" "$DROVER_BIN/hd"  # old CLI name, kept for agents and scripts that still call it
 
 # Remove an install made under the old "herd" name (its settings move over on first start).
