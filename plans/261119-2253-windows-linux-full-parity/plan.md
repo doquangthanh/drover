@@ -1,7 +1,7 @@
 ---
 title: "Windows = Linux: one codebase, same parts, same build, same update"
 description: "Remove every Windows/Linux difference except OS API shims and config; CI gate keeps them equal."
-status: todo
+status: in-progress
 priority: P1
 branch: main
 tags: [windows, linux, parity, tauri, packaging, ci]
@@ -19,15 +19,15 @@ Everything else (parts, bundle layout, window, CLI, daemon, update flow, tests) 
 ## Today's differences (audit 2026-11-19)
 | Area | Linux | Windows | Phase |
 |---|---|---|---|
-| Window | `drover` Rust/Tauri | `drover.exe` Python/pywebview | 01 |
-| Native GPUI preview | yes | no | 01 |
-| Bundle | folder: `dr`, `drover-server`, `drover`, `drover-native` | onefile `drover.exe` + runtime zip | 02 |
-| Self-update | Rust swaps bundle | Rust calls `drover.exe self-update` | 02 |
-| CI build | `-p drover-cli -p drover-desktop -p drover-desktop-native` | `-p drover-cli` | 02 |
-| Follow cwd | yes | off (`manager.rs:178`) | 03 |
-| Claude resume of typed claude | yes | off (`status_monitor.rs:113`) | 03 |
-| Title kind fallback | off | on (`status_monitor.rs:152`) | 03 |
-| Python daemon | not shipped as fallback | fallback + first start | 02 |
+| Window | `drover` Rust/Tauri | `drover.exe` Python/pywebview | 01 | [Tauri + GPUI windows build and run on Windows](phase-01-tauri-window-on-windows.md) | done (0.1.44) |
+| Native GPUI preview | yes | no | 01 | [Tauri + GPUI windows build and run on Windows](phase-01-tauri-window-on-windows.md) | done (0.1.44) |
+| Bundle | folder: `dr`, `drover-server`, `drover`, `drover-native` | onefile `drover.exe` + runtime zip | 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | done (0.1.43-0.1.45); cleanup left: remove Python daemon, runtime installer, `self_update_windows.rs` once no install runs 0.1.4x |
+| Self-update | Rust swaps bundle | Rust calls `drover.exe self-update` | 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | done (0.1.43-0.1.45); cleanup left: remove Python daemon, runtime installer, `self_update_windows.rs` once no install runs 0.1.4x |
+| CI build | `-p drover-cli -p drover-desktop -p drover-desktop-native` | `-p drover-cli` | 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | done (0.1.43-0.1.45); cleanup left: remove Python daemon, runtime installer, `self_update_windows.rs` once no install runs 0.1.4x |
+| Follow cwd | yes | off (`manager.rs:178`) | 03 | [Turn on the Windows-off features](phase-03-feature-gaps.md) | done (0.1.44): agent detection, claude resume, follow cwd, Windows Terminal font; title guess removed |
+| Claude resume of typed claude | yes | off (`status_monitor.rs:113`) | 03 | [Turn on the Windows-off features](phase-03-feature-gaps.md) | done (0.1.44): agent detection, claude resume, follow cwd, Windows Terminal font; title guess removed |
+| Title kind fallback | off | on (`status_monitor.rs:152`) | 03 | [Turn on the Windows-off features](phase-03-feature-gaps.md) | done (0.1.44): agent detection, claude resume, follow cwd, Windows Terminal font; title guess removed |
+| Python daemon | not shipped as fallback | fallback + first start | 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | done (0.1.43-0.1.45); cleanup left: remove Python daemon, runtime installer, `self_update_windows.rs` once no install runs 0.1.4x |
 | arm64 | yes | no | out of scope (note) |
 | Agent detection | done 51b3239 (one path) | done | - |
 
@@ -44,10 +44,10 @@ Windows download stays one click: `drover.exe` (the window) installs this folder
 ## Phases
 | # | Phase | Status |
 |---|---|---|
-| 01 | [Tauri + GPUI windows build and run on Windows](phase-01-tauri-window-on-windows.md) | done locally (9db25f6, 27367e0); `dr app` switch waits for 02 layout |
-| 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | todo (next) |
-| 03 | [Turn on the Windows-off features](phase-03-feature-gaps.md) | claude resume done (fa895cc); follow cwd, title fallback both OS, Windows Terminal font todo |
-| 04 | [Parity gate in CI + docs](phase-04-parity-gate-docs.md) | todo |
+| 01 | [Tauri + GPUI windows build and run on Windows](phase-01-tauri-window-on-windows.md) | done (0.1.44) |
+| 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | done (0.1.43-0.1.45); cleanup left: remove Python daemon, runtime installer, `self_update_windows.rs` once no install runs 0.1.4x |
+| 03 | [Turn on the Windows-off features](phase-03-feature-gaps.md) | done (0.1.44): agent detection, claude resume, follow cwd, Windows Terminal font; title guess removed |
+| 04 | [Parity gate in CI + docs](phase-04-parity-gate-docs.md) | ci.yml + code-standards done; architecture/README update left |
 
 ## Constraints
 - Low-RAM machine: cargo `-j2`, one heavy build at a time. Local Windows toolchain GNU + WinLibs (dlltool on PATH).
