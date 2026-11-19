@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+### Fixed
+- Windows, installs on 0.1.43: updating replaced the old runtime folder in place instead of moving to the new app
+  folder, so `drover.exe` stayed the old one-file app and the next start could go back to 0.1.43. The daemon now
+  finds itself in that folder and finishes the move: copies itself to `%LOCALAPPDATA%\drover\app`, puts the new
+  `drover.exe` where the old one was (found from its shims or autostart) and restarts from there, keeping port and
+  token. Updating once more (to this version or later) is enough.
+- Windows: `drover.exe` no longer opens a console window when it forwards arguments to `dr` (autostart, shims).
+
 ## 0.1.44
 ### Changed
 - Windows: the `drover.exe` download is the Rust (Tauri) window, as on Linux. On first run it installs the release

@@ -24,6 +24,8 @@ pub mod self_update;
 pub mod self_update_apply;
 #[cfg(windows)]
 pub mod self_update_windows;
+#[cfg(windows)]
+mod legacy_runtime_migration;
 pub mod settings;
 pub mod state_store;
 pub mod status_monitor;
@@ -114,6 +116,10 @@ pub fn serve(host: &str, port: u16, foreground: bool) -> std::io::Result<()> {
         std::env::remove_var("DROVER_KEEP_PORT");
     }
     log::init(foreground);
+    #[cfg(windows)]
+    if legacy_runtime_migration::hand_over(host, foreground, &keep) {
+        return Ok(());
+    }
     if is_alive(read_info().as_ref()) {
         log::info("another drover daemon is already running; exiting");
         return Ok(());
