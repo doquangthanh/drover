@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.43
 Windows and Linux move to one app: same folder, same programs, same update (plan 261119-2253).
 ### Added
 - Windows: an agent typed in a shell pane (`claude`, `codex`, `gemini`, `opencode`, also through `.cmd` shims and
