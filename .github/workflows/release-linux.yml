@@ -1,7 +1,7 @@
 name: release-linux
 
 # Builds the Linux bundle when a tag like v0.1.0 is pushed, and attaches it (with its SHA-256) to the GitHub release.
-# Hybrid bundle: Python `dr` (CLI + TUI, PyInstaller) + Rust `drover` (Tauri window) + Rust `drover-server` (daemon).
+# Bundle: Rust `dr` (fast CLI + daemon) + Python `dr-py` (rest of the CLI + TUI) + Rust `drover` (Tauri window).
 on:
   push:
     tags: ["v*"]
