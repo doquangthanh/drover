@@ -14,7 +14,7 @@ import sys
 import time
 
 log = logging.getLogger(__name__)
-START_GRACE_S = 5.0  # a Rust daemon still running (or serving) after this counts as started
+START_TIMEOUT_S = 20.0  # longer than any normal start (session load, antivirus scan of a fresh dr.exe)
 
 
 def bundled_rust_daemon() -> str | None:
@@ -42,10 +42,16 @@ def hand_over(exe: str, listen: str, background: bool) -> int | None:
 
     if not background:
         return subprocess.call(argv)
+    from drover.app_paths import log_dir
+
     flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
+    # Drop the onefile launcher's _PYI_* variables: they point at its temp folder, gone once drover.exe exits, and
+    # the daemon starts drover.exe again (self-update, restart) and hands its environment to every pane.
+    env = {k: v for k, v in os.environ.items() if not k.startswith("_PYI_")} | {"PYINSTALLER_RESET_ENVIRONMENT": "1"}
     try:
-        proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                                creationflags=flags, close_fds=True)
+        with open(log_dir() / "daemon-stdout.log", "ab") as log_file:  # start-up errors printed before the logger
+            proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=log_file, stderr=log_file, env=env,
+                                    creationflags=flags, close_fds=True)
     except OSError as exc:
         log.warning("Rust daemon %s did not start (%s); using the Python daemon", exe, exc)
         return None
@@ -56,10 +62,11 @@ def hand_over(exe: str, listen: str, background: bool) -> int | None:
 
 
 def _started(proc) -> bool:
-    """True once the child answers /health under its own pid, or is still alive after the grace period."""
+    """True once the child answers /health under its own pid; False if it exits first. Still starting after
+    START_TIMEOUT_S: counted as started (it is alive; clients keep waiting for it)."""
     from drover.daemon.daemon_client import is_alive, read_info
 
-    deadline = time.monotonic() + START_GRACE_S
+    deadline = time.monotonic() + START_TIMEOUT_S
     while time.monotonic() < deadline:
         if proc.poll() is not None:
             return False

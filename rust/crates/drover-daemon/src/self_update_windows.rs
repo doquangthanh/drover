@@ -23,6 +23,7 @@ pub async fn apply(tag: &str) -> Result<(), String> {
     }
     let mut cmd = tokio::process::Command::new(&owner);
     cmd.args(["self-update", tag]).stdin(std::process::Stdio::null()).kill_on_drop(true);
+    strip_onefile_env(cmd.as_std_mut());
     cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
     let out = cmd.output().await.map_err(|e| format!("could not run {}: {e}", owner.display()))?;
     if out.status.success() {
@@ -31,6 +32,17 @@ pub async fn apply(tag: &str) -> Result<(), String> {
     let err = String::from_utf8_lossy(&out.stderr);
     let err = err.trim().trim_start_matches("error: ");
     Err(if err.is_empty() { format!("update failed (exit {:?})", out.status.code()) } else { err.to_string() })
+}
+
+/// drover.exe is a PyInstaller onefile: `_PYI_*` variables inherited from the drover.exe that started us point at
+/// its deleted temp folder and would break the new one. Ask for a fresh unpack instead.
+pub fn strip_onefile_env(cmd: &mut std::process::Command) {
+    for (key, _) in std::env::vars_os() {
+        if key.to_string_lossy().starts_with("_PYI_") {
+            cmd.env_remove(&key);
+        }
+    }
+    cmd.env("PYINSTALLER_RESET_ENVIRONMENT", "1");
 }
 
 /// Program for the restart after an update: the (now new) drover.exe, else this binary.

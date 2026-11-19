@@ -186,6 +186,8 @@ fn restart_after_update(ctx: &Ctx) {
     let exe = std::env::current_exe().ok();
     let Some(exe) = exe else { return };
     let mut cmd = std::process::Command::new(exe);
+    #[cfg(windows)]
+    self_update_windows::strip_onefile_env(&mut cmd);
     cmd.args(["server", "run", "--background"]).env("DROVER_KEEP_TOKEN", &ctx.token).env("DROVER_KEEP_PORT", ctx.port().to_string())
         .stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
     #[cfg(unix)]

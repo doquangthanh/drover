@@ -98,7 +98,9 @@ impl Pty {
                 .name(format!("{name}-wait"))
                 .spawn(move || {
                     let code = child.wait().ok().map(|s| s.exit_code() as i32);
-                    drop(owner.master.lock().unwrap().take());
+                    // Take it out first: closing the pseudoconsole can block (conhost flushes), not under the lock.
+                    let master = owner.master.lock().unwrap().take();
+                    drop(master);
                     let _ = reading.join();
                     alive.store(false, Ordering::SeqCst);
                     on_exit(code);
