@@ -104,8 +104,12 @@ pub fn build_context(token: String) -> Arc<Ctx> {
     })
 }
 
+/// When `serve` began, for the start-up time in the log.
+static SERVE_START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+
 /// `dr server run`: blocks until the daemon stops.
 pub fn serve(host: &str, port: u16, foreground: bool) -> std::io::Result<()> {
+    SERVE_START.get_or_init(std::time::Instant::now);
     // A self-update restart keeps the old port and token, so open browser tabs reconnect on their own. Taken out
     // of the environment so panes (agents) never inherit the token; done before any thread starts.
     let keep = (std::env::var("DROVER_KEEP_TOKEN").unwrap_or_default(),
@@ -129,8 +133,13 @@ pub fn serve(host: &str, port: u16, foreground: bool) -> std::io::Result<()> {
 }
 
 async fn serve_async(host: String, port: u16, (keep_token, keep_port): (String, u16)) -> std::io::Result<()> {
+    let ms = |t: std::time::Instant| t.elapsed().as_secs_f64() * 1000.0;
+    let t = std::time::Instant::now();
     let ctx = build_context(if keep_token.is_empty() { new_token() } else { keep_token });
+    let context_ms = ms(t);
+    let t = std::time::Instant::now();
     persistence::load_previous(&mut ctx.manager.lock().unwrap(), &ctx.store);
+    let session_ms = ms(t);
     let listener = match tokio::net::TcpListener::bind(("127.0.0.1", if keep_port > 0 { keep_port } else { port })).await {
         Ok(l) => l,
         Err(_) => tokio::net::TcpListener::bind(("127.0.0.1", port)).await?, // the kept port was taken meanwhile
@@ -149,6 +158,8 @@ async fn serve_async(host: String, port: u16, (keep_token, keep_port): (String, 
     let info = json!({"port": bound, "token": ctx.token, "pid": std::process::id(), "version": env!("DROVER_VERSION"), "host": host});
     write_info(&info)?;
     log::info(&format!("drover daemon {} (rust) listening on {host}:{bound}", env!("DROVER_VERSION")));
+    log::info(&format!("start-up: context {context_ms:.1} ms (settings, rules, managers), session {session_ms:.1} ms, \
+                        ready {:.1} ms after `server run` began", ms(*SERVE_START.get_or_init(std::time::Instant::now))));
 
     ctx.remotes.sync_from_file(); // links to machines.toml start now
     let tasks = [
