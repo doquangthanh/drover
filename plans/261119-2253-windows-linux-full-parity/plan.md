@@ -44,9 +44,9 @@ Windows download stays one click: `drover.exe` (the window) installs this folder
 ## Phases
 | # | Phase | Status |
 |---|---|---|
-| 01 | [Tauri + GPUI windows build and run on Windows](phase-01-tauri-window-on-windows.md) | todo |
-| 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | todo |
-| 03 | [Turn on the Windows-off features](phase-03-feature-gaps.md) | todo |
+| 01 | [Tauri + GPUI windows build and run on Windows](phase-01-tauri-window-on-windows.md) | done locally (9db25f6, 27367e0); `dr app` switch waits for 02 layout |
+| 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | todo (next) |
+| 03 | [Turn on the Windows-off features](phase-03-feature-gaps.md) | claude resume done (fa895cc); follow cwd, title fallback both OS, Windows Terminal font todo |
 | 04 | [Parity gate in CI + docs](phase-04-parity-gate-docs.md) | todo |
 
 ## Constraints
