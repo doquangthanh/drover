@@ -41,4 +41,5 @@ falls back to the drover.exe in `.complete`, so `_check_zip` still only requires
 
 ## Out of scope
 - Linux bundle switch to the Rust front door (same code; follow-up once Windows is proven).
-- Porting `run`, `attach`, `status`, `server`, `tui` and the rest (stay Python).
+- 2026-11-19 follow-up: `run` ported (pane creation 130 ms, herdr 136 ms); templates and attach stay Python.
+- Porting `attach`, `status`, `server`, `tui` and the rest (stay Python).

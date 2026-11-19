@@ -33,6 +33,7 @@ pub enum FastCommand {
     WaitOutput { target: String, pattern: String, regex: bool, lines: i64, timeout: Timeout, json: bool },
     Rename { target: String, name: String },
     Kill { target: String, tree: bool },
+    Run(crate::fast_run_command::RunArgs),
     HookClaude,
 }
 
@@ -187,6 +188,7 @@ pub fn parse_fast(args: &[String]) -> Option<FastCommand> {
             let [target] = exactly(&p)?;
             FastCommand::Kill { target, tree: p.on("--tree") }
         }
+        "run" => FastCommand::Run(crate::fast_run_command::parse(rest)?),
         "hook" if rest == ["claude"] => FastCommand::HookClaude,
         _ => return None,
     })
@@ -221,7 +223,7 @@ mod tests {
             &["ls", "--help"][..], &["ls", "-h"], &["ls", "--js"], &["ls", "extra"], &["send", "w"], &["send", "w", "-x"],
             &["send", "w", "a", "b"], &["send", "--", "w", "a"], &["read", "w", "--lines", "abc"], &["read", "w", "--lines"],
             &["wait", "--children", "some"], &["wait", "w", "--state", "bogus"], &["wait", "w", "--timeout", "1e3"], &["wait", "w", "--timeout", "99999999999999999999"],
-            &["keys", "w"], &["run", "--bg"], &["status"], &["tui"], &[], &["ls", "--json=1"], &["hook", "codex"],
+            &["keys", "w"], &["run", "-x"], &["run", "--bg=1"], &["run", "--name"], &["status"], &["tui"], &[], &["ls", "--json=1"], &["hook", "codex"],
         ] {
             assert_eq!(fast(line), None, "{line:?}");
         }

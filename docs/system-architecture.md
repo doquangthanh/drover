@@ -10,11 +10,11 @@ take over the other's session. Windows still ships the all-Python `drover.exe`.
 `drover-cli-windows-x64.zip` holds the Rust `dr.exe` and the Python CLI `dr-py.exe`; the daemon installs it into
 `<state>/runtime/<version>/`. Agent panes get that folder first on PATH (then `shims/` with `dr.cmd`/`hd.cmd`).
 ```
-dr.exe ─ strict parse ─ ls/send/read/wait/prompt/keys/wait-output/rename/kill/hook claude ─ POST /rpc ─ print
+dr.exe ─ strict parse ─ run/ls/send/read/wait/prompt/keys/wait-output/rename/kill/hook claude ─ POST /rpc ─ print
    └─ anything else, --help, unsure args, daemon unreachable ─ dr-py.exe (or drover.exe from .complete), same argv
 ```
 Output is byte-identical to Python (`python_json.rs`: `json.dumps` style; `\r\n` newlines; same exit codes),
-guarded by `tests/test_rust_fast_dr_cli_parity.py` (`DROVER_TEST_FAST_DR_BIN`). Autostart stays in Python.
+guarded by `tests/test_rust_fast_dr_cli_parity.py` (`DROVER_TEST_FAST_DR_BIN`). Autostart stays in Python, and so do role templates and the terminal of `dr run` without `--bg` (`dr attach`).
 
 ```
 drover (Tauri window) / drover.exe (pywebview, Windows) / browser

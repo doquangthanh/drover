@@ -9,12 +9,16 @@ use serde_json::{Value, json};
 use crate::daemon_rpc::{self, RpcError};
 use crate::fast_args::{FastCommand, Timeout};
 use crate::fast_ls_command::{ls, print_names, state_label};
+use crate::fast_run_command::RunResult;
 use crate::python_json::{dumps, py_str};
 use crate::python_output::{ljust, print_err, print_out, read_stdin, truthy};
 
 pub enum Outcome {
     Exit(i32),
+    /// Run the same argv in the Python CLI.
     Delegate,
+    /// Run this argv in the Python CLI instead (`dr run` without `--bg` -> `attach <id>`).
+    DelegateWith(Vec<String>),
 }
 
 pub enum Failure {
@@ -75,6 +79,12 @@ pub fn run(cmd: FastCommand) -> Outcome {
         }
         FastCommand::Kill { target, tree } => match rpc("pane.close", json!({"pane": target, "subtree": tree}), DEFAULT_RPC_TIMEOUT) {
             Ok(_) => return Outcome::Exit(0), // prints nothing
+            Err(e) => Err(e),
+        },
+        FastCommand::Run(args) => match crate::fast_run_command::run(args) {
+            Ok(RunResult::Printed(id)) => Ok(id),
+            Ok(RunResult::Delegate) => return Outcome::Delegate,
+            Ok(RunResult::Attach(id)) => return Outcome::DelegateWith(vec!["attach".into(), id]),
             Err(e) => Err(e),
         },
         FastCommand::HookClaude => return Outcome::Exit(crate::hook_claude::run()),

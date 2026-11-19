@@ -6,7 +6,6 @@
 
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use serde_json::{Map, Value};
@@ -24,20 +23,8 @@ pub enum RpcError {
     Failed { code: i64, message: String },
 }
 
-/// Same folder as the daemon (`drover-daemon` paths / `app_paths.state_dir`).
-pub fn state_dir() -> PathBuf {
-    if let Some(dir) = std::env::var_os("DROVER_STATE_DIR") {
-        return PathBuf::from(dir);
-    }
-    #[cfg(windows)]
-    let base = std::env::var_os("LOCALAPPDATA").map(PathBuf::from);
-    #[cfg(not(windows))]
-    let base = dirs::state_dir().or_else(dirs::data_local_dir);
-    base.unwrap_or_else(|| PathBuf::from(".")).join("drover")
-}
-
 fn daemon_address() -> Result<(u16, String), RpcError> {
-    let text = std::fs::read_to_string(state_dir().join("daemon.json"))
+    let text = std::fs::read_to_string(crate::drover_paths::state_dir().join("daemon.json"))
         .map_err(|_| RpcError::Unavailable)?;
     let info: Value = serde_json::from_str(&text).map_err(|_| RpcError::Unavailable)?;
     match (info["port"].as_u64().and_then(|p| u16::try_from(p).ok()), info["token"].as_str()) {

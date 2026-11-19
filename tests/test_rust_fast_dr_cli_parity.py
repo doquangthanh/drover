@@ -8,6 +8,7 @@ exit code must match byte for byte. Commands the fast path delegates are checked
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import subprocess
 import sys
@@ -34,9 +35,10 @@ def python_dr_program() -> str:
     return str(script)
 
 
-def run(cmd: list[str], stdin: bytes | None = None) -> tuple[bytes, bytes, int]:
-    env = {**os.environ, "DROVER_PYTHON_DR": python_dr_program()}
-    env.pop("DR_PANE_ID", None)
+def run(cmd: list[str], stdin: bytes | None = None, pane_id: str = "") -> tuple[bytes, bytes, int]:
+    env = {**os.environ, "DROVER_PYTHON_DR": python_dr_program(), "DR_PANE_ID": pane_id}
+    if not pane_id:
+        env.pop("DR_PANE_ID")
     proc = subprocess.run(cmd, input=stdin or b"", capture_output=True, env=env, timeout=60, check=False)
     return proc.stdout, proc.stderr, proc.returncode
 
@@ -67,6 +69,23 @@ def start_python_daemon() -> ExternalDaemon:
         time.sleep(0.1)
     proc.kill()
     raise AssertionError(f"daemon did not start; see {state / 'external-daemon.log'}")
+
+
+RUN_FIELDS = ("command", "name", "cwd", "kind", "machine", "parent")
+
+
+def assert_same_run(args: list[str], panes: list[str], pane_id: str = "") -> list[dict]:
+    """`dr run --bg ...` through both CLIs: each creates its own pane, so compare the panes, not the ids."""
+    made = []
+    for cli in (PYTHON_DR, [FAST_BIN]):
+        out, err, code = run([*cli, "run", "--bg", *args], pane_id=pane_id)
+        assert (err, code) == (b"", 0), f"dr run {args} via {cli[0]}: {err!r} exit {code}"
+        panes.append(out.decode().strip())
+        made.append(next(p for p in json.loads(run([*PYTHON_DR, "ls", "--json"])[0]) if p["id"] == panes[-1]))
+    assert out.endswith(b"\r\n" if WINDOWS else b"\n") and out.strip() == panes[-1].encode()
+    py, rs = ({k: p.get(k) for k in RUN_FIELDS} for p in made)
+    assert rs == py, f"dr run {args}:\n python={py}\n rust  ={rs}"
+    return made
 
 
 async def wait_ready(daemon, pane: str) -> None:
@@ -114,6 +133,19 @@ async def test_fast_commands_print_exactly_like_python(drover_dirs: Path) -> Non
         assert_same(["keys", worker, "esc"])
         assert_same(["rename", panes[1], "tiếng-việt"])
         assert_same(["prompt", worker, "-", "--timeout", "5"], stdin=b"echo hai\r\n")
+
+        # dr run: argv joined like subprocess.list2cmdline, --cwd, --split from a pane, templates, a bare shell
+        assert_same_run(["--name", "r1", "--", "cmd", "/c", "echo", "a b", 'q"x', "c\\d\\"], panes)
+        assert_same_run(["--name=r2", "--cwd", str(drover_dirs), "cmd", "/k", "echo hi", "--name", "x"], panes)
+        split = assert_same_run(["--split", "--name", "r3", "--", "cmd", "/k"], panes, pane_id=worker)
+        assert {p["tab_id"] for p in split} == {next(p for p in json.loads(run([*PYTHON_DR, "ls", "--json"])[0])
+                                                   if p["id"] == worker)["tab_id"]}
+        templates = drover_dirs / "drover-config" / "templates"
+        templates.mkdir()
+        (templates / "rev.md").write_text("---\ncommand: cmd /k echo\n---\nYou review.\n", encoding="utf-8")
+        assert_same_run(["--name", "r4", "rev", "check x.py"], panes)
+        assert_same_run(["--name", "sh"], panes)
+        assert_same_run(["--name", "r5", "--on", "no-such-machine", "cmd"], panes)  # daemon accepts it; remote cwd stays ""
 
         # delegated to Python unchanged
         assert_same(["ls", "--help"])

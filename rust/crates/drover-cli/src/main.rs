@@ -4,10 +4,13 @@
 
 mod ctrl_c_handling;
 mod daemon_rpc;
+mod drover_paths;
 mod fast_args;
 mod fast_commands;
 mod fast_ls_command;
+mod fast_run_command;
 mod hook_claude;
+mod python_command_line;
 mod python_fallback;
 mod python_json;
 mod python_output;
@@ -37,6 +40,9 @@ fn dispatch(raw: &[OsString]) -> i32 {
     match fast_args::parse_fast(&args).map(fast_commands::run) {
         Some(Outcome::Exit(code)) => code,
         Some(Outcome::Delegate) | None => python_fallback::run(raw, python_output::consumed_stdin()),
+        Some(Outcome::DelegateWith(args)) => {
+            python_fallback::run(&args.into_iter().map(OsString::from).collect::<Vec<_>>(), None)
+        }
     }
 }
 
