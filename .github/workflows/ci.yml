@@ -1,0 +1,50 @@
+name: ci
+
+# Every push and PR builds and tests the Rust workspace on Linux and Windows, so code behind `#[cfg(unix)]` or
+# `#[cfg(windows)]` is never left uncompiled until a release (0.1.41 shipped without Linux because of that).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: System libraries for the Tauri and GPUI windows
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev libxcb1-dev libfontconfig1-dev libfreetype-dev libvulkan-dev
+      - name: Rust toolchain (rust/rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+        working-directory: rust
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Build every crate (CLI, daemon, Tauri window, GPUI window)
+        run: cargo build --workspace --locked
+        working-directory: rust
+      - name: Tests (core + daemon)
+        run: cargo test --locked -p drover-core -p drover-daemon
+        working-directory: rust
+
+  frontend:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm --prefix frontend ci
+      - run: npm --prefix frontend run build
+      - run: npm --prefix frontend test
