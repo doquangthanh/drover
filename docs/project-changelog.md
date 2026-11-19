@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.39
 ### Changed
 - Windows: `dr` agent commands (`ls`, `read`, `send`, `wait`, `prompt`, `keys`, `wait-output`, `rename`, `kill`,
   `hook claude`) are answered by a small Rust `dr.exe`: ~16 ms a call instead of ~170 ms (herdr: ~25 ms).
