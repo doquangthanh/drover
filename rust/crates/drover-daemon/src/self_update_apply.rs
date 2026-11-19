@@ -26,7 +26,7 @@ fn arch() -> Result<&'static str, String> {
     }
 }
 
-fn tag_ok(tag: &str) -> bool {
+pub(crate) fn tag_ok(tag: &str) -> bool {
     tag.strip_prefix('v').is_some_and(|v| !v.is_empty() && v.split('.').all(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit())))
 }
 

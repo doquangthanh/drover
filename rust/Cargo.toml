@@ -20,3 +20,6 @@ panic = "abort"
 xattr = { path = "vendor/xattr-0.2.3" }
 # gpui 0.2.2 -> zed-xim panics ("Encoding Error") when ibus/Unikey sends ISO 8859-1 compound text: decode it instead.
 zed-xim = { path = "vendor/zed-xim-0.4.0-zed" }
+# portable-pty 0.9.0 creates ConPTY with INHERIT_CURSOR: conhost then waits for a cursor-position reply that a
+# headless pane never sends, so Windows panes showed nothing and never exited. Same flags minus that one.
+portable-pty = { path = "vendor/portable-pty-0.9.0" }

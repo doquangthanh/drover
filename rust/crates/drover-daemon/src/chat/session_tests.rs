@@ -18,6 +18,8 @@ async fn wait_for(what: &str, mut ok: impl FnMut() -> bool) {
     panic!("timed out waiting for {what}");
 }
 
+// Unix only: the fake `claude` is a Python script run through its shebang, found via a ':'-separated PATH.
+#[cfg(unix)]
 #[tokio::test]
 async fn turn_with_permission_against_fake_cli() {
     let root = std::env::temp_dir().join(format!("drover-chat-session-{}", crate::chat::new_id()));

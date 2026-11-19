@@ -27,6 +27,8 @@ START_TIMEOUT = 20.0
 
 def external_bin() -> list[str] | None:
     raw = os.environ.get(BIN_ENV, "").strip()
+    if raw and os.path.isfile(raw):
+        return [raw]  # a plain path: POSIX shlex would eat the backslashes of a Windows path
     return shlex.split(raw) if raw else None
 
 

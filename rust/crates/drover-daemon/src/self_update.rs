@@ -1,6 +1,6 @@
 //! Is a newer drover release on GitHub, and install it. Port of `self_update.py` using the system `curl` (Linux,
 //! macOS and Windows 10+ ship it), so no TLS stack is built into the daemon. `apply` (Linux release bundle only)
-//! lives in `self_update_apply.rs`; Windows keeps the Python updater until its Rust build is tested.
+//! lives in `self_update_apply.rs` (Linux bundle) and `self_update_windows.rs` (drover.exe swaps itself).
 
 use serde_json::{Value, json};
 
@@ -13,7 +13,10 @@ pub fn version_tuple(text: &str) -> Vec<u64> {
     base.split(|c: char| !c.is_ascii_digit()).filter(|n| !n.is_empty()).filter_map(|n| n.parse().ok()).collect()
 }
 
+#[cfg(not(windows))]
 pub use crate::self_update_apply::{apply, installable};
+#[cfg(windows)]
+pub use crate::self_update_windows::{apply, installable};
 
 pub(crate) async fn curl(args: &[&str]) -> Result<String, String> {
     let mut cmd = tokio::process::Command::new("curl");

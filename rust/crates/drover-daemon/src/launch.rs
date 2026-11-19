@@ -59,14 +59,22 @@ pub fn exe_dir() -> Option<PathBuf> {
     std::env::current_exe().ok().and_then(|p| p.parent().map(Path::to_path_buf))
 }
 
+/// PATH for a pane: our folder first (`dr`), then on Windows `<state>/shims` (`hd.cmd`, the old name, written by
+/// drover.exe) when it exists. Folders already on PATH are not added twice.
 pub fn pane_path(current: &str) -> String {
-    let Some(dir) = exe_dir() else { return current.to_string() };
     let sep = if cfg!(windows) { ";" } else { ":" };
-    let dir = dir.to_string_lossy();
-    if current.split(sep).any(|p| p == dir) {
+    let mut front: Vec<PathBuf> = exe_dir().into_iter().collect();
+    let shims = crate::paths::state_dir().join("shims");
+    if cfg!(windows) && shims.is_dir() {
+        front.push(shims);
+    }
+    let parts: Vec<String> = front.iter().map(|d| d.to_string_lossy().into_owned())
+        .filter(|d| !current.split(sep).any(|p| p == d)).collect();
+    if parts.is_empty() {
         return current.to_string();
     }
-    if current.is_empty() { dir.into_owned() } else { format!("{dir}{sep}{current}") }
+    let joined = parts.join(sep);
+    if current.is_empty() { joined } else { format!("{joined}{sep}{current}") }
 }
 
 /// Variables that belong to one running Claude Code session. A daemon started from inside an agent (e.g. `dr`

@@ -10,6 +10,7 @@ from drover.cli import cli_commands_agent_input as agent_input
 from drover.cli import cli_commands_agents as agents
 from drover.cli import cli_commands_layout as layout_cmds
 from drover.cli import cli_hook_claude as hook_claude
+from drover.cli import cli_self_update as self_update_cmd
 from drover.cli import cli_shell_completion as completion
 from drover.daemon.daemon_client import DaemonUnavailable, RpcFailure
 
@@ -71,6 +72,7 @@ def build_parser() -> argparse.ArgumentParser:
     layout_cmds.add_layout_parsers(sub)
     completion.add_completion_parser(sub)
     hook_claude.add_hook_parser(sub)
+    self_update_cmd.add_self_update_parser(sub)
     return p
 
 
@@ -98,7 +100,7 @@ COMMANDS = {
     "server": admin.cmd_server, "machine": admin.cmd_machine, "worktree": admin.cmd_worktree,
     "rules": admin.cmd_rules, **agent_input.COMMANDS, **layout_cmds.COMMANDS,
     "completion": lambda args: completion.cmd_completion(args, build_parser()),
-    "hook": hook_claude.cmd_hook, "tui": _cmd_tui,
+    "hook": hook_claude.cmd_hook, "tui": _cmd_tui, "self-update": self_update_cmd.cmd_self_update,
 }
 
 

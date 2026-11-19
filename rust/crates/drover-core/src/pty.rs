@@ -11,7 +11,8 @@ use portable_pty::{ChildKiller, CommandBuilder, MasterPty, PtySize, native_pty_s
 use crate::utf8_stream::Utf8Stream;
 
 pub struct Pty {
-    master: Mutex<Box<dyn MasterPty + Send>>,
+    /// None once the child exited on Windows (dropping it closes the pseudoconsole, see `spawn`).
+    master: Mutex<Option<Box<dyn MasterPty + Send>>>,
     writer: Mutex<Box<dyn Write + Send>>,
     killer: Mutex<Box<dyn ChildKiller + Send + Sync>>,
     alive: Arc<AtomicBool>,
@@ -56,31 +57,54 @@ impl Pty {
         let pty = Arc::new(Pty {
             pid: child.process_id(),
             killer: Mutex::new(child.clone_killer()),
-            master: Mutex::new(pair.master),
+            master: Mutex::new(Some(pair.master)),
             writer: Mutex::new(writer),
             alive: alive.clone(),
         });
-        std::thread::Builder::new()
-            .name(format!("pty-{}", pty.pid.unwrap_or(0)))
-            .spawn(move || {
-                let mut decoder = Utf8Stream::default();
-                let mut buf = vec![0u8; 65536];
-                loop {
-                    match reader.read(&mut buf) {
-                        Ok(0) | Err(_) => break, // EOF / EIO once the child side closes
-                        Ok(n) => {
-                            let text = decoder.decode(&buf[..n]);
-                            if !text.is_empty() {
-                                on_output(text);
-                            }
+        let read_all = move || {
+            let mut decoder = Utf8Stream::default();
+            let mut buf = vec![0u8; 65536];
+            loop {
+                match reader.read(&mut buf) {
+                    Ok(0) | Err(_) => break, // EOF / EIO once the child side closes
+                    Ok(n) => {
+                        let text = decoder.decode(&buf[..n]);
+                        if !text.is_empty() {
+                            on_output(text);
                         }
                     }
                 }
+            }
+        };
+        let name = format!("pty-{}", pty.pid.unwrap_or(0));
+        #[cfg(unix)]
+        std::thread::Builder::new()
+            .name(name)
+            .spawn(move || {
+                read_all(); // EOF comes when the child (and anything holding the slave) is gone
                 let code = child.wait().ok().map(|s| s.exit_code() as i32);
                 alive.store(false, Ordering::SeqCst);
                 on_exit(code);
             })
             .map_err(|e| e.to_string())?;
+        #[cfg(windows)]
+        {
+            // ConPTY keeps its output pipe open after the child exits, until the pseudoconsole is closed. So wait for
+            // the child, close the pseudoconsole (drop the master: conhost flushes the last output, the read ends),
+            // and report the exit once that output was read.
+            let reading = std::thread::Builder::new().name(name.clone()).spawn(read_all).map_err(|e| e.to_string())?;
+            let owner = pty.clone();
+            std::thread::Builder::new()
+                .name(format!("{name}-wait"))
+                .spawn(move || {
+                    let code = child.wait().ok().map(|s| s.exit_code() as i32);
+                    drop(owner.master.lock().unwrap().take());
+                    let _ = reading.join();
+                    alive.store(false, Ordering::SeqCst);
+                    on_exit(code);
+                })
+                .map_err(|e| e.to_string())?;
+        }
         Ok(pty)
     }
 
@@ -92,8 +116,10 @@ impl Pty {
     }
 
     pub fn resize(&self, cols: u16, rows: u16) {
-        if self.is_alive() {
-            let _ = self.master.lock().unwrap().resize(size(cols, rows));
+        if self.is_alive()
+            && let Some(master) = self.master.lock().unwrap().as_ref()
+        {
+            let _ = master.resize(size(cols, rows));
         }
     }
 
@@ -108,7 +134,7 @@ impl Pty {
     /// Foreground process group of the terminal (POSIX only): which program the user is running in a shell.
     #[cfg(unix)]
     pub fn foreground_pgid(&self) -> Option<i32> {
-        self.master.lock().unwrap().process_group_leader()
+        self.master.lock().unwrap().as_ref().and_then(|m| m.process_group_leader())
     }
 
     #[cfg(not(unix))]

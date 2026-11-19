@@ -22,6 +22,8 @@ pub mod remote;
 pub mod rpc;
 pub mod self_update;
 pub mod self_update_apply;
+#[cfg(windows)]
+pub mod self_update_windows;
 pub mod settings;
 pub mod state_store;
 pub mod status_monitor;
@@ -175,9 +177,14 @@ async fn serve_async(host: String, port: u16, (keep_token, keep_port): (String, 
     Ok(())
 }
 
-/// Start the (just replaced) daemon binary at the same path, keeping port and token so open windows reconnect.
+/// Start the (just replaced) daemon, keeping port and token so open windows reconnect. Linux: the binary at the
+/// same path. Windows: through the new drover.exe, which starts the new version's daemon.
 fn restart_after_update(ctx: &Ctx) {
-    let Ok(exe) = std::env::current_exe() else { return };
+    #[cfg(windows)]
+    let exe = self_update_windows::restart_command();
+    #[cfg(not(windows))]
+    let exe = std::env::current_exe().ok();
+    let Some(exe) = exe else { return };
     let mut cmd = std::process::Command::new(exe);
     cmd.args(["server", "run", "--background"]).env("DROVER_KEEP_TOKEN", &ctx.token).env("DROVER_KEEP_PORT", ctx.port().to_string())
         .stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
