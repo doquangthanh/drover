@@ -55,7 +55,7 @@ jobs:
           install -m 755 rust/target/release/drover dist/drover/drover
           install -m 755 rust/target/release/drover-native dist/drover/drover-native  # GPUI window, preview (opt-in)
           ln -s dr dist/drover/hd  # old CLI name, kept so agents and scripts that call `hd` still work
-      - name: Smoke test (Rust dr, Python dr-py, Rust daemon: same checks as Windows)
+      - name: "Smoke test (Rust dr, Python dr-py, Rust daemon: same checks as Windows)"
         run: |
           export DROVER_STATE_DIR="$(mktemp -d)" DROVER_CONFIG_DIR="$(mktemp -d)"
           dist/drover/dr-py --help >/dev/null
