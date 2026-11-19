@@ -45,6 +45,8 @@ if sys.platform == "win32":
     exe_cli = EXE(PYZ(a_cli.pure), a_cli.scripts, [], exclude_binaries=True, name="dr-py", console=True, **ICON)
     COLLECT(exe_cli, a_cli.binaries, a_cli.datas, name="drover-cli")
 else:
+    # Same names as the Windows runtime: the Python CLI is dr-py; CI puts the Rust dr next to it (fast agent
+    # commands + the daemon), which runs dr-py for the commands it doesn't answer itself.
     a_dr = analysis("dr_entry.py")
-    exe_dr = EXE(PYZ(a_dr.pure), a_dr.scripts, [], exclude_binaries=True, name="dr", console=True, **ICON)
+    exe_dr = EXE(PYZ(a_dr.pure), a_dr.scripts, [], exclude_binaries=True, name="dr-py", console=True, **ICON)
     COLLECT(exe_dr, a_dr.binaries, a_dr.datas, name="drover")

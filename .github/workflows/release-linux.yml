@@ -50,14 +50,17 @@ jobs:
         working-directory: rust
       - name: Assemble bundle
         run: |
-          install -m 755 rust/target/release/dr dist/drover/drover-server
+          install -m 755 rust/target/release/dr dist/drover/dr  # Rust fast CLI + daemon; the Python CLI is dr-py
+          install -m 755 rust/target/release/dr dist/drover/drover-server  # old daemon name: updaters from <= 0.1.42 check it
           install -m 755 rust/target/release/drover dist/drover/drover
           install -m 755 rust/target/release/drover-native dist/drover/drover-native  # GPUI window, preview (opt-in)
           ln -s dr dist/drover/hd  # old CLI name, kept so agents and scripts that call `hd` still work
-      - name: Smoke test (Python dr starts the Rust daemon)
+      - name: Smoke test (Rust dr, Python dr-py, Rust daemon: same checks as Windows)
         run: |
           export DROVER_STATE_DIR="$(mktemp -d)" DROVER_CONFIG_DIR="$(mktemp -d)"
-          dist/drover/dr --help >/dev/null
+          dist/drover/dr-py --help >/dev/null
+          dist/drover/dr --help >/dev/null  # delegated to dr-py
+          test -z "$(dist/drover/dr ls --names)"  # fast path, no daemon: prints nothing, exit 0
           dist/drover/dr server start
           dist/drover/dr status
           grep -q '"engine": *"rust"' <(curl -fsS -H "Authorization: Bearer $(jq -r .token "$DROVER_STATE_DIR/daemon.json")" \

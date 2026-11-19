@@ -1,4 +1,4 @@
-//! Replace the Linux release bundle (`~/.local/share/drover`: Python `dr`, Rust `drover` + `drover-server`) with
+//! Replace the Linux release bundle (`~/.local/share/drover`: Rust `dr` + Python `dr-py`, Rust `drover`) with
 //! release `tag`: download, verify its SHA-256 against the release's `.sha256` file, unpack next to the bundle and
 //! swap folders (atomic renames on one filesystem; the old copy is put back if the swap fails).
 
