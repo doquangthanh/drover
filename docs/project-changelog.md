@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.45
 ### Fixed
 - Windows, installs on 0.1.43: updating replaced the old runtime folder in place instead of moving to the new app
   folder, so `drover.exe` stayed the old one-file app and the next start could go back to 0.1.43. The daemon now
