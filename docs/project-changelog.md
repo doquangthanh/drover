@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.38
+### Added
+- Preview of a native desktop window, `drover-native` (Linux bundle, opt-in): a GPUI app drawn straight to the GPU,
+  one more client of the daemon. Sidebar with spaces, tab bar, splits, zoom, close with confirm, typing through the
+  input method (Vietnamese Telex), resize and scroll. Views it does not have yet (Inbox, Changes, Files, Machines,
+  Settings, Agent tree) open in the browser. Select/copy and clickable links are not there yet; the Tauri window
+  `drover` stays the default.
+- Web UI: `#inbox`, `#changes`, `#files`, `#machines`, `#settings`, `#server`, `#tree` in the URL open that view.
+### Changed
+- Switching space or tab in the app and web UI is fast again: recently shown tabs stay mounted underneath, so going
+  back only shows them instead of re-attaching and redrawing their terminals.
+### Fixed
+- The last line of a terminal was cut off (padding was counted in the wrong place when fitting rows).
+- Ctrl+K Ctrl+arrows only move between panes of the shown tab.
+
 ## 0.1.37
 ### Added
 - Helpers report to the agent that started them: when one finishes, needs an answer or exits, drover types a
