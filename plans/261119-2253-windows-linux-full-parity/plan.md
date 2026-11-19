@@ -16,7 +16,7 @@ After this, a feature or fix lands once and ships the same on both. Allowed diff
 2. Config values (state dir, PATH separator, file names with `.exe`).
 Everything else (parts, bundle layout, window, CLI, daemon, update flow, tests) identical.
 
-## Differences found (audit 2026-11-19; all closed, see Phases)
+## Differences found (audit 2026-11-19; closed except arm64, see Phases)
 | Area | Linux | Windows | Phase |
 |---|---|---|---|
 | Window | `drover` Rust/Tauri | `drover.exe` Python/pywebview | 01 |
