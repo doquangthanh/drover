@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.36
 ### Changed
 - Keyboard works like VS Code in the app and web UI: the Ctrl+A prefix is gone. New keys include Ctrl+Shift+backtick new
   terminal, Ctrl+N new tab, Ctrl+K Ctrl+\ split down, Ctrl+K W close pane, Ctrl+1-9 focus pane, Alt+1-9 go to tab,
