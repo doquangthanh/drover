@@ -8,7 +8,7 @@ use serde_json::json;
 use drover_core::detection_rules::load_rule_sets;
 use drover_core::foreground_probe::running_agent;
 use drover_core::pane_session::PaneSession;
-use drover_core::status_detector::{detect_kind_from_title, evaluate};
+use drover_core::status_detector::evaluate;
 use drover_core::status_tracker::now_secs;
 
 use crate::claude_session::{has_transcript, resume_command, running_session_id};
@@ -99,13 +99,8 @@ fn probe_foreground(m: &mut Manager, pane: &Arc<PaneSession>, now: f64) {
     }
     let kinds: Vec<&str> = m.rule_sets.iter().map(|r| r.id.as_str()).collect();
     let found = running_agent(pane.pid(), group, &kinds);
-    let was_agent = std::mem::replace(&mut pane.state.lock().unwrap().fg_agent, found.as_ref().map(|(pid, _)| *pid));
-    match found {
-        Some((_, kind)) => m.set_pane_kind(pane, &kind),
-        // Windows also guesses agents from the terminal title (ssh, WSL): only undo a kind this probe set there.
-        None if was_agent.is_some() || cfg!(not(windows)) => m.set_pane_kind(pane, "shell"),
-        None => {}
-    }
+    pane.state.lock().unwrap().fg_agent = found.as_ref().map(|(pid, _)| *pid);
+    m.set_pane_kind(pane, found.as_ref().map_or("shell", |(_, kind)| kind.as_str()));
 }
 
 /// Resume a claude pane into its own conversation, not the folder's newest.
@@ -149,15 +144,6 @@ fn check_pane(m: &mut Manager, pane: &Arc<PaneSession>, now: f64) {
     }
     st.dirty = false;
     let title = st.screen.title();
-    let mut kind = kind;
-    if cfg!(windows) && kind == "shell" && !title.is_empty()
-        && let Some(guessed) = detect_kind_from_title(&title, &m.rule_sets).filter(|g| g != "shell")
-    {
-        let mut meta = pane.meta.lock().unwrap();
-        meta.kind = guessed.clone();
-        meta.resume = m.rule_set(&guessed).map(|r| r.resume.clone()).unwrap_or_default();
-        kind = guessed;
-    }
     let (detected, _) = evaluate(m.rule_set(&kind), &title, &st.screen.visible_lines());
     let old = st.tracker.state.clone();
     // Shells go idle after every command; only agents get a "done". Start-up output is not finished work either.
