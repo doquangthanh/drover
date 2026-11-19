@@ -5,6 +5,8 @@
 use serde_json::{Value, json};
 
 pub(crate) const REPO: &str = "doquangthanh/drover";
+/// This build's version (pyproject.toml, stamped from the tag in release builds).
+pub const VERSION: &str = env!("DROVER_VERSION");
 const TIMEOUT_SECS: &str = "15";
 
 /// 'v0.1.5' -> [0, 1, 5]; anything non-numeric is ignored.

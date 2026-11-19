@@ -23,7 +23,7 @@ pub fn bundle_dir() -> Option<PathBuf> {
         let dir = std::env::current_exe().ok()?.canonicalize().ok()?.parent()?.to_path_buf();
         #[cfg(windows)]
         let dir = PathBuf::from(dir.to_string_lossy().trim_start_matches(r"\\?\"));
-        (dir.join(DR).is_file() && dir.join("_internal").is_dir()).then_some(dir)
+        is_bundle(&dir).then_some(dir)
     })
     .clone()
 }
@@ -45,7 +45,7 @@ fn arch() -> Result<&'static str, String> {
     }
 }
 
-pub(crate) fn tag_ok(tag: &str) -> bool {
+pub fn tag_ok(tag: &str) -> bool {
     tag.strip_prefix('v').is_some_and(|v| !v.is_empty() && v.split('.').all(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit())))
 }
 
@@ -59,6 +59,13 @@ pub fn checksum_matches(file: &Path, sums: &str) -> Result<bool, String> {
 
 pub async fn apply(tag: &str) -> Result<(), String> {
     let target = bundle_dir().ok_or("this install can't update itself; re-run the install script")?;
+    install_release(&target, tag).await
+}
+
+/// Put release `tag` into `target`: replaces the bundle there, or makes a fresh one (first run of a downloaded
+/// `drover.exe`). Writes `.version` so a later launcher knows which release the folder holds.
+pub async fn install_release(target: &Path, tag: &str) -> Result<(), String> {
+    std::fs::create_dir_all(target).map_err(|e| format!("could not create {}: {e}", target.display()))?;
     if !tag_ok(tag) {
         return Err("bad version tag".into());
     }
@@ -69,9 +76,27 @@ pub async fn apply(tag: &str) -> Result<(), String> {
     // Same filesystem as the bundle, so the renames below are atomic.
     let tmp = parent.join(format!(".drover-update-{}", crate::chat::new_id()));
     std::fs::create_dir_all(tmp.join("new")).map_err(|e| e.to_string())?;
-    let result = install_into(&target, &tmp, &url).await;
+    let result = install_into(target, &tmp, &url).await;
     let _ = std::fs::remove_dir_all(&tmp);
-    result
+    result?;
+    let _ = std::fs::write(target.join(VERSION_FILE), tag.trim_start_matches('v'));
+    Ok(())
+}
+
+pub const VERSION_FILE: &str = ".version";
+
+/// Where a downloaded `drover` installs the release folder: next to the state (Windows `%LOCALAPPDATA%\drover\app`),
+/// Linux `~/.local/share/drover` (what install.sh uses).
+pub fn default_app_dir() -> PathBuf {
+    if cfg!(windows) {
+        return crate::paths::state_dir().join("app");
+    }
+    dirs::data_local_dir().unwrap_or_else(|| PathBuf::from(".")).join("drover")
+}
+
+/// `dir` holds a release bundle (`dr` + the Python `_internal/`).
+pub fn is_bundle(dir: &Path) -> bool {
+    dir.join(DR).is_file() && dir.join("_internal").is_dir()
 }
 
 async fn install_into(target: &Path, tmp: &Path, url: &str) -> Result<(), String> {

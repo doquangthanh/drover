@@ -48,6 +48,8 @@ jobs:
       - name: Build Rust window, daemon and the native window preview
         run: cargo build --release --locked -p drover-cli -p drover-desktop -p drover-desktop-native
         working-directory: rust
+        env:
+          DROVER_RELEASE: "1"  # same as Windows: a drover started outside the bundle may install it (launcher.rs)
       - name: Assemble bundle
         run: |
           install -m 755 rust/target/release/dr dist/drover/dr  # Rust fast CLI + daemon; the Python CLI is dr-py

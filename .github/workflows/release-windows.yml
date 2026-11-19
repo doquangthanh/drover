@@ -53,9 +53,12 @@ jobs:
       - name: Build Rust window and the native window preview (same crates as Linux)
         shell: bash
         working-directory: rust
+        env:
+          DROVER_RELEASE: "1"  # a downloaded drover.exe may install the release folder (launcher.rs)
         run: |
           cargo build --release --locked -p drover-desktop -p drover-desktop-native
           cp target/release/drover.exe target/release/drover-native.exe ../dist/drover/
+          cp target/release/*.dll ../dist/drover/ 2>/dev/null || true  # WebView2Loader.dll when not linked statically
       - name: Check output
         shell: bash
         run: |
