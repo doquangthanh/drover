@@ -13,10 +13,26 @@ pub fn version_tuple(text: &str) -> Vec<u64> {
     base.split(|c: char| !c.is_ascii_digit()).filter(|n| !n.is_empty()).filter_map(|n| n.parse().ok()).collect()
 }
 
-#[cfg(not(windows))]
-pub use crate::self_update_apply::{apply, installable};
-#[cfg(windows)]
-pub use crate::self_update_windows::{apply, installable};
+/// The release bundle (same on every OS) swaps itself. Windows installs up to 0.1.4x run from a runtime folder
+/// owned by the one-file drover.exe instead: that one still updates itself (`self_update_windows`).
+pub fn installable() -> bool {
+    crate::self_update_apply::installable() || legacy_installable()
+}
+
+pub async fn apply(tag: &str) -> Result<(), String> {
+    #[cfg(windows)]
+    if !crate::self_update_apply::installable() && crate::self_update_windows::installable() {
+        return crate::self_update_windows::apply(tag).await;
+    }
+    crate::self_update_apply::apply(tag).await
+}
+
+fn legacy_installable() -> bool {
+    #[cfg(windows)]
+    return crate::self_update_windows::installable();
+    #[cfg(not(windows))]
+    false
+}
 
 pub(crate) async fn curl(args: &[&str]) -> Result<String, String> {
     let mut cmd = tokio::process::Command::new("curl");

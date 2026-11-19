@@ -177,14 +177,13 @@ async fn serve_async(host: String, port: u16, (keep_token, keep_port): (String, 
     Ok(())
 }
 
-/// Start the (just replaced) daemon, keeping port and token so open windows reconnect. Linux: the binary at the
-/// same path. Windows: through the new drover.exe, which starts the new version's daemon.
+/// Start the (just replaced) daemon, keeping port and token so open windows reconnect: the bundle's `dr` at the
+/// path it had before the swap (the running exe has moved). Old Windows runtime: through the new drover.exe.
 fn restart_after_update(ctx: &Ctx) {
+    let exe = self_update_apply::restart_command();
     #[cfg(windows)]
-    let exe = self_update_windows::restart_command();
-    #[cfg(not(windows))]
-    let exe = std::env::current_exe().ok();
-    let Some(exe) = exe else { return };
+    let exe = exe.or_else(self_update_windows::restart_command);
+    let Some(exe) = exe.or_else(|| std::env::current_exe().ok()) else { return };
     let mut cmd = std::process::Command::new(exe);
     #[cfg(windows)]
     self_update_windows::strip_onefile_env(&mut cmd);
