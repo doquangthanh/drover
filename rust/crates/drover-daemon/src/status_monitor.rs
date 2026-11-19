@@ -6,7 +6,7 @@ use std::time::Duration;
 use serde_json::json;
 
 use drover_core::detection_rules::load_rule_sets;
-use drover_core::foreground_probe::foreground_agent_kind;
+use drover_core::foreground_probe::running_agent;
 use drover_core::pane_session::PaneSession;
 use drover_core::status_detector::{detect_kind_from_title, evaluate};
 use drover_core::status_tracker::now_secs;
@@ -82,25 +82,30 @@ fn reload_rules(ctx: &Ctx, m: &mut Manager, stamp: &mut Option<Vec<(String, std:
     *ctx.rule_errors.lock().unwrap() = errors;
 }
 
-/// Herdr-style: a shell pane is an agent while that agent holds its terminal (Linux).
+/// Herdr-style: a shell pane is that agent while the agent runs in it (same path on every platform).
 fn probe_foreground(m: &mut Manager, pane: &Arc<PaneSession>, now: f64) {
-    if cfg!(windows) || !pane.alive() || !pane.state.lock().unwrap().shell_launched {
+    const EVERY: f64 = 2.0; // and at once when the foreground group changes (Linux; Windows has none)
+    if !pane.alive() || !pane.state.lock().unwrap().shell_launched {
         return;
     }
-    let Some(pgid) = pane.foreground_pgid() else { return };
+    let group = pane.foreground_pgid();
     {
         let mut st = pane.state.lock().unwrap();
-        if st.fg_pgid == Some(pgid) && now - st.fg_checked_at < 5.0 {
+        if st.fg_pgid == group && now - st.fg_checked_at < EVERY {
             return;
         }
-        st.fg_pgid = Some(pgid);
+        st.fg_pgid = group;
         st.fg_checked_at = now;
     }
     let kinds: Vec<&str> = m.rule_sets.iter().map(|r| r.id.as_str()).collect();
-    let kind = if Some(pgid as u32) == pane.pid() { "shell".to_string() } else {
-        foreground_agent_kind(pgid, &kinds).unwrap_or_else(|| "shell".into())
-    };
-    m.set_pane_kind(pane, &kind);
+    let found = running_agent(pane.pid(), group, &kinds);
+    let was_agent = std::mem::replace(&mut pane.state.lock().unwrap().fg_agent, found.as_ref().map(|(pid, _)| *pid));
+    match found {
+        Some((_, kind)) => m.set_pane_kind(pane, &kind),
+        // Windows also guesses agents from the terminal title (ssh, WSL): only undo a kind this probe set there.
+        None if was_agent.is_some() || cfg!(not(windows)) => m.set_pane_kind(pane, "shell"),
+        None => {}
+    }
 }
 
 /// Resume a claude pane into its own conversation, not the folder's newest.

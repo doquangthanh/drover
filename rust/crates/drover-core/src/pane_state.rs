@@ -46,6 +46,8 @@ pub struct PaneState {
     /// Started as a shell: its kind follows the foreground program.
     pub shell_launched: bool,
     pub fg_pgid: Option<i32>,
+    /// Agent the foreground probe found last (its pid), None while the shell is in front.
+    pub fg_agent: Option<u32>,
     pub fg_checked_at: f64,
     pub claude_checked_at: f64,
     /// What the person typed here since their last Enter (guards parent notes).
@@ -71,6 +73,7 @@ impl PaneState {
             detection_paused_until: 0.0,
             shell_launched: false,
             fg_pgid: None,
+            fg_agent: None,
             fg_checked_at: 0.0,
             claude_checked_at: 0.0,
             draft: Default::default(),

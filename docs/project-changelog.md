@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+### Added
+- Windows: an agent typed in a shell pane (`claude`, `codex`, `gemini`, `opencode`, also through `.cmd` shims and
+  `node`) shows up as that agent, as on Linux: the daemon looks at the programs the pane's shell started.
+
 ## 0.1.42
 ### Fixed
 - Linux: the release build failed (0.1.41 shipped Windows only); the pane output reader did not compile on unix.

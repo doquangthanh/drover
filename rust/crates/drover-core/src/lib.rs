@@ -17,4 +17,6 @@ pub mod status_detector;
 pub mod status_tracker;
 pub mod terminal_keys;
 pub mod utf8_stream;
+#[cfg(windows)]
+pub mod windows_process_tree;
 pub mod workspace_models;

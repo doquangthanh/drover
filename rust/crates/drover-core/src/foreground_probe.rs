@@ -1,6 +1,6 @@
 //! Which program holds a pane's terminal right now (Herdr-style agent detection, Linux via /proc).
 //! Port of `drover/core/foreground_process_probe.py`. The foreground process group itself comes from
-//! `Pty::foreground_pgid` (tcgetpgrp). Windows has no such notion: callers keep the terminal-title fallback.
+//! `Pty::foreground_pgid` (tcgetpgrp). Windows has no such notion: see `windows_process_tree`.
 
 use std::path::Path;
 
@@ -11,10 +11,13 @@ const ALIASES: [(&str, &str); 4] =
 const RUNTIMES: [&str; 9] = ["node", "bun", "deno", "python", "python3", "sh", "bash", "zsh", "fish"];
 const SHELLS: [&str; 4] = ["sh", "bash", "zsh", "fish"];
 const SCRIPT_EXTS: [&str; 5] = [".js", ".mjs", ".cjs", ".ts", ".py"];
+/// Windows program suffixes: `claude.exe`, `node.exe`, `codex.cmd` name the same thing as on Linux.
+const PROGRAM_EXTS: [&str; 3] = [".exe", ".cmd", ".bat"];
 
 fn base(arg: &str) -> String {
-    let name = Path::new(arg).file_name().and_then(|n| n.to_str()).unwrap_or(arg).to_lowercase();
-    for ext in SCRIPT_EXTS {
+    // Split on both separators: Windows command lines use `\`, and the tests run on every platform.
+    let name = arg.trim_end_matches(['/', '\\']).rsplit(['/', '\\']).next().unwrap_or(arg).to_lowercase();
+    for ext in SCRIPT_EXTS.iter().chain(&PROGRAM_EXTS) {
         if let Some(stem) = name.strip_suffix(ext) {
             return stem.to_string();
         }
@@ -83,6 +86,22 @@ pub fn foreground_agent_kind(pgid: i32, kinds: &[&str]) -> Option<String> {
     group_members(pgid).into_iter().find_map(|pid| agent_kind_from_argv(&process_argv(pid), kinds))
 }
 
+/// Agent a pane's shell is running now, as (pid, rule-set id); None while it is just the shell. One entry point for
+/// every platform, only the process lookup differs: Linux asks the terminal for its foreground group (`fg_pgid`),
+/// Windows has none and looks at the programs the shell started.
+pub fn running_agent(shell_pid: Option<u32>, fg_pgid: Option<i32>, kinds: &[&str]) -> Option<(u32, String)> {
+    #[cfg(windows)]
+    {
+        let _ = fg_pgid;
+        crate::windows_process_tree::descendant_agent(shell_pid?, kinds)
+    }
+    #[cfg(not(windows))]
+    {
+        let pgid = fg_pgid.filter(|g| Some(*g as u32) != shell_pid)?; // the shell itself in front: no agent
+        foreground_agent_kind(pgid, kinds).map(|kind| (pgid as u32, kind))
+    }
+}
+
 /// Where the pane is now: cwd of the foreground program, else of the shell (Herdr's follow_cwd).
 pub fn follow_cwd(fg_pgid: Option<i32>, shell_pid: Option<i32>) -> Option<String> {
     [fg_pgid, shell_pid].into_iter().flatten().find_map(|pid| process_cwd(pid).filter(|c| Path::new(c).is_dir()))
@@ -103,6 +122,9 @@ mod tests {
             (&["node", "--no-warnings", "/usr/lib/node_modules/@openai/codex/bin/codex.js"], Some("codex")),
             (&["/bin/sh", "/tmp/x/gemini"], Some("gemini")),
             (&["bash", "-c", "opencode run"], Some("opencode")),
+            (&[r"C:\Users\me\.local\bin\claude.exe"], Some("claude")),
+            (&[r"C:\Program Files\nodejs\node.exe", r"C:\npm\node_modules\@openai\codex\bin\codex.js"], Some("codex")),
+            (&["node.exe", "server.js"], None),
             (&["vim", "claude.md"], None),
             (&["zsh"], None),
             (&["node", "server.js"], None),
