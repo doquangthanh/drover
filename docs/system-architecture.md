@@ -4,9 +4,9 @@ Linux release bundle (`~/.local/share/drover`): Python `dr` (CLI + TUI, PyInstal
 `rust/crates/drover-desktop`) + Rust `drover-server` (daemon, `rust/crates/drover-daemon`, binary of `drover-cli`).
 `dr server run` execs `drover-server` when it sits next to `dr` (`DROVER_ENGINE=python` keeps the Python daemon).
 Both daemons speak the same `/ws` + `/rpc` protocol and share `daemon.json`, `session.json`, `chats/`, so either can
-take over the other's session. Windows still ships the all-Python `drover.exe`.
+take over the other's session. Windows: Python `drover.exe` (window + CLI) + Rust `dr.exe` (fast CLI + daemon) in the runtime folder.
 
-## `dr` on Windows: Rust fast path (`rust/crates/drover-cli`, built `--no-default-features`)
+## Windows: Rust `dr.exe` (`rust/crates/drover-cli` with the `server` feature): fast CLI and daemon
 `drover-cli-windows-x64.zip` holds the Rust `dr.exe` and the Python CLI `dr-py.exe`; the daemon installs it into
 `<state>/runtime/<version>/`. Agent panes get that folder first on PATH (then `shims/` with `dr.cmd`/`hd.cmd`).
 ```
@@ -15,6 +15,13 @@ dr.exe ─ strict parse ─ run/ls/send/read/wait/prompt/keys/wait-output/rename
 ```
 Output is byte-identical to Python (`python_json.rs`: `json.dumps` style; `\r\n` newlines; same exit codes),
 guarded by `tests/test_rust_fast_dr_cli_parity.py` (`DROVER_TEST_FAST_DR_BIN`). Autostart stays in Python, and so do role templates and the terminal of `dr run` without `--bg` (`dr attach`).
+
+Daemon: `drover.exe server run` hands over to `runtime/<version>/dr.exe server run` (`cli/rust_daemon_handoff.py`);
+the Python daemon runs when that runtime is not installed yet (first start of a version: it installs it), when the
+Rust daemon exits during start-up, or with `DROVER_ENGINE=python`. `update.apply` in the Rust daemon runs
+`drover.exe self-update <tag>` (Python swaps the exe) and restarts through the new drover.exe. ConPTY comes from a
+vendored portable-pty without `INHERIT_CURSOR` (headless panes never answer its cursor query); the exit of a pane is
+taken from the child process, then the pseudoconsole is closed to flush its last output.
 
 ```
 drover (Tauri window) / drover.exe (pywebview, Windows) / browser

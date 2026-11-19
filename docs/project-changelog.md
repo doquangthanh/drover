@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+### Changed
+- Windows: the daemon is the Rust one (inside the runtime `dr.exe`), like on Linux. The Python daemon still runs on
+  the first start of a new version (it installs the runtime), if the Rust one fails to start, or with
+  `DROVER_ENGINE=python`. Same session, ports and protocol: panes, windows and agents carry on.
+### Fixed
+- Rust daemon on Windows: panes printed nothing and never exited (ConPTY waited for a cursor reply; the pane exit
+  was only seen at end of output, which ConPTY never sends while the pseudoconsole is open).
+
 ## 0.1.40
 ### Changed
 - Windows: `dr run` is answered by the Rust `dr.exe` too: a shell pane starts in ~130 ms instead of ~400-850 ms
