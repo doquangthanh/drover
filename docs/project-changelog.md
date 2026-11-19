@@ -4,10 +4,6 @@
 ### Fixed
 - Linux: the release build failed (0.1.41 shipped Windows only); the pane output reader did not compile on unix.
 
-## 0.1.42
-### Fixed
-- Linux build again (0.1.41 shipped no Linux bundle: the pane reader did not compile on Unix).
-
 ## 0.1.41
 ### Changed
 - Windows: the daemon is the Rust one (inside the runtime `dr.exe`), like on Linux. The Python daemon still runs on
