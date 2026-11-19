@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.37
 ### Added
 - Helpers report to the agent that started them: when one finishes, needs an answer or exits, drover types a
   `<dr from="%7 review" state="done">…</dr>` note into its parent agent. Never into a shell, a parent on a permission
