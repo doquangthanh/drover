@@ -77,7 +77,11 @@ pub fn group_members(pgid: i32) -> Vec<i32> {
     members
 }
 
+/// Current folder of a process: `/proc/<pid>/cwd` on Linux, the process's PEB on Windows.
 pub fn process_cwd(pid: i32) -> Option<String> {
+    #[cfg(windows)]
+    return crate::windows_process_cwd::process_cwd(pid as u32);
+    #[cfg(not(windows))]
     std::fs::read_link(format!("/proc/{pid}/cwd")).ok().map(|p| p.to_string_lossy().into_owned())
 }
 

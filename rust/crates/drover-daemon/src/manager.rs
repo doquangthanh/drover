@@ -173,12 +173,14 @@ impl Manager {
         self.save.notify_one();
     }
 
-    /// Folder the pane is in now (foreground program, else shell); None when unknown (Windows).
+    /// Folder the pane is in now: the program in front (Linux: foreground group; Windows: the agent the shell
+    /// started), else the shell.
     pub fn pane_follow_cwd(pane: &PaneSession) -> Option<String> {
-        if !pane.alive() || cfg!(windows) {
+        if !pane.alive() {
             return None;
         }
-        follow_cwd(pane.foreground_pgid(), pane.pid().map(|p| p as i32))
+        let front = pane.foreground_pgid().or_else(|| pane.state.lock().unwrap().fg_agent.map(|p| p as i32));
+        follow_cwd(front, pane.pid().map(|p| p as i32))
     }
 
     /// Herdr-style: a space is named after the folder its first pane is in, unless renamed by hand.

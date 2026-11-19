@@ -5,10 +5,10 @@
 use crate::foreground_probe::agent_kind_from_argv;
 use std::ffi::c_void;
 
-type Handle = *mut c_void;
+pub(crate) type Handle = *mut c_void;
 const INVALID_HANDLE: Handle = -1isize as Handle;
 const TH32CS_SNAPPROCESS: u32 = 0x2;
-const PROCESS_QUERY_LIMITED_INFORMATION: u32 = 0x1000;
+pub(crate) const PROCESS_QUERY_LIMITED_INFORMATION: u32 = 0x1000;
 const PROCESS_COMMAND_LINE_INFORMATION: u32 = 60; // Windows 8.1+
 const MAX_PATH: usize = 260;
 
@@ -27,10 +27,10 @@ struct ProcessEntry32W {
 }
 
 #[repr(C)]
-struct UnicodeString {
-    length: u16, // bytes
-    maximum_length: u16,
-    buffer: *const u16,
+pub(crate) struct UnicodeString {
+    pub length: u16, // bytes
+    pub maximum_length: u16,
+    pub buffer: *const u16,
 }
 
 #[link(name = "kernel32")]
@@ -38,14 +38,14 @@ unsafe extern "system" {
     fn CreateToolhelp32Snapshot(flags: u32, pid: u32) -> Handle;
     fn Process32FirstW(snapshot: Handle, entry: *mut ProcessEntry32W) -> i32;
     fn Process32NextW(snapshot: Handle, entry: *mut ProcessEntry32W) -> i32;
-    fn OpenProcess(access: u32, inherit: i32, pid: u32) -> Handle;
-    fn CloseHandle(handle: Handle) -> i32;
+    pub(crate) fn OpenProcess(access: u32, inherit: i32, pid: u32) -> Handle;
+    pub(crate) fn CloseHandle(handle: Handle) -> i32;
     fn LocalFree(mem: *mut c_void) -> *mut c_void;
 }
 
 #[link(name = "ntdll")]
 unsafe extern "system" {
-    fn NtQueryInformationProcess(process: Handle, class: u32, info: *mut c_void, len: u32, ret_len: *mut u32) -> i32;
+    pub(crate) fn NtQueryInformationProcess(process: Handle, class: u32, info: *mut c_void, len: u32, ret_len: *mut u32) -> i32;
 }
 
 #[link(name = "shell32")]
