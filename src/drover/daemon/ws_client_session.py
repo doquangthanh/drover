@@ -105,7 +105,9 @@ class WsClientSession:
         if kind == "in":
             pane = self.ctx.manager.panes.get(pane_id)
             if pane:
-                pane.write(str(msg.get("data", "")))
+                data = str(msg.get("data", ""))
+                pane.draft.feed(data)
+                pane.write(data)
         elif kind == "attach":
             self._attach(pane_id)
         elif kind == "detach":

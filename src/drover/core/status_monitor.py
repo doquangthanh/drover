@@ -25,6 +25,7 @@ class StatusMonitor:
         self.notifier = notifier
         self.rule_errors: list[str] = []
         self._rules_stamp = None
+        self._note_tasks: set[asyncio.Task] = set()
 
     async def run(self) -> None:
         last_config_check = 0.0
@@ -39,9 +40,32 @@ class StatusMonitor:
                     self.probe_foreground(pane, now)
                     self.probe_claude_session(pane, now)
                     self.check_pane(pane, now)
+                self.deliver_parent_notes(now)
             except Exception:
                 log.exception("status monitor tick failed")
             await asyncio.sleep(TICK)
+
+    def deliver_parent_notes(self, now: float) -> None:
+        for parent_id, text in self.manager.notes.take_ready(self.manager.panes, now):
+            task = asyncio.create_task(self._type_note(parent_id, text))
+            self._note_tasks.add(task)
+            task.add_done_callback(self._note_tasks.discard)
+
+    async def _type_note(self, parent_id: str, text: str) -> None:
+        from drover.rpc.methods_agent_input import submit_prompt  # rpc imports core: import late
+        from drover.rpc.rpc_registry import RpcError
+
+        pane = self.manager.panes.get(parent_id)
+        if not pane:
+            return
+        self.manager.notes.sending.add(parent_id)
+        try:
+            async with pane.input_lock:
+                await submit_prompt(pane, text)
+        except (RpcError, OSError) as exc:  # blocked meanwhile, or the pane closed: dropped; the Flow board has it
+            log.info("parent note to %s not typed: %s", parent_id, exc)
+        finally:
+            self.manager.notes.sending.discard(parent_id)
 
     def reload_config(self) -> None:
         self.manager.settings.reload_if_changed()
@@ -114,6 +138,7 @@ class StatusMonitor:
         # A focused agent finishing its turn goes working -> idle (no "done" badge), but it did finish: log it.
         finished = allow_done and old == "working" and new == "idle"
         self.manager.messages.add_state(pane.meta.id, pane.meta.parent, "done" if finished else new)
+        self.manager.report_to_parent(pane, "done" if finished else new)
         self.manager.hub.emit("pane", pane.to_dict())
         self.manager.hub.emit("status", {"pane": pane.to_dict(), "old": old, "new": new})
         if not pane.focused:

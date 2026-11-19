@@ -22,7 +22,7 @@ def _pane(ctx, params: dict, key: str = "pane") -> str:
 
 
 @registry.method("pane.create", "Start an agent or shell", "command?, cwd?, name?, tab_id?, split_from?, "
-                 "direction?, caller?, worktree?: {task, base?}, cols?, rows?")
+                 "direction?, caller?, worktree?: {task, base?}, cols?, rows?, outlive_parent?")
 async def pane_create(ctx, p: dict) -> dict:
     cwd = p.get("cwd") or ""
     if p.get("worktree"):
@@ -33,7 +33,7 @@ async def pane_create(ctx, p: dict) -> dict:
         pane = ctx.manager.create_pane(
             p.get("command", ""), cwd, p.get("name", ""), tab_id=p.get("tab_id"),
             split_from=p.get("split_from"), direction=p.get("direction", "row"), parent=caller,
-            cols=int(p.get("cols", 120)), rows=int(p.get("rows", 32)))
+            cols=int(p.get("cols", 120)), rows=int(p.get("rows", 32)), outlive_parent=bool(p.get("outlive_parent")))
     except PolicyError as exc:
         raise RpcError(E_POLICY, str(exc)) from exc
     return pane.to_dict()
@@ -43,7 +43,9 @@ async def pane_create(ctx, p: dict) -> dict:
 async def pane_write(ctx, p: dict) -> None:
     if p.get("caller"):
         raise RpcError(E_POLICY, "agents must use pane.send (dr send), not raw pane.write")
-    ctx.manager.get(need(p, "pane")).write(str(p.get("data", "")))
+    pane, data = ctx.manager.get(need(p, "pane")), str(p.get("data", ""))
+    pane.draft.feed(data)
+    pane.write(data)
 
 
 def mark_busy(ctx, pane) -> None:
@@ -78,8 +80,11 @@ async def pane_send(ctx, p: dict) -> dict:
     pane_id = _pane(ctx, p)
     pane = ctx.manager.get(pane_id)
     text = str(p.get("text", ""))
-    data = text + ("\r" if p.get("enter", True) else "")
     caller = p.get("caller")
+    sender = ctx.manager.panes.get(caller) if caller else None
+    if sender and sender.meta.parent == pane_id:  # a helper reporting back: say who it is, as parent notes do
+        text = f'<dr from="{caller} {sender.meta.name}">{text}</dr>'
+    data = text + ("\r" if p.get("enter", True) else "")
     gate_agent_input(ctx, pane_id, pane, data, text, caller)
     pane.write(data)
     if p.get("enter", True):
@@ -137,7 +142,10 @@ async def pane_wait(ctx, p: dict) -> dict:
     if p.get("caller"):
         ctx.manager.messages.add("wait", p["caller"], pane_id, ",".join(sorted(wanted - TERMINAL_STATES)))
     # "idle" is the starting state of every pane, so only a *transition* into idle counts.
-    state = await wait_for_state(ctx, pane, wanted, timeout, accept_current=pane.state != "idle")
+    with ctx.manager.notes.waiting(p.get("caller")):
+        state = await wait_for_state(ctx, pane, wanted, timeout, accept_current=pane.state != "idle")
+    if p.get("caller"):
+        ctx.manager.notes.drop(p["caller"], [pane_id])  # this reply is the news
     return {"pane": pane_id, "state": state}
 
 
@@ -189,10 +197,10 @@ async def pane_restart(ctx, p: dict) -> dict:
 async def pane_rename(ctx, p: dict) -> dict:
     pane_id = _pane(ctx, p)
     name = need(p, "name").strip()[:60]
-    # The resolver treats "self", "local" and "%..." specially, so such names could never be used as targets.
-    if not name or "/" in name or ":" in name or name in ("self", "local") or name.startswith("%"):
+    # The resolver treats "self", "parent", "local" and "%..." specially, so such names could never be used as targets.
+    if not name or "/" in name or ":" in name or name in ("self", "parent", "local") or name.startswith("%"):
         raise RpcError(E_BAD_PARAMS, "name must be non-empty, contain no '/' or ':', not start with '%' "
-                                     "and not be 'self' or 'local'")
+                                     "and not be 'self', 'parent' or 'local'")
     clash = next((o.meta.id for o in ctx.manager.panes.values() if o.meta.name == name and o.meta.id != pane_id), None)
     if clash:
         raise RpcError(E_BAD_PARAMS, f"name '{name}' is already used by {clash}")

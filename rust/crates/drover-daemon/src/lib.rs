@@ -15,6 +15,7 @@ pub mod manager_panes;
 pub mod messages_log;
 pub mod methods;
 pub mod notify;
+pub mod parent_notes;
 pub mod paths;
 pub mod persistence;
 pub mod remote;

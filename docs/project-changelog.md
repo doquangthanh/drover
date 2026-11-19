@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+### Added
+- Helpers report to the agent that started them: when one finishes, needs an answer or exits, drover types a
+  `<dr from="%7 review" state="done">…</dr>` note into its parent agent. Never into a shell, a parent on a permission
+  prompt, a parent inside `dr wait`, or over a message you are still typing. Setting `orchestration.notes`.
+- `dr send parent "text"`: a helper reports back itself; the parent sees it tagged with the helper's name.
+- `dr wait --children all|any`: wait until none of your helpers is working, or for the next one with news
+  (RPC `pane.wait_children`).
+- Role templates: `templates/<name>.md` in the config folder (`command` + instructions), started with
+  `dr run reviewer "task"`; `dr templates` lists them.
+### Changed
+- Helpers stop when the agent that started them exits (`orchestration.kill_children_on_parent_exit` now defaults to
+  `true`); `dr run --outlive-parent` keeps one running.
+- A pane can no longer be named `parent` (it is a `dr` target now).
+
 ## 0.1.36
 ### Changed
 - Keyboard works like VS Code in the app and web UI: the Ctrl+A prefix is gone. New keys include Ctrl+Shift+backtick new

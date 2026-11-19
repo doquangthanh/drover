@@ -28,7 +28,7 @@ BLOCKED_MESSAGE = ("agent_blocked: the agent is waiting on a question or permiss
                    "Read it with `dr read`; the user answers permission prompts")
 
 
-async def _submit(pane, text: str) -> float:
+async def submit_prompt(pane, text: str) -> float:
     """Type the prompt (as a bracketed paste when the app asked for it), then Enter.
 
     Returns the moment just before Enter: the echo of the typed text came before it, so it is not mistaken for work.
@@ -77,7 +77,7 @@ async def pane_prompt(ctx, p: dict) -> dict:
             raise RpcError(E_BLOCKED, BLOCKED_MESSAGE)
         if pane.state in ("exited", "stopped"):
             raise RpcError(E_GENERAL, f"agent is {pane.state}")
-        started_at = await _submit(pane, text)
+        started_at = await submit_prompt(pane, text)
         mark_busy(ctx, pane)
     if p.get("caller"):
         ctx.manager.messages.add("send", p["caller"], pane_id, text)

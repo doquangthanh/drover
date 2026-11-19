@@ -17,13 +17,14 @@ use crate::manager::Manager;
 use crate::manager_panes::NewPane;
 use crate::messages_log::Policy;
 use crate::method;
+use crate::parent_notes::WaitGuard;
 use crate::rpc::{E_BAD_PARAMS, E_POLICY, E_TIMEOUT, MethodSpec, RpcError, RpcResult, bad, flag, need_str, not_found, opt_f64, opt_i64, opt_str, truthy};
 
 static ANSWER_IDS: AtomicU64 = AtomicU64::new(1);
 
 pub fn methods() -> Vec<MethodSpec> {
     vec![
-        method!("pane.create", "Start an agent or shell", "command?, cwd?, name?, tab_id?, split_from?, direction?, caller?, worktree?: {task, base?}, cols?, rows?", pane_create),
+        method!("pane.create", "Start an agent or shell", "command?, cwd?, name?, tab_id?, split_from?, direction?, caller?, worktree?: {task, base?}, cols?, rows?, outlive_parent?", pane_create),
         method!("pane.write", "Raw keystrokes from the UI", "pane, data", pane_write),
         method!("pane.send", "Type text into an agent (as `dr send`)", "pane, text, enter?, caller?", pane_send),
         method!("policy.decide", "Allow or deny an agent's answer to a prompt (user only)", "id, allow", policy_decide),
@@ -65,7 +66,7 @@ async fn pane_create(ctx: Arc<Ctx>, p: Value) -> RpcResult {
         tab_id: p.get("tab_id").and_then(Value::as_str).map(String::from),
         split_from: p.get("split_from").and_then(Value::as_str).map(String::from),
         direction: direction_of(&p, "direction"), parent: caller_pane(&m, &p), cols: Some(cols), rows: Some(rows),
-        new_space: false,
+        new_space: false, outlive_parent: truthy(&p, "outlive_parent"),
     };
     Ok(m.create_pane(req).map_err(|e| e.policy_rpc())?.to_json())
 }
@@ -75,7 +76,9 @@ async fn pane_write(ctx: Arc<Ctx>, p: Value) -> RpcResult {
         return Err(RpcError::new(E_POLICY, "agents must use pane.send (dr send), not raw pane.write"));
     }
     let pane = ctx.manager.lock().unwrap().get(&need_str(&p, "pane")?)?;
-    pane.write(&opt_str(&p, "data"));
+    let data = opt_str(&p, "data");
+    pane.state.lock().unwrap().draft.feed(&data, drover_core::status_tracker::now_secs());
+    pane.write(&data);
     Ok(Value::Null)
 }
 
@@ -118,10 +121,15 @@ async fn pane_send(ctx: Arc<Ctx>, p: Value) -> RpcResult {
     let mut m = ctx.manager.lock().unwrap();
     let pane_id = pane_param(&m, &p, "pane")?;
     let pane = m.get(&pane_id)?;
-    let text = opt_str(&p, "text");
+    let mut text = opt_str(&p, "text");
     let enter = flag(&p, "enter", true);
-    let data = if enter { format!("{text}\r") } else { text.clone() };
     let caller = p.get("caller").and_then(Value::as_str).filter(|c| !c.is_empty());
+    let helper = caller.and_then(|c| m.panes.get(c)).map(|s| s.meta.lock().unwrap().clone())
+        .filter(|s| s.parent.as_deref() == Some(pane_id.as_str()));
+    if let Some(s) = helper {
+        text = format!("<dr from=\"{} {}\">{text}</dr>", s.id, s.name); // a helper reporting back: say who it is
+    }
+    let data = if enter { format!("{text}\r") } else { text.clone() };
     gate_agent_input(&ctx, &mut m, &pane_id, &pane, &data, &text, caller)?;
     pane.write(&data);
     if enter {
@@ -226,7 +234,14 @@ async fn pane_wait(ctx: Arc<Ctx>, p: Value) -> RpcResult {
     };
     // "idle" is the starting state of every pane, so only a *transition* into idle counts.
     let accept_current = pane.state_name() != "idle";
-    let state = wait_for_state(&ctx, &pane, wanted, timeout, accept_current).await?;
+    let caller = p.get("caller").and_then(Value::as_str).filter(|c| !c.is_empty());
+    let guard = WaitGuard::new(&ctx.manager, caller);
+    let state = wait_for_state(&ctx, &pane, wanted, timeout, accept_current).await;
+    drop(guard);
+    let state = state?;
+    if let Some(c) = caller {
+        ctx.manager.lock().unwrap().notes.drop_children(c, std::slice::from_ref(&pane_id)); // this reply is the news
+    }
     Ok(json!({"pane": pane_id, "state": state}))
 }
 
@@ -264,9 +279,9 @@ async fn pane_rename(ctx: Arc<Ctx>, p: Value) -> RpcResult {
     let m = ctx.manager.lock().unwrap();
     let pane_id = pane_param(&m, &p, "pane")?;
     let name: String = need_str(&p, "name")?.trim().chars().take(60).collect();
-    // The resolver treats "self", "local" and "%..." specially, so such names could never be used as targets.
-    if name.is_empty() || name.contains('/') || name.contains(':') || name == "self" || name == "local" || name.starts_with('%') {
-        return Err(bad("name must be non-empty, contain no '/' or ':', not start with '%' and not be 'self' or 'local'"));
+    // The resolver treats "self", "parent", "local" and "%..." specially, so such names could never be used as targets.
+    if name.is_empty() || name.contains('/') || name.contains(':') || ["self", "parent", "local"].contains(&name.as_str()) || name.starts_with('%') {
+        return Err(bad("name must be non-empty, contain no '/' or ':', not start with '%' and not be 'self', 'parent' or 'local'"));
     }
     let clash = m.panes.values().find(|o| { let x = o.meta.lock().unwrap(); x.name == name && x.id != pane_id }).map(|o| o.id());
     if let Some(other) = clash {

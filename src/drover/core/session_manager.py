@@ -15,6 +15,7 @@ from drover.core.event_hub import EventHub
 from drover.core.foreground_process_probe import follow_cwd
 from drover.core.orchestration_policy import OrchestrationPolicy, PolicyError
 from drover.core.pane_session import PaneMeta, PaneSession
+from drover.core.parent_notes import NOTE_STATES, ParentNotes
 from drover.core.workspace_models import Space, Tab, new_id
 from drover.pty.pty_backend_factory import default_shell, resolve_argv, split_command
 from drover.self_command import pane_path
@@ -32,6 +33,7 @@ class SessionManager:
         self.stopped: list[dict] = []  # panes from a previous run, offered for resume
         self.git: dict[str, dict] = {}  # space id -> {branch, dirty, ahead}, refreshed by GitWatcher
         self.messages = AgentMessagesLog()
+        self.notes = ParentNotes()  # typed into a parent agent when a helper finishes, asks or exits
         self.on_structure_change = lambda: None
         self.notify_state = lambda name, kind, state, detail="": None  # wired to desktop notifications by the daemon
 
@@ -82,7 +84,8 @@ class SessionManager:
 
     def create_pane(self, command: str = "", cwd: str = "", name: str = "", *, tab_id: str | None = None,
                     split_from: str | None = None, direction: str = "row", parent: str | None = None,
-                    cols: int = 120, rows: int = 32, new_space: bool = False) -> PaneSession:
+                    cols: int = 120, rows: int = 32, new_space: bool = False,
+                    outlive_parent: bool = False) -> PaneSession:
         policy = OrchestrationPolicy.from_settings(self.settings.get("orchestration", {}))
         live = sum(1 for p in self.panes.values() if p.alive)
         policy.check_spawn(live, self.depth_of(parent) if parent else None)
@@ -96,7 +99,7 @@ class SessionManager:
         rule_set = self.rule_sets.get(kind)
         meta = PaneMeta(id=pane_id, name=name, kind=kind, command=command or " ".join(argv), argv=argv,
                         cwd=cwd, space_id="", tab_id="", parent=parent,
-                        resume=rule_set.resume if rule_set else "")
+                        resume=rule_set.resume if rule_set else "", outlive_parent=outlive_parent)
         pane = PaneSession(meta, cols, rows, int(self.settings.get("scrollback", 5000)))
         pane.on_exit_hook = self._on_pane_exit
         pane.shell_launched = kind == "shell"
@@ -167,13 +170,14 @@ class SessionManager:
     def _on_pane_exit(self, pane: PaneSession) -> None:
         # A one-shot helper (`dr run claude -p ...`) exits instead of going "done": still report it on the Flow board.
         self.messages.add_state(pane.meta.id, pane.meta.parent, "exited", f"exit code {pane.exit_code}")
+        self.report_to_parent(pane, "exited", f"exit code {pane.exit_code}")
         self.hub.emit("pane", pane.to_dict())
         self.hub.emit("status", {"pane": pane.to_dict(), "old": "working", "new": "exited"})
         if not pane.focused:
             self.notify_state(pane.meta.name, pane.meta.kind, "exited", pane.screen.title)
-        if self.settings.get("orchestration.kill_children_on_parent_exit", False):
+        if self.settings.get("orchestration.kill_children_on_parent_exit", True):
             for child in self.children_of(pane.meta.id):
-                if child in self.panes:
+                if child in self.panes and not self.panes[child].meta.outlive_parent:
                     self.panes[child].kill()
         self._changed()
 
@@ -214,6 +218,11 @@ class SessionManager:
             tab.focused = pane_id
         pane.tracker.acknowledge()
         self.hub.emit("pane", pane.to_dict())
+
+    def report_to_parent(self, pane: PaneSession, state: str, detail: str = "") -> None:
+        parent = pane.meta.parent
+        if parent in self.panes and state in NOTE_STATES and self.settings.get("orchestration.notes", True):
+            self.notes.add(parent, pane.meta.id, pane.meta.name, state, detail)
 
     def children_of(self, pane_id: str) -> list[str]:
         return [p.meta.id for p in self.panes.values() if p.meta.parent == pane_id]

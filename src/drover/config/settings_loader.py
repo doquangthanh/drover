@@ -31,7 +31,8 @@ DEFAULT_SETTINGS: dict[str, Any] = {
         "max_panes": 0,  # 0 = no limit
         "max_depth": 3,
         "agents_may_answer_permission_prompts": "ask-user",  # never | ask-user | always
-        "kill_children_on_parent_exit": False,
+        "kill_children_on_parent_exit": True,  # `dr run --outlive-parent` keeps one helper running
+        "notes": True,  # type "<dr from=...>" notes into a parent agent when its helper finishes, asks or exits
     },
     "agents": {
         "claude": {"command": "claude", "resume": "claude --continue"},
@@ -63,7 +64,8 @@ quiet_hours = ""
 max_panes = 0                     # live panes at once; 0 = no limit
 max_depth = 3
 agents_may_answer_permission_prompts = "ask-user"   # never | ask-user | always
-kill_children_on_parent_exit = false
+kill_children_on_parent_exit = true   # helpers stop with the agent that started them (`dr run --outlive-parent` opts out)
+notes = true                          # tell a parent agent when its helper finishes, needs an answer or exits
 """
 
 

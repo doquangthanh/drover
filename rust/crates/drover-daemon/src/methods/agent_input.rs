@@ -37,7 +37,7 @@ fn caller(p: &Value) -> Option<&str> {
 }
 
 /// Type the prompt (bracketed paste when the app asked for it), then Enter. Returns the moment just before Enter.
-async fn submit(pane: &PaneSession, text: &str) -> Result<f64, RpcError> {
+pub async fn submit(pane: &PaneSession, text: &str) -> Result<f64, RpcError> {
     if pane.state.lock().unwrap().screen.modes().bracketed_paste {
         pane.write(&format!("\x1b[200~{}\x1b[201~", text.replace("\x1b[201~", ""))); // the text cannot end the paste
     } else {

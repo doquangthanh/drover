@@ -2,6 +2,7 @@
 
 pub mod alt_screen_pages;
 pub mod detection_rules;
+pub mod draft;
 pub mod foreground_probe;
 pub mod launch_command;
 pub mod layout_tree;

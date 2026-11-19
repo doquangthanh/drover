@@ -27,7 +27,9 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--on", default="", help="machine alias from machines.toml")
     run.add_argument("--worktree", default="", metavar="TASK", help="new git worktree for this task")
     run.add_argument("--split", action="store_true", help="split the caller's tab instead of a new tab")
-    run.add_argument("command", nargs=argparse.REMAINDER, help="-- command and args (empty = shell)")
+    run.add_argument("--outlive-parent", action="store_true", help="keep running when the agent that started it exits")
+    run.add_argument("command", nargs=argparse.REMAINDER,
+                     help="-- command and args (empty = shell), or a template name and its task")
 
     ls = sub.add_parser("ls", help="list agents and their state")
     ls.add_argument("--json", action="store_true")
@@ -43,8 +45,10 @@ def build_parser() -> argparse.ArgumentParser:
     read.add_argument("--lines", type=int, default=0)
     read.add_argument("--json", action="store_true")
 
-    wait = sub.add_parser("wait", help="block until an agent reaches a state")
-    wait.add_argument("target")
+    wait = sub.add_parser("wait", help="block until an agent reaches a state, or until your helpers do (--children)")
+    wait.add_argument("target", nargs="?", default="")
+    wait.add_argument("--children", choices=["all", "any"],
+                      help="all: until none of the agents you started is working; any: the next one with news")
     wait.add_argument("--state", action="append", choices=["done", "idle", "blocked", "working", "exited"])
     wait.add_argument("--timeout", type=float, default=600)
 
@@ -54,6 +58,9 @@ def build_parser() -> argparse.ArgumentParser:
     kill = sub.add_parser("kill", help="stop an agent")
     kill.add_argument("target")
     kill.add_argument("--tree", action="store_true", help="also stop the helpers it started")
+
+    templates = sub.add_parser("templates", help="list role templates for `dr run <template> \"task\"`")
+    templates.add_argument("--json", action="store_true")
 
     sub.add_parser("tui", help="terminal UI in this terminal (default when Textual is installed)")
     sub.add_parser("status", help="server, machines and agent counts")
@@ -86,7 +93,7 @@ def _cmd_tui(_args) -> int:
 
 COMMANDS = {
     "run": agents.cmd_run, "ls": agents.cmd_ls, "send": agents.cmd_send, "read": agents.cmd_read,
-    "wait": agents.cmd_wait, "attach": agents.cmd_attach, "kill": agents.cmd_kill,
+    "wait": agents.cmd_wait, "attach": agents.cmd_attach, "kill": agents.cmd_kill, "templates": agents.cmd_templates,
     "status": admin.cmd_status, "schema": admin.cmd_schema, "skill": admin.cmd_skill,
     "server": admin.cmd_server, "machine": admin.cmd_machine, "worktree": admin.cmd_worktree,
     "rules": admin.cmd_rules, **agent_input.COMMANDS, **layout_cmds.COMMANDS,

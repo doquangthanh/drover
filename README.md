@@ -58,7 +58,8 @@ notifications and an Inbox of everyone waiting.
 
 **Agents run agents**<br>
 `dr run`, `dr wait`, `dr read` and `dr send` work from inside any pane, so one agent can hand work to another and
-wait for the result.
+wait for the result. Helpers report back on their own, stop with the agent that started them, and roles can be
+saved as templates.
 
 </td>
 <td valign="top">
@@ -209,9 +210,11 @@ These keys go to Drover even inside a terminal, as in VS Code (Ctrl+W no longer 
 <summary><b>CLI reference (<code>dr</code>)</b></summary>
 
 ```
-dr run [--bg] [--name N] [--cwd DIR] [--on MACHINE] [--worktree TASK] -- claude
-dr ls [--json]            dr read NAME [--lines 60]      dr send NAME "text"
+dr run [--bg] [--name N] [--cwd DIR] [--on MACHINE] [--worktree TASK] [--outlive-parent] -- claude
+dr run --bg --name r1 reviewer "Review src/x.py"         dr templates [--json]
+dr ls [--json]            dr read NAME [--lines 60]      dr send NAME|parent "text"
 dr wait NAME --state done --timeout 900                  dr attach NAME   (Ctrl+\ detaches)
+dr wait --children all|any [--timeout 900]
 dr prompt NAME "text" [--wait] [--state done]            dr keys NAME esc | up | enter | ctrl+c ...
 dr wait-output NAME "passed|failed" [--regex] [--lines 80]   dr rename NAME-OR-ID NEW
 dr space new|ls           dr tab new SPACE|ls|rename|close   dr pane split|move|swap|zoom|unzoom|share|focus

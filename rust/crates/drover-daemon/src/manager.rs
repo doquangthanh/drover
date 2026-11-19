@@ -32,6 +32,8 @@ pub struct Manager {
     /// Space id -> {branch, dirty, ahead}, refreshed by the git watcher.
     pub git: HashMap<String, Value>,
     pub messages: MessagesLog,
+    /// Typed into a parent agent when a helper finishes, asks or exits.
+    pub notes: crate::parent_notes::ParentNotes,
     /// Structure changed: the persistence task saves session.json shortly after.
     pub save: Arc<Notify>,
     pub me: Weak<Mutex<Manager>>,
@@ -57,7 +59,7 @@ impl Manager {
             Mutex::new(Manager {
                 settings, hub, rule_sets, save,
                 spaces: IndexMap::new(), tabs: IndexMap::new(), panes: IndexMap::new(),
-                stopped: vec![], git: HashMap::new(), messages: MessagesLog::default(), me: me.clone(),
+                stopped: vec![], git: HashMap::new(), messages: MessagesLog::default(), notes: Default::default(), me: me.clone(),
             })
         })
     }
@@ -129,6 +131,16 @@ impl Manager {
             pane_id = self.panes[&id].meta.lock().unwrap().parent.clone();
         }
         depth
+    }
+
+    pub fn report_to_parent(&mut self, pane: &PaneSession, state: &str, detail: &str) {
+        let (id, name, parent) = { let m = pane.meta.lock().unwrap(); (m.id.clone(), m.name.clone(), m.parent.clone()) };
+        let on = self.settings.lock().unwrap().bool("orchestration.notes", true);
+        if let Some(parent) = parent.filter(|p| self.panes.contains_key(p))
+            && on && crate::parent_notes::NOTE_STATES.contains(&state)
+        {
+            self.notes.add(&parent, &id, &name, state, detail);
+        }
     }
 
     pub fn children_of(&self, pane_id: &str) -> Vec<String> {

@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from drover.core.pane_screen_text import PaneScreen
+from drover.core.parent_notes import DraftTracker
 from drover.core.terminal_mode_tracker import TerminalModes
 from drover.pty.pty_backend_factory import create_pty_backend
 from drover.status.osc7501_parser import parse_osc7501
@@ -33,6 +34,7 @@ class PaneMeta:
     parent: str | None = None
     created_at: float = field(default_factory=time.time)
     resume: str = ""
+    outlive_parent: bool = False  # keep running when the pane that started it exits
 
 
 class PaneSession:
@@ -53,6 +55,7 @@ class PaneSession:
         self.unread = False
         self.exit_code: int | None = None
         self.focused = False
+        self.draft = DraftTracker()  # what the person typed here since their last Enter (guards parent notes)
         self.backend = None
         self.output_listeners: set[Callable[[str, str], None]] = set()
         self._pending_screen: list[str] = []

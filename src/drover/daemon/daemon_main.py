@@ -47,6 +47,7 @@ from drover.rpc import (  # noqa: F401
     methods_panes,
     methods_subagents,
     methods_system,
+    methods_wait_children,
     methods_workspace,
 )
 from drover.status.detection_rule_loader import load_rule_sets

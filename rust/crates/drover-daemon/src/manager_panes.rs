@@ -28,6 +28,7 @@ pub struct NewPane {
     pub cols: Option<u16>,
     pub rows: Option<u16>,
     pub new_space: bool,
+    pub outlive_parent: bool,
 }
 
 /// Why a pane could not start. `rpc(policy_code)`: pane.create reports a policy refusal as code 4; other callers
@@ -94,6 +95,7 @@ impl Manager {
             command: if req.command.is_empty() { argv.join(" ") } else { req.command.clone() },
             argv: argv.clone(), cwd: cwd.clone(), parent: req.parent.clone(), created_at: now_secs(),
             resume: self.rule_set(&kind).map(|r| r.resume.clone()).unwrap_or_default(),
+            outlive_parent: req.outlive_parent,
             ..Default::default()
         };
         let pane = PaneSession::new(meta, req.cols.unwrap_or(120), req.rows.unwrap_or(32), scrollback);
@@ -138,6 +140,7 @@ impl Manager {
         let code_text = code.map(|c| c.to_string()).unwrap_or_else(|| "None".into());
         // A one-shot helper (`dr run claude -p ...`) exits instead of going "done": still report it.
         self.messages.add_state(&id, parent.as_deref(), "exited", &format!("exit code {code_text}"));
+        self.report_to_parent(pane, "exited", &format!("exit code {code_text}"));
         let data = pane.to_json();
         self.hub.emit("pane", data.clone());
         self.hub.emit("status", json!({"pane": data, "old": "working", "new": "exited"}));
@@ -146,10 +149,10 @@ impl Manager {
             let (name, kind) = { let m = pane.meta.lock().unwrap(); (m.name.clone(), m.kind.clone()) };
             crate::notify::notify_state(&self.settings.lock().unwrap(), &name, &kind, "exited", &title);
         }
-        let kill_children = self.settings.lock().unwrap().bool("orchestration.kill_children_on_parent_exit", false);
+        let kill_children = self.settings.lock().unwrap().bool("orchestration.kill_children_on_parent_exit", true);
         if kill_children {
             for child in self.children_of(&id) {
-                if let Some(c) = self.panes.get(&child) {
+                if let Some(c) = self.panes.get(&child).filter(|c| !c.meta.lock().unwrap().outlive_parent) {
                     c.kill(false);
                 }
             }

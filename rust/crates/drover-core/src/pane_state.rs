@@ -21,6 +21,8 @@ pub struct PaneMeta {
     pub parent: Option<String>,
     pub created_at: f64,
     pub resume: String,
+    /// Keep running when the pane that started it exits (`dr run --outlive-parent`).
+    pub outlive_parent: bool,
 }
 
 pub struct PaneState {
@@ -46,6 +48,8 @@ pub struct PaneState {
     pub fg_pgid: Option<i32>,
     pub fg_checked_at: f64,
     pub claude_checked_at: f64,
+    /// What the person typed here since their last Enter (guards parent notes).
+    pub draft: crate::draft::DraftTracker,
 }
 
 impl PaneState {
@@ -69,6 +73,7 @@ impl PaneState {
             fg_pgid: None,
             fg_checked_at: 0.0,
             claude_checked_at: 0.0,
+            draft: Default::default(),
         }
     }
 }

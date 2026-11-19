@@ -85,7 +85,9 @@ impl Session {
             Some("in") => {
                 let pane = self.ctx.manager.lock().unwrap().panes.get(&pane_id).cloned();
                 if let Some(p) = pane {
-                    p.write(msg.get("data").and_then(Value::as_str).unwrap_or(""));
+                    let data = msg.get("data").and_then(Value::as_str).unwrap_or("");
+                    p.state.lock().unwrap().draft.feed(data, drover_core::status_tracker::now_secs());
+                    p.write(data);
                 }
             }
             Some("attach") => self.attach(&pane_id),

@@ -1,4 +1,4 @@
-"""Resolve CLI targets ("%3", "auth", "self", "shop-api/auth") to a local pane id."""
+"""Resolve CLI targets ("%3", "auth", "self", "parent", "shop-api/auth") to a local pane id."""
 
 from __future__ import annotations
 
@@ -13,6 +13,13 @@ def resolve_pane(manager: SessionManager, target: str, caller: str | None = None
         if not caller:
             raise RpcError(E_BAD_PARAMS, "'self' only works inside a drover pane")
         target = caller
+    elif target == "parent":
+        parent = manager.panes[caller].meta.parent if caller in manager.panes else None
+        if not parent:
+            raise RpcError(E_BAD_PARAMS, "'parent' only works in a pane another agent started (dr run)")
+        if parent not in manager.panes:
+            raise RpcError(E_NOT_FOUND, f"the agent that started this one ({parent}) is gone")
+        target = parent
     target = target.removeprefix("local:")
     if target in manager.panes:
         return target

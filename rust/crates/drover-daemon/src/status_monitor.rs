@@ -27,7 +27,7 @@ pub async fn run(ctx: Arc<Ctx>) {
     }
 }
 
-fn tick(ctx: &Ctx, last_config_check: &mut f64, rules_stamp: &mut Option<Vec<(String, std::time::SystemTime)>>) {
+fn tick(ctx: &Arc<Ctx>, last_config_check: &mut f64, rules_stamp: &mut Option<Vec<(String, std::time::SystemTime)>>) {
     let now = now_secs();
     let mut m = ctx.manager.lock().unwrap();
     if now - *last_config_check > 2.0 {
@@ -41,6 +41,28 @@ fn tick(ctx: &Ctx, last_config_check: &mut f64, rules_stamp: &mut Option<Vec<(St
         probe_foreground(&mut m, &pane, now);
         probe_claude_session(&m, &pane, now);
         check_pane(&mut m, &pane, now);
+    }
+    deliver_parent_notes(ctx, &mut m, now);
+}
+
+/// Type queued helper notes into parents that can take them now (see `parent_notes.rs`).
+fn deliver_parent_notes(ctx: &Arc<Ctx>, m: &mut Manager, now: f64) {
+    for (parent_id, text) in m.notes.take_ready(&m.panes, now) {
+        let Some(pane) = m.panes.get(&parent_id).cloned() else { continue };
+        m.notes.sending.insert(parent_id.clone());
+        let ctx = ctx.clone();
+        tokio::spawn(async move {
+            let lock = ctx.input_lock(&parent_id);
+            let typed = {
+                let _held = lock.lock().await;
+                crate::methods::agent_input::submit(&pane, &text).await
+            };
+            if let Err(e) = typed {
+                // Blocked meanwhile, or the pane closed: the note is dropped; the Flow board has the event.
+                crate::log::info(&format!("parent note to {parent_id} not typed: {}", e.message));
+            }
+            ctx.manager.lock().unwrap().notes.sending.remove(&parent_id);
+        });
     }
 }
 
@@ -145,6 +167,7 @@ fn check_pane(m: &mut Manager, pane: &Arc<PaneSession>, now: f64) {
     // A focused agent finishing its turn goes working -> idle (no "done" badge), but it did finish: log it.
     let finished = allow_done && old == "working" && new == "idle";
     m.messages.add_state(&id, parent.as_deref(), if finished { "done" } else { &new }, "");
+    m.report_to_parent(pane, if finished { "done" } else { &new }, "");
     let data = pane.to_json();
     m.hub.emit("pane", data.clone());
     m.hub.emit("status", json!({"pane": data, "old": old, "new": new}));

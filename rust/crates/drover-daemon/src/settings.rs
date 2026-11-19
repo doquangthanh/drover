@@ -27,7 +27,8 @@ pub fn default_settings() -> Value {
             "max_panes": 0,
             "max_depth": 3,
             "agents_may_answer_permission_prompts": "ask-user",
-            "kill_children_on_parent_exit": false,
+            "kill_children_on_parent_exit": true,
+            "notes": true,
         },
         "agents": {
             "claude": {"command": "claude", "resume": "claude --continue"},

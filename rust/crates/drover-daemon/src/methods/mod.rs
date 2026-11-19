@@ -8,6 +8,7 @@ pub mod machines;
 pub mod panes;
 pub mod subagents;
 pub mod system;
+pub mod wait_children;
 pub mod workspace;
 
 use std::collections::HashMap;
@@ -20,7 +21,7 @@ use crate::manager::Manager;
 use crate::rpc::{E_BAD_PARAMS, E_NO_METHOD, E_NOT_FOUND, MethodSpec, RpcError, RpcResult};
 
 static TABLE: LazyLock<HashMap<&'static str, MethodSpec>> = LazyLock::new(|| {
-    [system::methods(), workspace::methods(), panes::methods(), layout::methods(), agent_input::methods(), files_git::methods(), subagents::methods(), chat::methods(), machines::methods()]
+    [system::methods(), workspace::methods(), panes::methods(), layout::methods(), agent_input::methods(), files_git::methods(), subagents::methods(), chat::methods(), machines::methods(), wait_children::methods()]
         .into_iter()
         .flatten()
         .map(|m| (m.name, m))
@@ -38,13 +39,22 @@ pub async fn call(ctx: Arc<Ctx>, name: &str, params: Value) -> RpcResult {
     (spec.handler)(ctx, params).await
 }
 
-/// Resolve CLI targets ("%3", "auth", "self", "shop-api/auth") to a local pane id. Port of `target_resolver.py`.
+/// Resolve CLI targets ("%3", "auth", "self", "parent", "shop-api/auth") to a local pane id. Port of `target_resolver.py`.
 pub fn resolve_pane(m: &Manager, target: &str, caller: Option<&str>) -> Result<String, RpcError> {
     if target.is_empty() {
         return Err(RpcError::new(E_BAD_PARAMS, "missing target"));
     }
+    let parent_id;
     let target = if target == "self" {
         caller.filter(|c| !c.is_empty()).ok_or_else(|| RpcError::new(E_BAD_PARAMS, "'self' only works inside a drover pane"))?
+    } else if target == "parent" {
+        let parent = caller.and_then(|c| m.panes.get(c)).and_then(|p| p.meta.lock().unwrap().parent.clone())
+            .ok_or_else(|| RpcError::new(E_BAD_PARAMS, "'parent' only works in a pane another agent started (dr run)"))?;
+        if !m.panes.contains_key(&parent) {
+            return Err(RpcError::new(E_NOT_FOUND, format!("the agent that started this one ({parent}) is gone")));
+        }
+        parent_id = parent;
+        parent_id.as_str()
     } else {
         target
     };
