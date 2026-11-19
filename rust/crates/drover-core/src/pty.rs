@@ -35,7 +35,7 @@ fn size(cols: u16, rows: u16) -> PtySize {
 impl Pty {
     pub fn spawn(
         spec: SpawnSpec<'_>,
-        mut on_output: impl FnMut(String) + Send + 'static,
+        on_output: impl FnMut(String) + Send + 'static,
         on_exit: impl FnOnce(Option<i32>) + Send + 'static,
     ) -> Result<Arc<Pty>, String> {
         let Some((program, args)) = spec.argv.split_first() else { return Err("empty command".into()) };
@@ -62,6 +62,7 @@ impl Pty {
             alive: alive.clone(),
         });
         let read_all = move || {
+            let mut on_output = on_output; // moved in: the closure is FnOnce on both platforms
             let mut decoder = Utf8Stream::default();
             let mut buf = vec![0u8; 65536];
             loop {
