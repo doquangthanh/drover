@@ -26,7 +26,25 @@ pub fn parse_pango_font(desc: &str) -> (String, Option<f64>) {
     }
 }
 
+/// Windows Terminal's default profile font (`profiles.defaults.font`), its own default when unset. None when
+/// Windows Terminal isn't installed. Its settings.json may hold `//` comment lines, dropped before parsing.
+fn windows_terminal_font() -> Option<(String, Option<f64>)> {
+    let local = std::env::var_os("LOCALAPPDATA")?;
+    let file = std::path::Path::new(&local)
+        .join(r"Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json");
+    let text = std::fs::read_to_string(file).ok()?;
+    let json: String = text.lines().filter(|l| !l.trim_start().starts_with("//")).collect::<Vec<_>>().join("\n");
+    let v: Value = serde_json::from_str(&json).unwrap_or_default();
+    let d = &v["profiles"]["defaults"];
+    let face = d["font"]["face"].as_str().or(d["fontFace"].as_str()).unwrap_or("Cascadia Mono");
+    let size = d["font"]["size"].as_f64().or(d["fontSize"].as_f64()).unwrap_or(12.0);
+    Some((face.to_string(), Some(size)))
+}
+
 fn system_terminal_font() -> Option<(String, Option<f64>)> {
+    if cfg!(windows) {
+        return windows_terminal_font();
+    }
     if !cfg!(target_os = "linux") || crate::launch::which("gsettings").is_none() {
         return None;
     }
