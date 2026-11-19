@@ -38,10 +38,11 @@ if sys.platform == "win32":
     pyz_app = PYZ(a_app.pure)
     # Single file dist/drover.exe: window with no args, `drover <cmd>` is the CLI, `drover server run` the daemon.
     EXE(pyz_app, a_app.scripts, a_app.binaries, a_app.datas, [], name="drover", console=False, **ICON)
-    # Plus folder dist/drover-cli/ (dr.exe, no onefile unpacking per call): zipped as drover-cli-windows-x64.zip,
-    # installed by the daemon into <state>/runtime/<version>/ for the fast `dr` shim (windows_cli_runtime_installer).
+    # Plus folder dist/drover-cli/ (no onefile unpacking per call): zipped as drover-cli-windows-x64.zip, installed
+    # by the daemon into <state>/runtime/<version>/ (windows_cli_runtime_installer). The Python CLI is dr-py.exe;
+    # CI adds the Rust dr.exe next to it, which answers agent commands itself and runs dr-py.exe for the rest.
     a_cli = analysis("dr_entry.py")
-    exe_cli = EXE(PYZ(a_cli.pure), a_cli.scripts, [], exclude_binaries=True, name="dr", console=True, **ICON)
+    exe_cli = EXE(PYZ(a_cli.pure), a_cli.scripts, [], exclude_binaries=True, name="dr-py", console=True, **ICON)
     COLLECT(exe_cli, a_cli.binaries, a_cli.datas, name="drover-cli")
 else:
     a_dr = analysis("dr_entry.py")

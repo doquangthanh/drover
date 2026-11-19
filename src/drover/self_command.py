@@ -53,13 +53,22 @@ def dr_command(windowless: bool = False) -> list[str]:
 
 
 def pane_path(current: str) -> str:
-    """PATH for agent panes: in a packaged build put dr.exe first so agents can call `dr`."""
+    """PATH for agent panes: in a packaged build put dr.exe first so agents can call `dr`.
+
+    Single exe: the installed runtime folder comes first, so `dr` is its dr.exe (Rust fast path) without the
+    `dr.cmd` hop through cmd.exe (~15 ms a call). The shims folder stays behind it for `hd` and for when an update
+    removes that runtime folder while the pane still runs."""
     if not is_frozen():
         return current
     import os
 
-    folder = _dr_shim_dir() if is_single_exe() else bundle_dir()
-    return str(folder) + os.pathsep + current if current else str(folder)
+    folders = [bundle_dir()]
+    if is_single_exe():
+        from drover.core.windows_cli_runtime_installer import runtime_dr_exe
+
+        fast = runtime_dr_exe()
+        folders = [*([fast.parent] if fast else []), _dr_shim_dir()]
+    return os.pathsep.join([*map(str, folders), *([current] if current else [])])
 
 
 def fast_cli_command() -> list[str]:

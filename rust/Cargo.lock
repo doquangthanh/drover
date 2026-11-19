@@ -1948,6 +1948,7 @@ dependencies = [
 name = "drover-cli"
 version = "0.2.0-dev"
 dependencies = [
+ "dirs 7.0.0",
  "drover-daemon",
  "serde_json",
 ]

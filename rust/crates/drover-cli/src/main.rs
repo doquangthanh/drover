@@ -1,29 +1,54 @@
-//! `dr`: the Drover CLI. Phase 03 wires `dr server run` and `dr hook claude`; the rest is ported in phase 06.
+//! `dr`: the Drover CLI front door. Agent commands that run on every turn (`ls`, `read`, `send`, `wait`, `prompt`,
+//! `keys`, ...) are answered here over /rpc in a few ms; everything else, and anything this parser is not sure
+//! about, runs in the Python CLI (`dr-py`) unchanged. With the `server` feature it also hosts the Rust daemon.
 
+mod ctrl_c_handling;
+mod daemon_rpc;
+mod fast_args;
+mod fast_commands;
+mod fast_ls_command;
 mod hook_claude;
+mod python_fallback;
+mod python_json;
+mod python_output;
+
+use std::ffi::OsString;
+
+use fast_commands::Outcome;
 
 fn main() {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    let words: Vec<&str> = args.iter().map(String::as_str).collect();
-    match words.as_slice() {
-        ["server", "run", rest @ ..] => std::process::exit(server_run(rest)),
-        ["hook", "claude"] => std::process::exit(hook_claude::run()),
-        ["--version"] | ["version"] => println!("dr (rust) {}", env!("CARGO_PKG_VERSION")),
-        _ => {
-            eprintln!("dr (rust) {}: only `dr server run [--listen ADDR] [--background]` exists yet", env!("CARGO_PKG_VERSION"));
-            std::process::exit(2);
-        }
+    ctrl_c_handling::exit_130();
+    let raw: Vec<OsString> = std::env::args_os().skip(1).collect();
+    std::process::exit(dispatch(&raw));
+}
+
+fn dispatch(raw: &[OsString]) -> i32 {
+    // Non-UTF-8 arguments: Python decodes them its own way.
+    let Some(args) = raw.iter().map(|a| a.to_str().map(str::to_string)).collect::<Option<Vec<String>>>() else {
+        return python_fallback::run(raw, None);
+    };
+    #[cfg(feature = "server")]
+    if let [cmd, sub, rest @ ..] = args.as_slice()
+        && cmd == "server"
+        && sub == "run"
+    {
+        return server_run(rest);
+    }
+    match fast_args::parse_fast(&args).map(fast_commands::run) {
+        Some(Outcome::Exit(code)) => code,
+        Some(Outcome::Delegate) | None => python_fallback::run(raw, python_output::consumed_stdin()),
     }
 }
 
-fn server_run(rest: &[&str]) -> i32 {
+#[cfg(feature = "server")]
+fn server_run(rest: &[String]) -> i32 {
     let mut listen = "127.0.0.1".to_string();
     let mut background = false;
     let mut it = rest.iter();
     while let Some(arg) = it.next() {
-        match *arg {
+        match arg.as_str() {
             "--background" => background = true,
-            "--listen" => listen = it.next().map(|s| s.to_string()).unwrap_or_default(),
+            "--listen" => listen = it.next().cloned().unwrap_or_default(),
             other if other.starts_with("--listen=") => listen = other["--listen=".len()..].to_string(),
             other => {
                 eprintln!("error: unknown argument {other}");

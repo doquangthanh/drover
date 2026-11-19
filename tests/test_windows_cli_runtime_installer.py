@@ -242,6 +242,15 @@ def test_runtime_dr_exe_runs_daemon_through_owner(tmp_path, monkeypatch):
     assert self_command.dr_command() == [str(owner)]
 
 
+def test_pane_path_puts_runtime_before_shims_once_installed(frozen, monkeypatch):
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    shims = str(self_command._dr_shim_dir())
+    assert self_command.pane_path("C:\\bin") == os.pathsep.join([shims, "C:\\bin"])
+    runtime = str(make_runtime())
+    assert self_command.pane_path("C:\\bin") == os.pathsep.join([runtime, shims, "C:\\bin"])
+    assert self_command.pane_path("") == os.pathsep.join([runtime, shims])
+
+
 def test_hook_command_uses_forward_slashes_plain_then_runtime(frozen):
     exe = str(frozen).replace("\\", "/")
     assert claude_subagent_hooks.hook_command() == f'"{exe}" hook claude'

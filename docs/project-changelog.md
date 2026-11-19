@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+### Changed
+- Windows: `dr` agent commands (`ls`, `read`, `send`, `wait`, `prompt`, `keys`, `wait-output`, `rename`, `kill`,
+  `hook claude`) are answered by a small Rust `dr.exe`: ~16 ms a call instead of ~170 ms (herdr: ~25 ms).
+  Output and exit codes are unchanged; every other command runs the Python CLI (`dr-py.exe`) as before. Agent
+  panes call `dr.exe` directly instead of going through `dr.cmd`.
+
 ## 0.1.38
 ### Added
 - Preview of a native desktop window, `drover-native` (Linux bundle, opt-in): a GPUI app drawn straight to the GPU,

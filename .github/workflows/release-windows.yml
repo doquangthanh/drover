@@ -30,11 +30,28 @@ jobs:
         run: |
           uv sync --extra tui  # bundle Textual so plain `dr` opens the terminal UI
           uv run pyinstaller packaging/drover.spec --noconfirm
+      - name: Rust toolchain (rust/rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+        working-directory: rust
+      - name: Build Rust dr.exe (fast path for agent commands)
+        # No `server` feature: on Windows the daemon stays Python; dr.exe only answers ls/read/send/wait/... itself.
+        # crt-static: dr.exe sits at the runtime root, where Windows can't see PyInstaller's _internal\VCRUNTIME140.dll
+        shell: bash
+        working-directory: rust
+        env:
+          RUSTFLAGS: -C target-feature=+crt-static
+        run: |
+          cargo build --release --locked -p drover-cli --no-default-features
+          cp target/release/dr.exe ../dist/drover-cli/dr.exe
       - name: Check output
         shell: bash
-        run: test -s dist/drover.exe && ls -l dist/drover.exe && dist/drover-cli/dr.exe --help > /dev/null
+        run: |
+          test -s dist/drover.exe && ls -l dist/drover.exe
+          dist/drover-cli/dr-py.exe --help > /dev/null
+          dist/drover-cli/dr.exe --help > /dev/null  # delegated to dr-py.exe
+          test -z "$(dist/drover-cli/dr.exe ls --names)"  # fast path, no daemon: prints nothing, exit 0
       - name: Zip fast CLI runtime
-        # dr.exe at the zip root: the daemon extracts it into <state>/runtime/<version>/ (windows_cli_runtime_installer)
+        # dr.exe + dr-py.exe at the zip root: the daemon extracts them into <state>/runtime/<version>/
         shell: pwsh
         run: Compress-Archive -Path dist/drover-cli/* -DestinationPath dist/drover-cli-windows-x64.zip
       - uses: actions/upload-artifact@v4

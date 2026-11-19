@@ -6,6 +6,16 @@ Linux release bundle (`~/.local/share/drover`): Python `dr` (CLI + TUI, PyInstal
 Both daemons speak the same `/ws` + `/rpc` protocol and share `daemon.json`, `session.json`, `chats/`, so either can
 take over the other's session. Windows still ships the all-Python `drover.exe`.
 
+## `dr` on Windows: Rust fast path (`rust/crates/drover-cli`, built `--no-default-features`)
+`drover-cli-windows-x64.zip` holds the Rust `dr.exe` and the Python CLI `dr-py.exe`; the daemon installs it into
+`<state>/runtime/<version>/`. Agent panes get that folder first on PATH (then `shims/` with `dr.cmd`/`hd.cmd`).
+```
+dr.exe ─ strict parse ─ ls/send/read/wait/prompt/keys/wait-output/rename/kill/hook claude ─ POST /rpc ─ print
+   └─ anything else, --help, unsure args, daemon unreachable ─ dr-py.exe (or drover.exe from .complete), same argv
+```
+Output is byte-identical to Python (`python_json.rs`: `json.dumps` style; `\r\n` newlines; same exit codes),
+guarded by `tests/test_rust_fast_dr_cli_parity.py` (`DROVER_TEST_FAST_DR_BIN`). Autostart stays in Python.
+
 ```
 drover (Tauri window) / drover.exe (pywebview, Windows) / browser
         |  http://127.0.0.1:<port>/?token=...
