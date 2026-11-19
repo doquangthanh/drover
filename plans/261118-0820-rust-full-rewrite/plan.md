@@ -48,7 +48,7 @@ includes `server run` and `tui`), `drover-tui`, `drover-desktop` (bin `drover`).
 | 03 | [Daemon server and RPC methods](phase-03-daemon-server-and-rpc-methods.md) | 30h | in progress |
 | 04 | [Chat over the claude CLI](phase-04-chat-over-claude-cli.md) | 14h | done (UI click-through pending) |
 | 05 | [Remote, notify, policy, self-update](phase-05-remote-notify-policy-and-self-update.md) | 18h | done (update swap -> 09; real-host ssh not run) |
-| 06 | [CLI `dr`](phase-06-cli-dr.md) | 12h | dropped (hybrid: Python `dr` stays) |
+| 06 | [CLI `dr`](phase-06-cli-dr.md) | 12h | partly revived 2026-11-19 as a fast path (hot commands in Rust, rest Python): [plan](../261119-2003-rust-fast-path-dr-cli/plan.md) |
 | 07 | [Desktop window on Tauri](phase-07-desktop-window-on-tauri.md) | 14h | in progress |
 | 08 | [TUI on ratatui](phase-08-tui-on-ratatui.md) | 18h | dropped (hybrid: Python TUI stays) |
 | 09 | [Packaging, cutover (hybrid)](phase-09-packaging-cutover-and-python-removal.md) | 14h | Linux done locally; CI + Windows pending |
