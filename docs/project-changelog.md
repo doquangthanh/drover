@@ -1,9 +1,22 @@
 # Changelog
 
 ## Unreleased
+Windows and Linux move to one app: same folder, same programs, same update (plan 261119-2253).
 ### Added
 - Windows: an agent typed in a shell pane (`claude`, `codex`, `gemini`, `opencode`, also through `.cmd` shims and
   `node`) shows up as that agent, as on Linux: the daemon looks at the programs the pane's shell started.
+- Windows: a claude typed in a shell pane resumes its own conversation after a restart, as on Linux.
+- Windows release: `drover-windows-x64.zip` (+ `.sha256`), the same folder as the Linux tarball: `dr` (Rust),
+  `dr-py` (Python CLI), `drover` (Rust/Tauri window), `drover-native` (GPUI preview). The one-file `drover.exe`
+  download is unchanged in this release.
+### Changed
+- Linux: `dr` is the Rust CLI, as on Windows: agent commands (`ls`, `read`, `send`, `wait`...) answer in ~16 ms
+  instead of ~170 ms; the Python CLI is `dr-py` and runs the other commands. `drover-server` stays as a copy.
+- Self-update is one code path: the release folder downloads its new archive, checks the SHA-256 and swaps itself
+  (Windows moves the files one by one, since a running program's folder can't be renamed, and puts them back on
+  any failure).
+### Fixed
+- Native (GPUI) window: terminal font on Windows matches the web UI (Consolas instead of a fallback font).
 
 ## 0.1.42
 ### Fixed
