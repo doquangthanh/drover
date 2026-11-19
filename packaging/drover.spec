@@ -37,8 +37,3 @@ def analysis(script):
 a_dr = analysis("dr_entry.py")
 exe_dr = EXE(PYZ(a_dr.pure), a_dr.scripts, [], exclude_binaries=True, name="dr-py", console=True, **ICON)
 COLLECT(exe_dr, a_dr.binaries, a_dr.datas, name="drover")
-if sys.platform == "win32":
-    # Old one-file app dist/drover.exe (window + CLI + daemon), still the download for installs up to 0.1.4x until
-    # the Tauri drover.exe installs the folder itself (plans/261119-2253-windows-linux-full-parity, phase 02).
-    a_app = analysis("drover_entry.py")
-    EXE(PYZ(a_app.pure), a_app.scripts, a_app.binaries, a_app.datas, [], name="drover", console=False, **ICON)

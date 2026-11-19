@@ -1,7 +1,8 @@
 name: release-windows
 
-# Builds the single-file Windows app (drover.exe) when a tag like v0.1.0 is pushed, and attaches it to the GitHub release.
-# The landing page links to releases/latest/download/drover.exe, so the asset name must stay "drover.exe".
+# Builds the Windows release folder (same as Linux: dr, dr-py, drover, drover-native) when a tag like v0.1.0 is
+# pushed: drover-windows-x64.zip (+ .sha256) and the download drover.exe (the Tauri window, which installs the
+# folder on first run). The landing page links to releases/latest/download/drover.exe: keep that asset name.
 on:
   push:
     tags: ["v*"]
@@ -28,7 +29,7 @@ jobs:
         run: |
           npm --prefix frontend ci
           npm --prefix frontend run build
-      - name: Build drover.exe
+      - name: Build dr-py (Python CLI + TUI)
         run: |
           uv sync --extra tui  # bundle Textual so plain `dr` opens the terminal UI
           uv run pyinstaller packaging/drover.spec --noconfirm
@@ -36,8 +37,8 @@ jobs:
         run: rustup show active-toolchain || rustup toolchain install
         working-directory: rust
       - name: Build Rust dr.exe (fast agent commands + the daemon)
-        # Default `server` feature: drover.exe's `server run` hands over to this dr.exe (Rust daemon), Python stays the
-        # fallback. crt-static: dr.exe sits at the runtime root, where Windows can't see _internal\VCRUNTIME140.dll.
+        # Default `server` feature: dr.exe is also the daemon. crt-static: dr.exe sits at the folder root, where
+        # Windows can't see _internal\VCRUNTIME140.dll.
         shell: bash
         working-directory: rust
         env:
@@ -45,11 +46,6 @@ jobs:
         run: |
           cargo build --release --locked -p drover-cli
           cp target/release/dr.exe ../dist/drover/dr.exe
-      - name: Zip fast CLI runtime (old layout)
-        # Installs up to 0.1.4x download this: dr.exe + dr-py.exe at the zip root, extracted by the daemon into
-        # <state>/runtime/<version>/. Zipped before the windows are added, so it stays what those versions expect.
-        shell: pwsh
-        run: Compress-Archive -Path dist/drover/* -DestinationPath dist/drover-cli-windows-x64.zip
       - name: Build Rust window and the native window preview (same crates as Linux)
         shell: bash
         working-directory: rust
@@ -59,6 +55,7 @@ jobs:
           cargo build --release --locked -p drover-desktop -p drover-desktop-native
           cp target/release/drover.exe target/release/drover-native.exe ../dist/drover/
           cp target/release/*.dll ../dist/drover/ 2>/dev/null || true  # WebView2Loader.dll when not linked statically
+          cp target/release/drover.exe ../dist/drover.exe  # the download: installs the folder on first run
       - name: Check output
         shell: bash
         run: |
@@ -91,7 +88,6 @@ jobs:
           name: drover-windows-x64
           path: |
             dist/drover.exe
-            dist/drover-cli-windows-x64.zip
             dist/drover-windows-x64.zip*
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -100,6 +96,5 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}  # v1.2.3-rc.1: test build, not offered as an update
           files: |
             dist/drover.exe
-            dist/drover-cli-windows-x64.zip
             dist/drover-windows-x64.zip
             dist/drover-windows-x64.zip.sha256

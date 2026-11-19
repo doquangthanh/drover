@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+### Changed
+- Windows: the `drover.exe` download is the Rust (Tauri) window, as on Linux. On first run it installs the release
+  folder (`%LOCALAPPDATA%\drover\app`: `dr`, `dr-py`, `drover`, `drover-native`; ~10 s) and adds Drover to the
+  Start menu; later runs open the window from there. With arguments it is `dr` (old autostart and `dr.cmd` keep
+  working). Installs up to 0.1.43 move to it through their normal update; the old one-file app and its runtime
+  zip are no longer built.
+- Windows: panes follow the folder their program is in, and the terminal font follows Windows Terminal, as on
+  Linux (GNOME Terminal).
+### Removed
+- Windows: the agent guess from the terminal title (a folder named `claude-...` turned a shell pane into a claude
+  pane). Agents are seen from their process, as on Linux.
+
 ## 0.1.43
 Windows and Linux move to one app: same folder, same programs, same update (plan 261119-2253).
 ### Added
