@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.40
+### Changed
+- Windows: `dr run` is answered by the Rust `dr.exe` too: a shell pane starts in ~130 ms instead of ~400-850 ms
+  (same command quoting as before; role templates and the interactive attach still use the Python CLI).
+
 ## 0.1.39
 ### Changed
 - Windows: `dr` agent commands (`ls`, `read`, `send`, `wait`, `prompt`, `keys`, `wait-output`, `rename`, `kill`,
