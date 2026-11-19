@@ -110,7 +110,7 @@ fn probe_foreground(m: &mut Manager, pane: &Arc<PaneSession>, now: f64) {
 
 /// Resume a claude pane into its own conversation, not the folder's newest.
 fn probe_claude_session(m: &Manager, pane: &Arc<PaneSession>, now: f64) {
-    if cfg!(windows) || pane.meta.lock().unwrap().kind != "claude" || !pane.alive() {
+    if pane.meta.lock().unwrap().kind != "claude" || !pane.alive() {
         return;
     }
     {
@@ -120,8 +120,9 @@ fn probe_claude_session(m: &Manager, pane: &Arc<PaneSession>, now: f64) {
         }
         st.claude_checked_at = now;
     }
-    // Typed in a shell, claude leads the foreground group; started by drover, it is the pane's own process.
-    let pids = [pane.foreground_pgid(), pane.pid().map(|p| p as i32)].into_iter().flatten();
+    // Typed in a shell, claude is the agent the foreground probe found; started by drover, the pane's own process.
+    let typed = pane.state.lock().unwrap().fg_agent;
+    let pids = [typed, pane.pid()].into_iter().flatten().map(|p| p as i32);
     let Some(sid) = running_session_id(pids) else { return };
     let cmd = resume_command(&sid);
     if cmd == pane.meta.lock().unwrap().resume || !has_transcript(&sid) {
