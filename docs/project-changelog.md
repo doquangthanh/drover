@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.44
 ### Changed
 - Windows: the `drover.exe` download is the Rust (Tauri) window, as on Linux. On first run it installs the release
   folder (`%LOCALAPPDATA%\drover\app`: `dr`, `dr-py`, `drover`, `drover-native`; ~10 s) and adds Drover to the
