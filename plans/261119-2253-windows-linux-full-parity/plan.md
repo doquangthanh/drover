@@ -16,18 +16,18 @@ After this, a feature or fix lands once and ships the same on both. Allowed diff
 2. Config values (state dir, PATH separator, file names with `.exe`).
 Everything else (parts, bundle layout, window, CLI, daemon, update flow, tests) identical.
 
-## Today's differences (audit 2026-11-19)
+## Differences found (audit 2026-11-19; all closed, see Phases)
 | Area | Linux | Windows | Phase |
 |---|---|---|---|
-| Window | `drover` Rust/Tauri | `drover.exe` Python/pywebview | 01 | [Tauri + GPUI windows build and run on Windows](phase-01-tauri-window-on-windows.md) | done (0.1.44) |
-| Native GPUI preview | yes | no | 01 | [Tauri + GPUI windows build and run on Windows](phase-01-tauri-window-on-windows.md) | done (0.1.44) |
-| Bundle | folder: `dr`, `drover-server`, `drover`, `drover-native` | onefile `drover.exe` + runtime zip | 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | done (0.1.43-0.1.45); cleanup left: remove Python daemon, runtime installer, `self_update_windows.rs` once no install runs 0.1.4x |
-| Self-update | Rust swaps bundle | Rust calls `drover.exe self-update` | 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | done (0.1.43-0.1.45); cleanup left: remove Python daemon, runtime installer, `self_update_windows.rs` once no install runs 0.1.4x |
-| CI build | `-p drover-cli -p drover-desktop -p drover-desktop-native` | `-p drover-cli` | 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | done (0.1.43-0.1.45); cleanup left: remove Python daemon, runtime installer, `self_update_windows.rs` once no install runs 0.1.4x |
-| Follow cwd | yes | off (`manager.rs:178`) | 03 | [Turn on the Windows-off features](phase-03-feature-gaps.md) | done (0.1.44): agent detection, claude resume, follow cwd, Windows Terminal font; title guess removed |
-| Claude resume of typed claude | yes | off (`status_monitor.rs:113`) | 03 | [Turn on the Windows-off features](phase-03-feature-gaps.md) | done (0.1.44): agent detection, claude resume, follow cwd, Windows Terminal font; title guess removed |
-| Title kind fallback | off | on (`status_monitor.rs:152`) | 03 | [Turn on the Windows-off features](phase-03-feature-gaps.md) | done (0.1.44): agent detection, claude resume, follow cwd, Windows Terminal font; title guess removed |
-| Python daemon | not shipped as fallback | fallback + first start | 02 | [Same bundle, CI and self-update on both](phase-02-same-bundle-ci-update.md) | done (0.1.43-0.1.45); cleanup left: remove Python daemon, runtime installer, `self_update_windows.rs` once no install runs 0.1.4x |
+| Window | `drover` Rust/Tauri | `drover.exe` Python/pywebview | 01 |
+| Native GPUI preview | yes | no | 01 |
+| Bundle | folder: `dr`, `drover-server`, `drover`, `drover-native` | onefile `drover.exe` + runtime zip | 02 |
+| Self-update | Rust swaps bundle | Rust calls `drover.exe self-update` | 02 |
+| CI build | `-p drover-cli -p drover-desktop -p drover-desktop-native` | `-p drover-cli` | 02 |
+| Follow cwd | yes | off (`manager.rs:178`) | 03 |
+| Claude resume of typed claude | yes | off (`status_monitor.rs:113`) | 03 |
+| Title kind fallback | off | on (`status_monitor.rs:152`) | 03 |
+| Python daemon | not shipped as fallback | fallback + first start | 02 |
 | arm64 | yes | no | out of scope (note) |
 | Agent detection | done 51b3239 (one path) | done | - |
 
