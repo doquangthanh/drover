@@ -28,7 +28,7 @@ Script: scratchpad `bench-drover-0145-vs-herdr.ps1` (not committed).
 
 ## Unresolved
 - Linux numbers not measured (no Linux machine here); CI runners are too noisy for ms timings.
-- Window (Tauri vs herdr GPUI) start time and RAM not measured.
+- Tauri window launch time: needs the user's Drover window closed (single instance). See "Client apps" below.
 
 ## Client apps (2026-11-20 07:30)
 herdr has no desktop window on Windows: its client is a TUI (`herdr`) inside a terminal. RAM after 5 s, median of 3;
