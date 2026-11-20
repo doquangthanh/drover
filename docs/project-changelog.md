@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+### Added
+- Native window: in-app toasts, as in the web UI. A pane you are not looking at going blocked / done / exited, an
+  agent trying to answer a prompt (policy), a newer release and a failed request each raise a card bottom right:
+  tone colour, agent badge, action button (Answer / Open / Review / Update), slide-in, a countdown bar that pauses
+  on hover, at most four, one per pane. Click opens the pane, the Inbox or Settings → Updates.
+- Native window: Inbox has a machine filter (all / this computer / each remote) and a side panel with sample toasts,
+  which events notify you (`[notify]`), quiet hours and "Send a test notification".
+- Native window: Settings → Notifications has controls (Herdr's "Alerts"): per event (needs me / finishes /
+  crashes) switch Toast, Desktop and Sound, and pick quiet hours. They edit `[notify]` in settings.toml in place
+  (other lines and comments stay).
+- Native window: tab settle (Herdr's `tab.settle`): "Put this tab away" in the command palette hides the tab from the
+  tab bar and from next / previous, it keeps running; it comes back when shown, from "N put away", or when an agent in
+  it needs you.
+- Native window: terminal text zoom, Ctrl+= / Ctrl+- / Ctrl+0 (and palette commands). The window's own chrome keeps its size.
+- Native window: pasting an image (a screenshot) into a terminal saves it as a file and pastes its path; "Select all in
+  terminal" in the palette selects the screen and scrollback; a welcome card shows before the first space exists.
+- Native window: themes. Settings → Appearance picks Dark, Light, Midnight or Auto (follows the desktop); saved as
+  `theme = "…"` in settings.toml and applied at once. Every colour in the window and the terminal background / text
+  follow the theme (the 16 ANSI colours stay as they are).
+### Changed
+- Native toasts follow `[notify]`: an event whose channels leave out "toast" raises no card in the window.
+- "Test notification" (Settings, Inbox) also shows a sample toast in the window, not only the desktop popup.
+- Failed requests sent to the daemon now show a "Something went wrong" toast instead of being dropped.
+
 ## 0.1.48
 ### Added
 - Native window: every view is drawn in the window, no browser needed. As in Herdr, Agents, Files and Changes open

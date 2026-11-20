@@ -14,6 +14,7 @@ pub struct Store {
     pub orchestration: Value,
     pub machines: Value,
     pub policy_pending: Vec<Value>,
+    pub notify: Value,
     /// Bumped on the daemon's "messages" event (a sub-agent started or stopped): the Agent tree refetches.
     pub messages_tick: u64,
     pane_index: HashMap<String, usize>,
@@ -48,6 +49,7 @@ impl Store {
                 self.orchestration = snap.orchestration;
                 self.machines = snap.machines;
                 self.policy_pending = snap.policy_pending;
+                self.notify = snap.notify;
                 self.reindex();
                 true
             }

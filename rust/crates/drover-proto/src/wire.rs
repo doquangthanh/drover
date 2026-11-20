@@ -56,6 +56,8 @@ pub struct Snapshot {
     pub machines: Value,
     /// Agent actions waiting for the user's allow/deny (Inbox).
     pub policy_pending: Vec<Value>,
+    /// `[notify]` settings (Inbox's notification panel).
+    pub notify: Value,
 }
 
 /// One message from the daemon.
