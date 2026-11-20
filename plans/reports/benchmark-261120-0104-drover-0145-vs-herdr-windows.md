@@ -74,3 +74,18 @@ Drover's probe waits for daemon.json before `dr ls` (without it, `dr ls` hands o
   returns once typed), pane creation ~45 ms faster.
 - herdr-core: server cold start ~28 ms faster (Drover daemon ~35 ms inside `serve`, see its start-up log line).
 - Windows: herdr-app ~30 MB lighter than Drover's Tauri window; Drover's GPUI window lighter than both.
+
+## Web UI (2026-11-20 08:20)
+herdr has no web UI: no herdr process listens on TCP; herdr-app is a GPUI app. Drover only, isolated daemon v0.1.45:
+
+| First page (index + linked files) | |
+|---|---:|
+| files / bytes on the wire | 6 / 704 KB (JS 622 KB, CSS 82 KB) |
+| compression | none (browser asked for gzip, br) |
+| cache | hashed assets `immutable`, 1 year; index `no-store` |
+| served locally, all files one after another | 13 ms median |
+| web_dist on disk | 973 KB, 23 files (rest are lazy chunks) |
+
+- Local (window, same PC): serving is not the cost; the browser parsing ~620 KB of JS is.
+- Remote (phone over Tailscale): 704 KB uncompressed on the first visit; gzip/brotli would cut it to roughly a
+  third. Repeat visits only fetch the ~1 KB index (immutable cache).
