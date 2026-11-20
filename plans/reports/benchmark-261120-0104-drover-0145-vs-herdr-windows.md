@@ -29,3 +29,17 @@ Script: scratchpad `bench-drover-0145-vs-herdr.ps1` (not committed).
 ## Unresolved
 - Linux numbers not measured (no Linux machine here); CI runners are too noisy for ms timings.
 - Window (Tauri vs herdr GPUI) start time and RAM not measured.
+
+## Client apps (2026-11-20 07:30)
+herdr has no desktop window on Windows: its client is a TUI (`herdr`) inside a terminal. RAM after 5 s, median of 3;
+trees count only children created after their parent (Windows reuses PIDs).
+
+| Client | Kind | Launch to window | RAM |
+|---|---|---:|---:|
+| herdr 0.9.5 | TUI in conhost | not measured (window owned by the terminal) | 15 MB (herdr + conhost) |
+| drover-native 0.1.45 | GPUI window | 767 ms | 43 MB |
+| drover 0.1.45 (Tauri) | web UI window | not measured (user's window open: single instance) | 114 MB (6 MB exe + 108 MB WebView2 x5), after hours in use |
+
+- The Tauri window's weight is WebView2 (a browser engine); GPUI draws itself: ~2.5x lighter.
+- A TUI is lightest, but needs a terminal around it (Windows Terminal itself ~50-100 MB, shared by its tabs).
+- `dr tui` not measured: started through conhost it exits at once in the script (runs fine with redirected I/O).
