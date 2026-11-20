@@ -43,3 +43,34 @@ trees count only children created after their parent (Windows reuses PIDs).
 - The Tauri window's weight is WebView2 (a browser engine); GPUI draws itself: ~2.5x lighter.
 - A TUI is lightest, but needs a terminal around it (Windows Terminal itself ~50-100 MB, shared by its tabs).
 - `dr tui` not measured: started through conhost it exits at once in the script (runs fine with redirected I/O).
+
+## The herdr actually installed: herdr-app 0.1.16 + herdr-core 0.1.21 (`hc`) (2026-11-20 08:10)
+The tables above used the older standalone `herdr.exe` 0.9.5 (TUI). The user's herdr is the app + core pair:
+`herdr-app.exe` (native window, no WebView2) talking to `herdr-core.exe serve`, one `herdr-core hold` process per
+terminal, CLI `hc`. Isolated with `HC_SESSION=bench` (own pipe); the user's default session was not touched.
+Drover's probe waits for daemon.json before `dr ls` (without it, `dr ls` hands over to Python and inflates the time).
+
+| Metric (ms, median) | herdr-core 0.1.21 | Drover 0.1.45 |
+|---|---:|---:|
+| server cold start (to first list) | 112 | 140 |
+| list, empty | 20.8 | 21.3 |
+| list, 10 panes | 25.2 | 21.9 |
+| read pane | 39.1 | 24.3 |
+| send text + enter | 248.9 | 24.7 |
+| create shell pane | 230 | 184 |
+
+| Memory, server tree (MB) | herdr-core | Drover |
+|---|---:|---:|
+| idle | 17 | 20 |
+| + 10 PowerShell panes | 880 | 885 |
+
+| Window (in use, measured as running) | RAM |
+|---|---:|
+| herdr-app 0.1.16 (native) + herdr-core connect | 70 + 16 MB |
+| Drover Tauri (WebView2) | 114 MB |
+| Drover GPUI preview (fresh) | 43 MB |
+
+- Drover: faster `read` (-15 ms) and `send` (`hc send` waits ~250 ms, likely until the paste is taken; `dr send`
+  returns once typed), pane creation ~45 ms faster.
+- herdr-core: server cold start ~28 ms faster (Drover daemon ~35 ms inside `serve`, see its start-up log line).
+- Windows: herdr-app ~30 MB lighter than Drover's Tauri window; Drover's GPUI window lighter than both.
