@@ -5,7 +5,7 @@
 - Tests to port: `views/agent-flow-logic.test.ts`, `views/views-logic.test.ts`
 
 ## Overview
-Priority P1 · Status todo · ~400 lines of TSX/TS to port.
+Priority P1 · Status done (2026-11-20) · ~400 lines of TSX/TS to port.
 
 ## Key Insights
 - Tree rows come from the Store (`parent` on each pane): no RPC for the list.
@@ -44,12 +44,12 @@ views/agents/flow.rs       Flow lanes + Messages + Policy
 6. Build, screenshot vs web `#tree`.
 
 ## Todo List
-- [ ] Logic port + tests
-- [ ] List + filter
-- [ ] Inspector + send/stop
-- [ ] Messages / Policy
-- [ ] Flow lanes
-- [ ] Build, test, screenshot
+- [x] Logic port + tests (`drover-proto/src/agent_tree.rs`, 4 tests)
+- [x] List + filter (`views/agents/list.rs`)
+- [x] Inspector + send box / Open / Stop subtree with confirm (`views/agents/inspector.rs`)
+- [x] Messages / Policy (`views/agents/activity.rs`)
+- [x] Flow lanes (no sub-agent lanes, no activity bars, ages instead of hh:mm)
+- [x] Build, test, screenshot
 
 ## Success Criteria
 - Same agents, parents and states as web `#tree` for the live session.

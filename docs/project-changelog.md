@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.1.48
+### Added
+- Native window: every view is drawn in the window, no browser needed. As in Herdr, Agents, Files and Changes open
+  as a panel beside the terminals (tab bar buttons) and follow the focused pane: its agent, its folder, its worktree.
+  - Agents: the focused agent (Open / Send / Stop subtree), its tree's Flow, Messages and Policy; the sidebar's
+    Agents heading opens every tree with a filter.
+  - Changes: the focused pane's worktree, files changed vs a base, coloured diff, Commit / Rebase / Push & open PR;
+    a Worktrees tab to pick, create, remove and clean up worktrees.
+  - Files (read-only): the focused pane's folder tree with git status, the file with line numbers, its diff vs HEAD,
+    Copy file; editing is still in the web UI ("Edit in browser").
+  - Inbox: who needs you, quick answers (1 / 2 / 3 / Esc), policy prompts (Allow once / Deny), restart / dismiss.
+  - Settings: each config file with its errors, Open in editor, test notification, check and apply updates.
+  - Machines: this computer and remote machines, Remove, and the Add a machine form (test, add, install dr).
+- Native window: resize with the mouse: the gutter between two panes (double-click evens it out, saved for every
+  viewer), the panel's left edge (280-900 px) and the sidebar's right edge.
+- Native window: VS Code's keyboard shortcuts, as in the web UI (Ctrl+K Ctrl+S lists them): tabs (Ctrl+N, Ctrl+W,
+  Ctrl+Tab, Alt+1-9), panes (Ctrl+\\, Ctrl+K Ctrl+\\, Ctrl+K W, Ctrl+1-9, Ctrl+K Ctrl+arrows, swap, resize, zoom),
+  panels and views (Ctrl+Shift+A / E / G / I / M, Ctrl+,), Ctrl+B, F8 / Shift+F8.
+- Native window: Ctrl+Shift+P / F1 (all commands), Ctrl+P (jump to a terminal or agent), F2 (rename the focused
+  agent) and Ctrl+F (find in the focused terminal's history; Enter: older match). They filter while a Vietnamese
+  word is still being composed, and ignore accents ("Viet" finds "Việt").
+- `files.list`, `files.read`, `files.status` (and `files.write`) take `pane` instead of `space`: the folder the pane's
+  program is in, e.g. an agent's worktree outside the space.
+### Fixed
+- Native window: Vietnamese looked broken with a terminal font that has no Vietnamese letters (Ubuntu Mono): the
+  terminal then uses the bundled JetBrains Mono (OFL), as Herdr does, so every letter of a word comes from one font.
+- Native window: the dock shows Drover's icon (the window sets WM_CLASS / app_id `drover`).
+
 ## 0.1.47
 ### Fixed
 - Native window: Powerline prompts (agnoster and the like) showed boxes. The separators are drawn as shapes and the
