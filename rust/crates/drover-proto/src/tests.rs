@@ -63,3 +63,19 @@ fn zoomed_tab_shows_only_its_focused_pane() {
     s.apply("state", &snap);
     assert_eq!(s.tab_view("t1"), Some(Node::Pane { pane: "%2".into() }));
 }
+
+#[test]
+fn state_event_keeps_policy_machines_and_orchestration_and_messages_bump_a_tick() {
+    let mut s = Store::default();
+    let mut snap = snapshot();
+    snap["orchestration"] = json!({"max_depth": 3});
+    snap["machines"] = json!([{"alias": "box", "connected": true}]);
+    snap["policy_pending"] = json!([{"id": "p1", "source": "%1", "target": "%2", "action": "send"}]);
+    s.apply("state", &snap);
+    assert_eq!(s.orchestration["max_depth"], 3);
+    assert_eq!(s.machines[0]["alias"], "box");
+    assert_eq!(s.policy_pending.len(), 1);
+    assert_eq!(s.messages_tick, 0);
+    assert!(s.apply("messages", &json!({"kind": "run"})));
+    assert_eq!(s.messages_tick, 1);
+}

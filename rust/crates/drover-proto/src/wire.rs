@@ -50,6 +50,12 @@ pub struct Snapshot {
     pub spaces: Vec<Space>,
     pub tabs: Vec<Tab>,
     pub panes: Vec<Pane>,
+    /// `[orchestration]` settings (Agent tree's Policy panel).
+    pub orchestration: Value,
+    /// Remote machines, as `RemoteRegistry::public_state` (Machines view).
+    pub machines: Value,
+    /// Agent actions waiting for the user's allow/deny (Inbox).
+    pub policy_pending: Vec<Value>,
 }
 
 /// One message from the daemon.

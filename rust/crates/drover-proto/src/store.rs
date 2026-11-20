@@ -11,6 +11,11 @@ pub struct Store {
     pub spaces: Vec<Space>,
     pub tabs: Vec<Tab>,
     pub panes: Vec<Pane>,
+    pub orchestration: Value,
+    pub machines: Value,
+    pub policy_pending: Vec<Value>,
+    /// Bumped on the daemon's "messages" event (a sub-agent started or stopped): the Agent tree refetches.
+    pub messages_tick: u64,
     pane_index: HashMap<String, usize>,
 }
 
@@ -40,11 +45,18 @@ impl Store {
                 self.spaces = snap.spaces;
                 self.tabs = snap.tabs;
                 self.panes = snap.panes;
+                self.orchestration = snap.orchestration;
+                self.machines = snap.machines;
+                self.policy_pending = snap.policy_pending;
                 self.reindex();
                 true
             }
             "pane" => self.upsert(data),
             "status" => self.upsert(&data["pane"]),
+            "messages" => {
+                self.messages_tick += 1;
+                true
+            }
             _ => false,
         }
     }
