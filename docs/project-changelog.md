@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.1.46
+### Changed
+- The GPUI window is the default: `drover` (and `drover app`, the menu entry) starts the daemon, then opens
+  `drover-native` from the same folder. The Tauri window is the fallback: `DROVER_WINDOW=webview`, or when
+  drover-native is missing or cannot start.
+- Native window: Agents, Files, Changes, Inbox, Machines and Settings open inside the window instead of the browser
+  (each says what is not drawn yet, with "Open in browser"); Escape or a tab click goes back to the terminals.
+### Added
+- Native window: a text field that types through the input method (Vietnamese Telex), for the views' filters and forms.
 ### Fixed
 - `drover server run` (autostart, restart after an update) no longer leaves two `drover` processes waiting for the
   daemon: the launcher starts it and exits.
