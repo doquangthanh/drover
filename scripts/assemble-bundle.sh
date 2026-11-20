@@ -22,6 +22,7 @@ case "$tag" in v[0-9]*) ;; *) echo "assemble-bundle: tag must look like v0.2.0" 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/in" "$work/bundle" "$out"
+out="$(cd "$out" && pwd)"  # absolute: the zip step runs after a cd
 
 fetch() { # <repo> <asset>: into $work/in, checked against its .sha256
   if [ -n "${DROVER_ASSETS_DIR:-}" ]; then
