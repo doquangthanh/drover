@@ -62,13 +62,19 @@ def bundled_rules_dir() -> Path:
     return Path(__file__).parent / "status" / "rules"
 
 
+def web_root() -> Path:
+    """Where the UI files from the drover-web repo are unpacked (`web/` static files, `web_dist/` React build)."""
+    env = os.environ.get("DROVER_WEB_DIR")
+    return Path(env) if env else Path(__file__).parent
+
+
 def web_static_dir() -> Path:
-    return Path(__file__).parent / "web"
+    return web_root() / "web"
 
 
 def web_dist_dir() -> Path:
-    """Vite build output of the React UI (gitignored; `cd frontend && npm run build`)."""
-    return Path(__file__).parent / "web_dist"
+    """Vite build output of the React UI, built and released by drover-web."""
+    return web_root() / "web_dist"
 
 
 def restrict_to_owner(path: Path) -> None:

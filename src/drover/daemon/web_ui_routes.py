@@ -10,7 +10,7 @@ from drover.app_paths import web_dist_dir
 
 ASSETS_PREFIX = "/ui/assets/"
 IMMUTABLE = "public, max-age=31536000, immutable"
-NOT_BUILT = "UI not built: cd frontend && npm run build\n"
+NOT_BUILT = "UI not installed: unpack a drover-web release into DROVER_WEB_DIR\n"
 
 
 def add_ui_routes(app: web.Application, headers: dict[str, str]) -> None:

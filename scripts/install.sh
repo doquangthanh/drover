@@ -1,11 +1,11 @@
 #!/bin/sh
 # Install drover from the latest GitHub release (Linux x64/arm64). No root needed.
-#   curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover-core/main/scripts/install.sh | sh
 # Env: DROVER_VERSION=v0.1.0 (default: latest), DROVER_HOME=~/.local/share/drover, DROVER_BIN=~/.local/bin,
 #      DROVER_ARCHIVE=/path/drover-linux-x64.tar.gz (install a local build, no download, no checksum)
 set -eu
 
-REPO="doquangthanh/drover"
+REPO="doquangthanh/drover-core"
 DROVER_HOME="${DROVER_HOME:-$HOME/.local/share/drover}"
 DROVER_BIN="${DROVER_BIN:-$HOME/.local/bin}"
 

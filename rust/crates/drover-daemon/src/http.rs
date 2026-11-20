@@ -17,7 +17,7 @@ use crate::ctx::Ctx;
 /// Large enough for a chat message carrying pictures; everything needs the token anyway.
 pub const MAX_MESSAGE_BYTES: usize = 24 * 1024 * 1024;
 const IMMUTABLE: &str = "public, max-age=31536000, immutable";
-const NOT_BUILT: &str = "UI not built: cd frontend && npm run build\n";
+const NOT_BUILT: &str = "UI not installed: unpack a drover-web release into DROVER_WEB_DIR\n";
 
 /// Constant-time token check (no early exit on the first differing byte).
 pub fn token_ok(ctx: &Ctx, supplied: Option<&str>) -> bool {

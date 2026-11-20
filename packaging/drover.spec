@@ -5,11 +5,8 @@ import sys
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
-# Run first: npm --prefix frontend ci && npm --prefix frontend run build  (writes src/drover/web_dist/)
-if not os.path.isfile(os.path.join(SPECPATH, "..", "src", "drover", "web_dist", "index.html")):
-    raise SystemExit("web_dist missing: run `npm --prefix frontend ci && npm --prefix frontend run build` first")
 
-datas = collect_data_files("drover", includes=["web/**/*", "web_dist/**/*", "status/rules/*.toml", "tui/*.tcss"])
+datas = collect_data_files("drover", includes=["status/rules/*.toml", "tui/*.tcss"])
 hidden = collect_submodules("drover") + collect_submodules("desktop_notifier") + collect_submodules("claude_agent_sdk")
 try:  # `dr tui` needs Textual (optional extra): bundle it only when the build environment has it
     import textual  # noqa: F401

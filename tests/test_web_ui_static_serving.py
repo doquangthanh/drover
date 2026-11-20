@@ -5,12 +5,16 @@ from __future__ import annotations
 import pytest
 from aiohttp.test_utils import TestClient, TestServer
 
-from drover.daemon import web_ui_routes
+from drover.daemon import web_server, web_ui_routes
 from drover.daemon.web_server import build_app
 
 
 async def _client(monkeypatch, dist) -> TestClient:
     monkeypatch.setattr(web_ui_routes, "web_dist_dir", lambda: dist)
+    static = dist.parent / "web"  # what a drover-web release unpacks next to web_dist
+    static.mkdir(exist_ok=True)
+    (static / "favicon.png").write_bytes(b"png")
+    monkeypatch.setattr(web_server, "web_static_dir", lambda: static)
     client = TestClient(TestServer(build_app(None)))  # UI routes never touch ctx
     await client.start_server()
     return client
@@ -32,7 +36,7 @@ async def test_missing_dist_returns_503_and_app_builds(monkeypatch, tmp_path):
         for path in ("/", "/ui/", "/ui/index.html"):
             resp = await client.get(path)
             assert resp.status == 503
-            assert "npm run build" in await resp.text()
+            assert "DROVER_WEB_DIR" in await resp.text()
         assert (await client.get("/ui/assets/x.js")).status == 404
         assert (await client.get("/health")).status == 200
     finally:

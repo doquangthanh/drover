@@ -16,7 +16,7 @@ async def test_health_and_index_are_public(start_daemon):
     health = await daemon.client.get("/health")
     assert await health.json() == {"ok": True, "app": "drover"}
     index = await daemon.client.get("/")
-    assert index.status == 200
+    assert index.status in (200, 503)  # 503 when no drover-web release is unpacked; never 401: the page is public
     assert index.headers["Cache-Control"] == "no-store"
 
 
