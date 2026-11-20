@@ -13,10 +13,10 @@ use crate::rpc::{E_BAD_PARAMS, E_GENERAL, E_NOT_FOUND, MethodSpec, RpcError, Rpc
 
 pub fn methods() -> Vec<MethodSpec> {
     vec![
-        method!("files.list", "List a folder inside a space (folders first)", "space, path?", files_list),
-        method!("files.read", "Read a text file inside a space (1 MB max)", "space, path", files_read),
+        method!("files.list", "List a folder inside a space or a pane's folder (folders first)", "space | pane, path?", files_list),
+        method!("files.read", "Read a text file inside a space or a pane's folder (1 MB max)", "space | pane, path", files_read),
         method!("files.write", "Save a text file inside a space (create=true makes a new one)", "space, path, text, base_mtime_us?, create?, force?", files_write),
-        method!("files.status", "Changed files in the space's git repo (M/A/D/R/?)", "space", files_status),
+        method!("files.status", "Changed files in the git repo of a space or a pane's folder (M/A/D/R/?)", "space | pane", files_status),
         method!("fs.list_dirs", "List sub-folders (in-app folder picker)", "path?, hidden?", fs_list_dirs),
         method!("fs.mkdir", "Create a folder inside an allowed root", "parent, name", fs_mkdir),
         method!("git.info", "Is this folder a git repo, which branch, how dirty", "path", git_info),
@@ -33,7 +33,13 @@ pub fn methods() -> Vec<MethodSpec> {
     ]
 }
 
+/// The folder `files.*` work in: a pane's when `pane` is given (it follows the folder its program is in, e.g. an
+/// agent's worktree outside the space; the native window's Files panel follows the focused agent), else a space's.
 fn space_root(ctx: &Ctx, p: &Value) -> Result<String, RpcError> {
+    if let Some(pane) = p.get("pane").and_then(Value::as_str).filter(|s| !s.is_empty()) {
+        let session = ctx.manager.lock().unwrap().get(pane)?;
+        return Ok(session.meta.lock().unwrap().cwd.clone());
+    }
     let id = need_str(p, "space")?;
     ctx.manager.lock().unwrap().spaces.get(&id).map(|s| s.cwd.clone()).ok_or_else(|| RpcError::new(E_NOT_FOUND, "no such space"))
 }
