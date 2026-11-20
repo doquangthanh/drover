@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: full-bleed 3D herd field hero → tilted app window → install tabs → numbered guide → reference grid.
-   Palette is the app's own (frontend/src/styles/themes.css): agent state colours do the talking. */
+   Palette is the app's own (drover-web: frontend/src/styles/themes.css): agent state colours do the talking. */
 :root {
   --bg: #0d0e10; --chrome: #131518; --pane: #17191d; --card: #1d1f23; --line: #2a2d33;
   --fg: #eeeeef; --muted: #98999b; --dim: #6d7078;
@@ -226,7 +226,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: 
           <circle class="lead" cx="314" cy="256" r="20"/>
         </g>
       </svg>Drover</a>
-    <div class="links"><a href="#features">Features</a><a href="#install">Install</a><a href="#guide">Guide</a><a href="#reference">Reference</a><a href="https://github.com/doquangthanh/drover" target="_blank" rel="noopener">GitHub</a></div>
+    <div class="links"><a href="#features">Features</a><a href="#install">Install</a><a href="#guide">Guide</a><a href="#reference">Reference</a><a href="https://github.com/doquangthanh/drover-core" target="_blank" rel="noopener">GitHub</a></div>
     <a class="btn primary" href="#install">Get Drover</a>
   </div>
 </nav>
@@ -238,7 +238,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: 
     <h1 style="margin-top:18px">Keep the whole herd <em>moving.</em></h1>
     <p class="lede">Drover runs Claude Code, Codex, Gemini, opencode and any shell side by side. They keep working when you close the window, and Drover tells you which one needs you.</p>
     <div class="cta"><a class="btn primary" id="hero-cta" href="#install">Install Drover</a><a class="btn" href="#guide">Read the guide</a></div>
-    <div class="oneliner"><code><b>$</b> curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/install.sh | sh</code><button class="copy" data-copy="curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/install.sh | sh">copy</button></div>
+    <div class="oneliner"><code><b>$</b> curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover-core/main/scripts/install.sh | sh</code><button class="copy" data-copy="curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover-core/main/scripts/install.sh | sh">copy</button></div>
   </div>
   <div class="legend" aria-live="off">
     <div><div class="k s-working"><span class="dot"></span>working</div><div class="n" id="c0">0</div></div>
@@ -305,9 +305,9 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: 
       <button class="tab" role="tab" id="t-src" aria-selected="false" data-tab="src">From source</button>
     </div>
     <div class="panel" data-panel="linux">
-      <div class="code"><button class="copy" data-copy="curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/install.sh | sh">copy</button>
+      <div class="code"><button class="copy" data-copy="curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover-core/main/scripts/install.sh | sh">copy</button>
 <pre><span class="c"># x64 or arm64, installs to ~/.local/share</span>
-<span class="p">$ </span>curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/install.sh | sh
+<span class="p">$ </span>curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover-core/main/scripts/install.sh | sh
 
 <span class="c"># pin a version</span>
 <span class="p">$ </span>DROVER_VERSION=v0.1.5 sh install.sh
@@ -324,7 +324,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: 
       <div class="dl">
         <div class="dl-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3zM11.5 4.3 21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg></div>
         <div class="dl-txt"><strong>Drover for Windows</strong><span>Windows 10 and 11 · free · about 30 MB</span></div>
-        <a class="btn primary" href="https://github.com/doquangthanh/drover/releases/latest/download/drover.exe" target="_blank" rel="noopener">Download</a>
+        <a class="btn primary" href="https://github.com/doquangthanh/drover-core/releases/latest/download/drover.exe" target="_blank" rel="noopener">Download</a>
       </div>
       <ol class="run">
         <li><b>Download</b> Drover and save it anywhere you like, such as your Desktop.</li>
@@ -339,18 +339,17 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: 
       </dl>
     </div>
     <div class="panel" data-panel="src" hidden>
-      <div class="code"><button class="copy" data-copy="uv sync && npm --prefix frontend ci && npm --prefix frontend run build && uv run drover">copy</button>
-<pre><span class="c"># needs uv, Python 3.12, Node 20.19+</span>
-<span class="p">$ </span>git clone https://github.com/doquangthanh/drover && cd drover
+      <div class="code"><button class="copy" data-copy="uv sync && uv run dr server start && uv run dr app">copy</button>
+<pre><span class="c"># needs uv, Python 3.12 (the web UI and the windows are in drover-web and drover-desktop)</span>
+<span class="p">$ </span>git clone https://github.com/doquangthanh/drover-core && cd drover-core
 <span class="p">$ </span>uv sync
-<span class="p">$ </span>npm --prefix frontend ci
-<span class="p">$ </span>npm --prefix frontend run build
-<span class="p">$ </span>uv run drover
+<span class="p">$ </span>uv run dr server start
+<span class="p">$ </span>uv run dr app
 
 <span class="c"># put dr on PATH</span>
 <span class="p">$ </span>uv tool install --editable .</pre></div>
       <dl class="notes">
-        <div><dt>UI dev</dt><dd style="margin:0"><code>npm --prefix frontend run dev</code> proxies to the running daemon.</dd></div>
+        <div><dt>UI dev</dt><dd style="margin:0">In <a href="https://github.com/doquangthanh/drover-web">drover-web</a>: <code>npm --prefix frontend run dev</code> proxies to the running daemon.</dd></div>
         <div><dt>Build .exe</dt><dd style="margin:0"><code>uv run pyinstaller packaging/drover.spec</code></dd></div>
       </dl>
     </div>
@@ -435,7 +434,7 @@ tunnel 127.0.0.1:47213 → vps-1 <span class="ok">connected</span></div></div>
     document.getElementById('t-win').click();
     const cta = document.getElementById('hero-cta');
     cta.textContent = 'Download';
-    cta.href = 'https://github.com/doquangthanh/drover/releases/latest/download/drover.exe';
+    cta.href = 'https://github.com/doquangthanh/drover-core/releases/latest/download/drover.exe';
     cta.target = '_blank'; cta.rel = 'noopener';
   }
   document.querySelector('.tabs').prepend(document.getElementById('t-win'));

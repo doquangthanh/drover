@@ -2,6 +2,7 @@
 
 | Area | Status |
 |---|---|
+| Split into drover-core, drover-web, drover-desktop (plan `plans/261120-1700-split-into-three-repos`) | done in code; first tag v0.2.0-dev; installers and release workflows not yet proven by a full release |
 | Daemon, CLI (`dr`), remote machines, desktop window | done |
 | Web UI: desktop, tablet, phone layouts, themes, editor, git changes | done |
 | React/TypeScript frontend migration (plan `plans/261114-1115-react-frontend-migration`, phases 1-9) | done |

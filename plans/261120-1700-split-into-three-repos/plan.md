@@ -40,7 +40,7 @@ drover-desktop (GPUI) ── Rust dependency on drover-core + drover-proto  ◄�
 | 3 | Web: cut `frontend/`, `src/drover/web`, Tauri crate, pywebview launcher; own CI; release `web-<ver>.tar.gz` | done: npm build + 141 tests pass, Tauri crate cargo check passes (with path deps) |
 | 4 | Desktop: cut `drover-desktop-native`, vendor dirs it needs; depend on core by git tag; own CI + release | done: cargo check passes (with path deps); Settings > Server included |
 | 5 | Installers: pieces per repo, `assemble-bundle` joins them into the old bundle layout | done locally: script tested with fake pieces + install.sh; CI workflows YAML-valid but NOT run |
-| 6 | Docs, README, site/pages, links, and archive or redirect the old monorepo | todo |
+| 6 | Docs, README, site, links; the old repo renamed to drover-core | done in code and docs (branch refactor/split-core); Pages URL is now /drover-core/ |
 
 ## Open questions (need the user)
 1. **Where does the installer live** (phase 5)? Recommend core: its release workflow downloads the web archive and the desktop binary.

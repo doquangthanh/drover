@@ -1,6 +1,6 @@
 name: pages
 
-# Publishes the landing page in site/ to GitHub Pages (https://doquangthanh.github.io/drover/) on every push that touches it.
+# Publishes the landing page in site/ to GitHub Pages (https://doquangthanh.github.io/drover-core/) on every push that touches it.
 on:
   push:
     branches: [main]

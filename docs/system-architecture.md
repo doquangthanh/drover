@@ -1,7 +1,14 @@
 # System architecture
 
-Linux release bundle (`~/.local/share/drover`): Python `dr` (CLI + TUI, PyInstaller) + Rust `drover` (Tauri window,
-`rust/crates/drover-desktop`) + Rust `drover-server` (daemon, `rust/crates/drover-daemon`, binary of `drover-cli`).
+Linux release bundle (`~/.local/share/drover`): Python `dr-py` (CLI + TUI, PyInstaller) + Rust `dr` (daemon + fast CLI,
+`rust/crates/drover-daemon`, binary of `drover-cli`) + the windows `drover` (Tauri) and `drover-native` (GPUI).
+
+**Three repos.** This repo (drover-core) holds the daemon, CLI, protocol and TUI. The browser UI and the Tauri window live in
+drover-web; the GPUI window in drover-desktop. They meet only through the wire protocol (`/ws`, `/rpc`) and one folder
+contract: the daemon serves `/ui` and `/static` from `DROVER_WEB_DIR` (`web/` + `web_dist/`, unpacked from a drover-web release;
+`_internal/drover/` inside the bundle). The Rust crates of the windows depend on `drover-core`, `drover-proto` and
+`drover-daemon` as git dependencies at a tag; a release of the windows needs the same tag as core (the Tauri window installs the
+bundle of its own version). `scripts/assemble-bundle.sh` joins the pieces into the bundle.
 `dr server run` execs `drover-server` when it sits next to `dr` (`DROVER_ENGINE=python` keeps the Python daemon).
 Both daemons speak the same `/ws` + `/rpc` protocol and share `daemon.json`, `session.json`, `chats/`, so either can
 take over the other's session. Windows: Python `drover.exe` (window + CLI) + Rust `dr.exe` (fast CLI + daemon) in the runtime folder.
@@ -24,16 +31,16 @@ vendored portable-pty without `INHERIT_CURSOR` (headless panes never answer its 
 taken from the child process, then the pseudoconsole is closed to flush its last output.
 
 ```
-drover (Tauri window) / drover.exe (pywebview, Windows) / browser
+drover (Tauri window, drover-web) / drover-native (GPUI, drover-desktop) / browser
         |  http://127.0.0.1:<port>/?token=...
         v
 drover-server (Rust: tokio + axum; Python fallback: aiohttp, src/drover/daemon)
-  /            index.html of the React build (no-store)      src/drover/web_dist/   (built, gitignored)
+  /            index.html of the React build (no-store)      DROVER_WEB_DIR/web_dist/   (from drover-web)
   /ui/         same index (kept so old links and the dev server path work)
   /ui/assets/  hashed JS/CSS/fonts, `immutable` cache
-  /static/     shared runtime files: icons/material, vendor/ace, favicon, app-icon    src/drover/web/
+  /static/     shared runtime files: icons/material, vendor/ace, favicon, app-icon    DROVER_WEB_DIR/web/
   /ws /rpc     token-protected state stream + JSON-RPC (unchanged)
-  503 "UI not built" when web_dist is missing (daemon, CLI and tests still work)
+  503 "UI not installed" when web_dist is missing (daemon, CLI and tests still work)
 ```
 
 ## TUI client (`src/drover/tui/`, Textual, optional extra `tui`)
@@ -57,18 +64,7 @@ TuiApp
   (sidebar overlay on prefix `b`), narrow (< 60 columns or < 15 rows: one pane at a time).
 - Ctrl+Q is delivered to the pane (Textual would quit); quit is prefix `d`.
 
-## Frontend (`frontend/`, Vite + React 19 + TypeScript + Zustand)
+## Frontend
 
-- `src/core/`: imperative, React-free modules: `connection` (ws + rpc), `store` (Zustand, structural sharing so unchanged
-  panes keep identity), `keys` (Ctrl+B prefix), `theme`, `file-icons`, `event-router`.
-- `src/terminals/`: xterm registry. Terminal output never touches React state; `TerminalHost` only re-parents a long-lived element.
-- `src/shell/` (sidebar, topbar, status bar, mobile nav, toasts), `overlays/` (palette, search, dialogs), `views/`,
-  `files/` (tree + Ace, Ace injected from `/static/vendor/ace` on first open), `changes/`, `workspace/` (splits, panes).
-- Views register through `views/view-registry` and are lazy chunks; xterm webgl is a dynamic import.
-- `src/styles/`: the original plain CSS files, global (shared class names), imported in cascade order by `styles/index.ts`.
-- Rendering rule: components subscribe with narrow selectors (`useStore(s => ...)`) and rows are `React.memo`, so a state
-  event re-renders only what changed.
-
-Build: `npm --prefix frontend run build` writes `src/drover/web_dist/` (`base: "/ui/"`). Dev: `npm --prefix frontend run dev`
-proxies `/ws /rpc /static /health` to the running daemon. Packaging: `packaging/drover.spec` bundles `web/` and `web_dist/`
-and refuses to build when `web_dist` is missing; the hatch wheel includes it via `artifacts`.
+Moved to the drover-web repo (`frontend/`, Vite + React 19 + TypeScript + Zustand): see its README. Build there with
+`npm --prefix frontend run build`; the output (`src/drover/web_dist/` + `src/drover/web/`) is what `DROVER_WEB_DIR` points at.
