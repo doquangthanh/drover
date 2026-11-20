@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+### Changed
+- The repo is now drover-core (renamed from `drover`; old URLs redirect). The browser UI, the Tauri window and the GPUI window moved to
+  drover-web and drover-desktop. The daemon serves the UI from `DROVER_WEB_DIR`; `dr app` opens `drover-native` or `drover` next to `dr`,
+  else the browser. `pywebview` and `drover` as a Python command are gone. Releases are joined by `assemble-bundle` from the pieces of the
+  three repos (same bundle layout); the updater and `install.sh` read releases of `doquangthanh/drover-core`.
 ### Added
 - Native window: in-app toasts, as in the web UI. A pane you are not looking at going blocked / done / exited, an
   agent trying to answer a prompt (policy), a newer release and a failed request each raise a card bottom right:

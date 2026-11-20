@@ -38,13 +38,3 @@ jobs:
       - name: Tests (core + daemon)
         run: cargo test --locked -p drover-core -p drover-daemon
         working-directory: rust
-
-  frontend:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: npm --prefix frontend ci
-      - run: npm --prefix frontend run build
-      - run: npm --prefix frontend test

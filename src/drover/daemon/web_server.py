@@ -89,6 +89,7 @@ def build_app(ctx) -> web.Application:
     app.router.add_post("/rpc", rpc_handler)
     app.router.add_get("/health", health)
     # Icons, ace and favicon stay as plain files; the UI itself is the built bundle (see web_ui_routes).
-    app.router.add_static("/static/", web_static_dir(), show_index=False)
+    if web_static_dir().is_dir():  # unpacked from a drover-web release; absent in a bare core install
+        app.router.add_static("/static/", web_static_dir(), show_index=False)
     add_ui_routes(app, SECURITY_HEADERS)
     return app

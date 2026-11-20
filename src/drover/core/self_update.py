@@ -16,7 +16,7 @@ from pathlib import Path
 from drover import __version__
 from drover.self_command import bundle_dir, is_frozen, is_single_exe
 
-REPO = "doquangthanh/drover"
+REPO = "doquangthanh/drover-core"
 LATEST_API = f"https://api.github.com/repos/{REPO}/releases/latest"
 LATEST_PAGE = f"https://github.com/{REPO}/releases/latest"
 ASSET_URL = f"https://github.com/{REPO}/releases/download/{{tag}}/drover-linux-{{arch}}.tar.gz"

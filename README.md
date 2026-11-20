@@ -3,19 +3,19 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/doquangthanh/drover/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/doquangthanh/drover?style=flat-square&color=96b2d7&label=release"></a>
+  <a href="https://github.com/doquangthanh/drover-core/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/doquangthanh/drover-core?style=flat-square&color=96b2d7&label=release"></a>
   <img alt="Windows, Linux, macOS" src="https://img.shields.io/badge/runs%20on-Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-1d1f23?style=flat-square">
   <img alt="Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-4cc48c?style=flat-square">
-  <a href="https://github.com/doquangthanh/drover/actions"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/doquangthanh/drover/release-windows.yml?style=flat-square&label=build"></a>
+  <a href="https://github.com/doquangthanh/drover-core/actions"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/doquangthanh/drover-core/release-windows.yml?style=flat-square&label=build"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/doquangthanh/drover/releases/latest/download/drover.exe"><img alt="Download for Windows" src="https://img.shields.io/badge/Download-Windows%2010%20%2F%2011-76a8ff?style=for-the-badge&logo=windows&logoColor=white&labelColor=1c2147"></a>
+  <a href="https://github.com/doquangthanh/drover-core/releases/latest/download/drover.exe"><img alt="Download for Windows" src="https://img.shields.io/badge/Download-Windows%2010%20%2F%2011-76a8ff?style=for-the-badge&logo=windows&logoColor=white&labelColor=1c2147"></a>
   &nbsp;
   <a href="#linux"><img alt="Install on Linux" src="https://img.shields.io/badge/Install-Linux-4cc48c?style=for-the-badge&logo=linux&logoColor=white&labelColor=1c2147"></a>
 </p>
 
-<p align="center"><a href="https://doquangthanh.github.io/drover/"><b>doquangthanh.github.io/drover</b></a></p>
+<p align="center"><a href="https://doquangthanh.github.io/drover-core/"><b>doquangthanh.github.io/drover-core</b></a></p>
 
 ---
 
@@ -111,7 +111,7 @@ Settings.
 
 ### Windows
 
-1. **[Download Drover](https://github.com/doquangthanh/drover/releases/latest/download/drover.exe)** and save it
+1. **[Download Drover](https://github.com/doquangthanh/drover-core/releases/latest/download/drover.exe)** and save it
    anywhere, such as your Desktop.
 2. **Open it.** Drover starts right away. There is no setup wizard and nothing else to install.
 3. The first time, Windows may say it doesn't recognise the app. Click **More info**, then **Run anyway**.
@@ -119,7 +119,7 @@ Settings.
 ### Linux
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/doquangthanh/drover-core/main/scripts/install.sh | sh
 ```
 
 Installs the latest release (x64 or arm64) into `~/.local/share/drover`, links `dr` and `drover` into
@@ -266,31 +266,40 @@ you. Logs and session state sit next to it (`~/.local/state/drover` on Linux).
 <details>
 <summary><b>Build from source</b></summary>
 
-Needs [uv](https://docs.astral.sh/uv/) (Python 3.12) and Node 20.19+ or 22+.
+Drover is three repositories:
+
+| Repo | What it holds |
+|---|---|
+| [drover-core](https://github.com/doquangthanh/drover-core) (this one) | the daemon, the `dr` CLI, the protocol, the TUI, the installers and the release bundle |
+| [drover-web](https://github.com/doquangthanh/drover-web) | the browser UI (React) and the Tauri window `drover` |
+| [drover-desktop](https://github.com/doquangthanh/drover-desktop) | the native GPUI window `drover-native` |
+
+Needs [uv](https://docs.astral.sh/uv/) (Python 3.12) for this repo.
 
 ```sh
-git clone https://github.com/doquangthanh/drover && cd drover
+git clone https://github.com/doquangthanh/drover-core && cd drover-core
 uv sync
-npm --prefix frontend ci
-npm --prefix frontend run build      # -> src/drover/web_dist/, served at / (and /ui/)
-uv run drover                        # opens the window (starts drover-server if needed)
-uv tool install --editable .         # optional: put dr and drover on PATH
+uv run dr server start
+uv run dr app                        # opens drover-native or drover if installed, else the web UI in the browser
+uv tool install --editable .         # optional: put dr on PATH
 ```
 
-For UI work run the server, then `npm --prefix frontend run dev`: the dev server proxies `/ws`, `/rpc`, `/static` and
-`/health` to the running server (read from `daemon.json`; override with `DROVER_STATE_DIR`).
+The browser UI comes from drover-web. Build it there (`npm --prefix frontend ci && npm --prefix frontend run build`), then
+start the server with `DROVER_WEB_DIR=<drover-web>/src/drover` (the folder that holds `web/` and `web_dist/`). Without it the
+daemon, CLI and TUI work and `/` answers 503. For UI work see the drover-web README (its dev server proxies to the running daemon).
 
 | Check | Command |
 |---|---|
 | Python tests | `uv run pytest` |
 | Lint | `uv run ruff check src tests` |
-| UI types / tests | `npm --prefix frontend run typecheck` · `npm --prefix frontend test` |
-| Windows app | `uv run pyinstaller packaging/drover.spec --noconfirm` → `dist\drover.exe` |
-| Rust daemon / window | `scripts/cargo-capped.sh build --release -p drover-cli -p drover-desktop` (in `rust/`) |
+| Windows app | `uv run pyinstaller packaging/drover.spec --noconfirm` → `dist\drover\dr-py.exe` |
+| Rust daemon | `scripts/cargo-capped.sh build --release -p drover-cli` (in `rust/`) |
 | Rust tests | `scripts/cargo-capped.sh test -p drover-daemon` · Python suite on the Rust daemon: `DROVER_TEST_DAEMON_BIN=rust/target/release/dr uv run pytest` |
 
-Tagging `v*` builds the Windows app and the Linux bundles in CI and attaches them to the GitHub release. The Linux
-bundle is hybrid: Python `dr` (CLI, TUI) plus the Rust `drover` window (Tauri) and `drover-server` daemon.
+Releasing `vX`: tag drover-core (CI builds `drover-core-<os>-<arch>`: Rust `dr` + Python `dr-py`); then point drover-web and
+drover-desktop at that core tag and tag them `vX` (they publish the web archive, the Tauri window and `drover-native`); then run
+the `assemble-bundle` workflow here with `vX`. It joins the pieces into `drover-<os>-<arch>` (and `drover.exe`) that the
+installer and the updater download.
 
 </details>
 

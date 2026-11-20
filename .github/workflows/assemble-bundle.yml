@@ -1,0 +1,33 @@
+name: assemble-bundle
+
+# Run after drover-core, drover-web and drover-desktop have all released the same tag (the window programs are built
+# against drover-core at that tag, so core is tagged first). Joins the pieces into the bundle the updater and
+# install.sh download, and attaches it to this repo's release.
+on:
+  workflow_dispatch:
+    inputs:
+      tag: { description: "Release tag, e.g. v0.2.0", required: true }
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: linux, arch: x64 }
+          - { os: linux, arch: arm64 }
+          - { os: windows, arch: x64 }
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y zip
+      - run: sh scripts/assemble-bundle.sh ${{ matrix.os }} ${{ matrix.arch }} "${{ inputs.tag }}" out
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          prerelease: ${{ contains(inputs.tag, '-') }}  # v1.2.3-rc.1: test build, not offered as an update
+          files: out/*

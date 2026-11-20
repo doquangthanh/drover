@@ -4,7 +4,7 @@
 
 use serde_json::{Value, json};
 
-pub(crate) const REPO: &str = "doquangthanh/drover";
+pub(crate) const REPO: &str = "doquangthanh/drover-core";
 /// This build's version (pyproject.toml, stamped from the tag in release builds).
 pub const VERSION: &str = env!("DROVER_VERSION");
 const TIMEOUT_SECS: &str = "15";
