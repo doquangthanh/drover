@@ -41,6 +41,8 @@ GPUI becomes the default desktop window on Windows and Linux, replacing Tauri + 
 phones/other machines and for the views GPUI doesn't draw yet. Switch the default only once the daily basics work:
 select/copy, clickable links, main shortcuts (new tab/pane, switch, close, zoom), web views reachable from the app.
 Measured 2026-11-20 (Windows): Tauri window 114 MB (6 + 108 WebView2), GPUI 43-67 MB, herdr-app (GPUI) 70 MB.
+Update (user, 2026-11-20, later): switch now, before phases 4-5. `drover` opens `drover-native` by default,
+Tauri is the fallback (`DROVER_WINDOW=webview`); see plans/261120-0900-native-gpui-views-port.
 
 MVP = phases 0-5. Views not in the MVP (Changes/diff, Files + editor, Settings, Machines, Agent tree, Chat) open the
 existing web UI in the browser from a menu until each is ported.
