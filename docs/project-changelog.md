@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.47
+### Fixed
+- Native window: Powerline prompts (agnoster and the like) showed boxes. The separators are drawn as shapes and the
+  branch icon shows as ⎇: GPUI on Linux ignores icon-only fonts such as PowerlineSymbols.
+
 ## 0.1.46
 ### Changed
 - The GPUI window is the default: `drover` (and `drover app`, the menu entry) starts the daemon, then opens
