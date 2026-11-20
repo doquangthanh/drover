@@ -31,10 +31,16 @@ drover-server (Rust daemon, unchanged: /ws /rpc /health, daemon.json)
 |---|---|---|
 | 0 | [Spike: GPUI builds and runs here, one live terminal](phase-00-gpui-spike-go-no-go.md) | done: GO |
 | 1 | [Daemon client + state store (ws, rpc, reconnect)](phase-01-daemon-client-and-state.md) | done |
-| 2 | [Terminal element: emulator, GPU text, input, resize, scroll, select/copy, links](phase-02-terminal-element.md) | in progress: input/IME/resize/scroll done; Vietnamese typing not verified by hand; select/copy, links todo |
+| 2 | [Terminal element: emulator, GPU text, input, resize, scroll, select/copy, links](phase-02-terminal-element.md) | in progress: input/IME/resize/scroll, select/copy/paste, links done; Vietnamese typing not verified by hand |
 | 3 | [Shell: sidebar (spaces, agents, states), tab bar, splits, zoom, status bar](phase-03-shell-sidebar-tabs-splits.md) | in progress: look matches the web UI (theme, Geist, icons, terminal font/colours); buttons not wired yet |
 | 4 | [Keys (VS Code map), command palette, jump-to, notifications, inbox](phase-04-keys-palette-inbox.md) | todo |
 | 5 | [Packaging: Linux bundle swaps the Tauri window; docs; release](phase-05-packaging-release.md) | todo |
+
+### Decision (user, 2026-11-20)
+GPUI becomes the default desktop window on Windows and Linux, replacing Tauri + WebView2. The web UI stays for
+phones/other machines and for the views GPUI doesn't draw yet. Switch the default only once the daily basics work:
+select/copy, clickable links, main shortcuts (new tab/pane, switch, close, zoom), web views reachable from the app.
+Measured 2026-11-20 (Windows): Tauri window 114 MB (6 + 108 WebView2), GPUI 43-67 MB, herdr-app (GPUI) 70 MB.
 
 MVP = phases 0-5. Views not in the MVP (Changes/diff, Files + editor, Settings, Machines, Agent tree, Chat) open the
 existing web UI in the browser from a menu until each is ported.
