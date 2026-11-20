@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+### Fixed
+- `drover server run` (autostart, restart after an update) no longer leaves two `drover` processes waiting for the
+  daemon: the launcher starts it and exits.
+### Added
+- The daemon log has one start-up line (context, session, time to ready), ~35 ms on Windows.
+
 ## 0.1.45
 ### Fixed
 - Windows, installs on 0.1.43: updating replaced the old runtime folder in place instead of moving to the new app
