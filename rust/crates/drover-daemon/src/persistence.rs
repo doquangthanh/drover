@@ -72,6 +72,24 @@ pub fn load_previous(m: &mut Manager, store: &StateStore) {
     bump_id_counter(ids.iter().map(String::as_str));
 }
 
+/// Herdr's `resume_agents_on_restore`: after a daemon or computer restart, start every stopped pane again (agents
+/// with their resume command, shells as new shells in their folder) without waiting for a window to offer it; the
+/// native window never does. One pane at a time, so a folder that is gone only leaves that pane stopped.
+/// Off with `[session] resume_on_start = false` (the web UI then asks, as before).
+pub fn resume_all(m: &mut Manager) {
+    let ids: Vec<String> = m.stopped.iter().filter_map(|p| p["id"].as_str().map(String::from)).collect();
+    let mut started = 0;
+    for id in &ids {
+        match resume(m, std::slice::from_ref(id), true) {
+            Ok(_) => started += 1,
+            Err(e) => crate::log::warn(&format!("could not resume pane {id}: {}", e.rpc(0).message)),
+        }
+    }
+    if !ids.is_empty() {
+        crate::log::info(&format!("resumed {started} of {} panes from the previous session", ids.len()));
+    }
+}
+
 pub fn resume(m: &mut Manager, pane_ids: &[String], use_resume_command: bool) -> Result<Vec<String>, SpawnError> {
     let mut started = vec![];
     let todo: Vec<Value> = m.stopped.iter().filter(|p| p["id"].as_str().is_some_and(|i| pane_ids.iter().any(|x| x == i))).cloned().collect();

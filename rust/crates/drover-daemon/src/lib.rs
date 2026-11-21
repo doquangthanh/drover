@@ -140,6 +140,9 @@ async fn serve_async(host: String, port: u16, (keep_token, keep_port): (String, 
     let context_ms = ms(t);
     let t = std::time::Instant::now();
     persistence::load_previous(&mut ctx.manager.lock().unwrap(), &ctx.store);
+    if ctx.settings.lock().unwrap().bool("session.resume_on_start", true) {
+        persistence::resume_all(&mut ctx.manager.lock().unwrap());
+    }
     let session_ms = ms(t);
     let listener = match tokio::net::TcpListener::bind(("127.0.0.1", if keep_port > 0 { keep_port } else { port })).await {
         Ok(l) => l,
