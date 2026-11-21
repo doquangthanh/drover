@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import shlex
+import sys
 
 import pytest
 
@@ -73,7 +74,9 @@ def test_dr_run_without_a_template_is_unchanged(monkeypatch):
     monkeypatch.setattr(agents, "call", lambda method, params=None, **kw: sent.update(params) or {"id": "%9"})
     args = build_parser().parse_args(["run", "--bg", "--name", "t", "--", "codex", "write tests"])
     agents.cmd_run(args)
-    assert sent["command"] == "codex 'write tests'" and sent["name"] == "t"
+    # Windows quotes for cmd.exe (list2cmdline), elsewhere POSIX shlex quoting
+    expected = 'codex "write tests"' if sys.platform == "win32" else "codex 'write tests'"
+    assert sent["command"] == expected and sent["name"] == "t"
 
 
 def test_dr_templates_json(capsys):
