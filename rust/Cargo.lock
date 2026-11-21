@@ -296,7 +296,7 @@ checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 
 [[package]]
 name = "drover-cli"
-version = "0.2.1-dev"
+version = "0.2.2"
 dependencies = [
  "dirs",
  "drover-daemon",
@@ -305,7 +305,7 @@ dependencies = [
 
 [[package]]
 name = "drover-core"
-version = "0.2.1-dev"
+version = "0.2.2"
 dependencies = [
  "alacritty_terminal",
  "portable-pty",
@@ -318,7 +318,7 @@ dependencies = [
 
 [[package]]
 name = "drover-daemon"
-version = "0.2.1-dev"
+version = "0.2.2"
 dependencies = [
  "axum",
  "base64 0.23.1",
@@ -340,7 +340,7 @@ dependencies = [
 
 [[package]]
 name = "drover-proto"
-version = "0.2.1-dev"
+version = "0.2.2"
 dependencies = [
  "dirs",
  "drover-core",
@@ -351,7 +351,7 @@ dependencies = [
 
 [[package]]
 name = "drover-tui"
-version = "0.2.1-dev"
+version = "0.2.2"
 
 [[package]]
 name = "equivalent"
