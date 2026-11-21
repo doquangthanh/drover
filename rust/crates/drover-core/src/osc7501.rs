@@ -12,7 +12,17 @@ static OSC_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\x1b\]7501;([^\x07\x1b]*)(?:\x07|\x1b\\)").expect("valid regex"));
 const ALLOWED: [&str; 4] = ["working", "blocked", "idle", "done"];
 
-/// The last valid report in `chunk` (fields by key), or None.
+/// Longest `summary` kept (one sidebar line).
+const SUMMARY_MAX_CHARS: usize = 120;
+
+/// Display text of a report (`summary=indexing docs`, Herdr's `report-metadata summary`): control characters dropped,
+/// capped to one sidebar line. Some("") clears it; None when the report has no summary field.
+pub fn report_summary(report: &BTreeMap<String, String>) -> Option<String> {
+    report.get("summary").map(|s| s.chars().filter(|c| !c.is_control()).take(SUMMARY_MAX_CHARS).collect())
+}
+
+/// The last valid report in `chunk` (fields by key), or None. Valid: a known `state`, or no state but a `summary`
+/// (display text only; it never changes the state).
 pub fn parse_osc7501(chunk: &str) -> Option<BTreeMap<String, String>> {
     let mut last = None;
     for caps in OSC_RE.captures_iter(chunk) {
@@ -23,7 +33,11 @@ pub fn parse_osc7501(chunk: &str) -> Option<BTreeMap<String, String>> {
                 fields.insert(key.trim().to_string(), value.trim().to_string());
             }
         }
-        if fields.get("state").is_some_and(|s| ALLOWED.contains(&s.as_str())) {
+        let valid = match fields.get("state") {
+            Some(s) => ALLOWED.contains(&s.as_str()),
+            None => fields.contains_key("summary"),
+        };
+        if valid {
             last = Some(fields);
         }
     }
@@ -73,6 +87,19 @@ mod tests {
     #[test]
     fn whitespace_around_key_and_value_is_stripped() {
         assert_eq!(parse_osc7501(&format!("{ESC}]7501; state = working {BEL}")), map(&[("state", "working")]));
+    }
+
+    #[test]
+    fn summary_reports_with_or_without_state() {
+        let both = parse_osc7501(&format!("{ESC}]7501;state=working:summary=indexing docs{BEL}")).unwrap();
+        assert_eq!(report_summary(&both).as_deref(), Some("indexing docs"));
+        let only = parse_osc7501(&format!("{ESC}]7501;summary={BEL}")).unwrap(); // clears it
+        assert_eq!((only.get("state"), report_summary(&only).as_deref()), (None, Some("")));
+        let long = format!("{ESC}]7501;summary={}{BEL}", "a".repeat(200));
+        assert_eq!(report_summary(&parse_osc7501(&long).unwrap()).map(|s| s.len()), Some(120));
+        let tab = parse_osc7501(&format!("{ESC}]7501;summary=a\tb{BEL}")).unwrap();
+        assert_eq!(report_summary(&tab).as_deref(), Some("ab"));
+        assert_eq!(report_summary(&parse_osc7501(&format!("{ESC}]7501;state=idle{BEL}")).unwrap()), None);
     }
 
     #[test]

@@ -44,6 +44,30 @@ pub fn agent_kind_from_argv(argv: &[String], kinds: &[&str]) -> Option<String> {
     })
 }
 
+/// Env var naming the agent a wrapper runs (`DROVER_AGENT=claude fence -- claude`, Herdr's `HERDR_AGENT`): wrappers
+/// hide the agent's own program name from `agent_kind_from_argv`.
+pub const AGENT_HINT_VAR: &str = "DROVER_AGENT";
+
+/// Rule-set id a `DROVER_AGENT` value names; unknown names and `shell` are ignored.
+pub fn agent_kind_from_hint(value: Option<&str>, kinds: &[&str]) -> Option<String> {
+    let kind = value?.trim().to_lowercase();
+    (kinds.contains(&kind.as_str()) && kind != "shell").then_some(kind)
+}
+
+/// Agent a process is: its `DROVER_AGENT` hint first, then its command line.
+pub fn process_agent_kind(hint: Option<String>, argv: &[String], kinds: &[&str]) -> Option<String> {
+    agent_kind_from_hint(hint.as_deref(), kinds).or_else(|| agent_kind_from_argv(argv, kinds))
+}
+
+/// Linux (`/proc`); None elsewhere (Windows uses `windows_process_env`).
+fn process_env_var(pid: i32, name: &str) -> Option<String> {
+    let raw = std::fs::read(format!("/proc/{pid}/environ")).ok()?;
+    raw.split(|b| *b == 0).find_map(|e| {
+        let e = String::from_utf8_lossy(e);
+        e.strip_prefix(name)?.strip_prefix('=').map(String::from)
+    })
+}
+
 pub fn process_argv(pid: i32) -> Vec<String> {
     let dir = format!("/proc/{pid}");
     let Ok(raw) = std::fs::read(format!("{dir}/cmdline")) else { return vec![] };
@@ -87,7 +111,8 @@ pub fn process_cwd(pid: i32) -> Option<String> {
 
 /// Agent running in the foreground group: the leader first, then any other member.
 pub fn foreground_agent_kind(pgid: i32, kinds: &[&str]) -> Option<String> {
-    group_members(pgid).into_iter().find_map(|pid| agent_kind_from_argv(&process_argv(pid), kinds))
+    group_members(pgid).into_iter()
+        .find_map(|pid| process_agent_kind(process_env_var(pid, AGENT_HINT_VAR), &process_argv(pid), kinds))
 }
 
 /// Agent a pane's shell is running now, as (pid, rule-set id); None while it is just the shell. One entry point for
@@ -138,6 +163,16 @@ mod tests {
             let argv: Vec<String> = argv.iter().map(|s| s.to_string()).collect();
             assert_eq!(agent_kind_from_argv(&argv, &KINDS).as_deref(), *kind, "{argv:?}");
         }
+    }
+
+    #[test]
+    fn hint_names_the_agent_behind_a_wrapper() {
+        let fence: Vec<String> = ["fence", "--", "claude"].iter().map(|s| s.to_string()).collect();
+        assert_eq!(process_agent_kind(Some(" Claude ".into()), &fence, &KINDS).as_deref(), Some("claude"));
+        assert_eq!(process_agent_kind(None, &fence, &KINDS), None);
+        // Unknown or shell hints fall back to the command line.
+        assert_eq!(process_agent_kind(Some("vim".into()), &["codex".to_string()], &KINDS).as_deref(), Some("codex"));
+        assert_eq!(agent_kind_from_hint(Some("shell"), &KINDS), None);
     }
 
     #[cfg(target_os = "linux")]

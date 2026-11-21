@@ -1,7 +1,7 @@
 //! Background loop: run detection rules on panes, publish state changes. Port of `status_monitor.py`.
 
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, UNIX_EPOCH};
 
 use serde_json::json;
 
@@ -12,11 +12,12 @@ use drover_core::status_detector::evaluate;
 use drover_core::status_tracker::now_secs;
 
 use crate::claude_session::{has_transcript, resume_command, running_session_id};
+use crate::codex_session;
 use crate::ctx::Ctx;
 use crate::manager::Manager;
 
 const TICK: Duration = Duration::from_millis(250);
-const CLAUDE_SESSION_EVERY: f64 = 5.0; // /clear or /resume inside Claude switches the conversation
+const AGENT_SESSION_EVERY: f64 = 5.0; // /clear, /new or /resume inside the agent switches the conversation
 
 pub async fn run(ctx: Arc<Ctx>) {
     let mut last_config_check = 0.0;
@@ -39,8 +40,12 @@ fn tick(ctx: &Arc<Ctx>, last_config_check: &mut f64, rules_stamp: &mut Option<Ve
     let panes: Vec<Arc<PaneSession>> = m.panes.values().cloned().collect();
     for pane in panes {
         probe_foreground(&mut m, &pane, now);
-        probe_claude_session(&m, &pane, now);
+        probe_agent_session(&m, &pane, now);
         check_pane(&mut m, &pane, now);
+        // An OSC 7501 `summary=` changes the sidebar line without a state change.
+        if std::mem::take(&mut pane.state.lock().unwrap().summary_changed) {
+            m.hub.emit("pane", pane.to_json());
+        }
     }
     deliver_parent_notes(ctx, &mut m, now);
 }
@@ -103,28 +108,52 @@ fn probe_foreground(m: &mut Manager, pane: &Arc<PaneSession>, now: f64) {
     m.set_pane_kind(pane, found.as_ref().map_or("shell", |(_, kind)| kind.as_str()));
 }
 
-/// Resume a claude pane into its own conversation, not the folder's newest.
-fn probe_claude_session(m: &Manager, pane: &Arc<PaneSession>, now: f64) {
-    if pane.meta.lock().unwrap().kind != "claude" || !pane.alive() {
+/// Resume a Claude or Codex pane into its own conversation, not the folder's (or machine's) newest.
+fn probe_agent_session(m: &Manager, pane: &Arc<PaneSession>, now: f64) {
+    let kind = pane.meta.lock().unwrap().kind.clone();
+    if !matches!(kind.as_str(), "claude" | "codex") || !pane.alive() {
         return;
     }
     {
         let mut st = pane.state.lock().unwrap();
-        if now - st.claude_checked_at < CLAUDE_SESSION_EVERY {
+        if now - st.claude_checked_at < AGENT_SESSION_EVERY {
             return;
         }
         st.claude_checked_at = now;
     }
-    // Typed in a shell, claude is the agent the foreground probe found; started by drover, the pane's own process.
-    let typed = pane.state.lock().unwrap().fg_agent;
-    let pids = [typed, pane.pid()].into_iter().flatten().map(|p| p as i32);
-    let Some(sid) = running_session_id(pids) else { return };
-    let cmd = resume_command(&sid);
-    if cmd == pane.meta.lock().unwrap().resume || !has_transcript(&sid) {
+    let found = if kind == "claude" { claude_resume(pane) } else { codex_resume(m, pane) };
+    let Some(cmd) = found else { return };
+    if cmd == pane.meta.lock().unwrap().resume {
         return;
     }
     pane.meta.lock().unwrap().resume = cmd;
     m.save.notify_one(); // save it, so a daemon or computer restart resumes this conversation
+}
+
+fn claude_resume(pane: &PaneSession) -> Option<String> {
+    // Typed in a shell, claude is the agent the foreground probe found; started by drover, the pane's own process.
+    let typed = pane.state.lock().unwrap().fg_agent;
+    let pids = [typed, pane.pid()].into_iter().flatten().map(|p| p as i32);
+    let sid = running_session_id(pids)?;
+    has_transcript(&sid).then(|| resume_command(&sid))
+}
+
+fn codex_resume(m: &Manager, pane: &Arc<PaneSession>) -> Option<String> {
+    let (cwd, created_at) = {
+        let meta = pane.meta.lock().unwrap();
+        (meta.cwd.clone(), meta.created_at)
+    };
+    let cwd = Manager::pane_follow_cwd(pane).unwrap_or(cwd);
+    // Codex's files only tell conversations apart by folder: with two Codex panes in one folder, guessing could swap
+    // them, so both keep the default resume (and `persistence::resume` starts the second one fresh).
+    let shared = m.panes.values()
+        .filter(|p| !Arc::ptr_eq(p, pane) && p.alive() && p.meta.lock().unwrap().kind == "codex")
+        .any(|p| Manager::pane_follow_cwd(p).is_some_and(|c| codex_session::same_folder(&c, &cwd)));
+    if shared {
+        return None;
+    }
+    let since = UNIX_EPOCH + Duration::from_secs_f64(created_at.max(0.0));
+    codex_session::newest_session_in(&cwd, since).map(|id| codex_session::resume_command(&id))
 }
 
 fn check_pane(m: &mut Manager, pane: &Arc<PaneSession>, now: f64) {

@@ -25,8 +25,13 @@ pub fn running_session_id(pids: impl IntoIterator<Item = i32>) -> Option<String>
         let text = std::fs::read_to_string(base.join("sessions").join(format!("{pid}.json"))).ok()?;
         let v: serde_json::Value = serde_json::from_str(&text).ok()?;
         let sid = v.get("sessionId")?.as_str()?;
-        SESSION_ID.is_match(sid).then(|| sid.to_string())
+        is_session_id(sid).then(|| sid.to_string())
     })
+}
+
+/// A UUID and nothing else: session ids end up in a resume command line (Claude and Codex both use UUIDs).
+pub fn is_session_id(sid: &str) -> bool {
+    SESSION_ID.is_match(sid)
 }
 
 /// `claude --resume` fails on a conversation with no message yet; its transcript appears with the first one.

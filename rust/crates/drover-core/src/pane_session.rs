@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use serde_json::{Value, json};
 
-use crate::osc7501::parse_osc7501;
+use crate::osc7501::{parse_osc7501, report_summary};
 pub use crate::pane_state::{PaneMeta, PaneState, REPLAY_LIMIT};
 use crate::pty::{Pty, SpawnSpec};
 use crate::status_tracker::now_secs;
@@ -96,7 +96,15 @@ impl PaneSession {
         if data.contains("\x1b]7501;")
             && let Some(report) = parse_osc7501(data)
         {
-            st.tracker.report_at(&report["state"], now);
+            if let Some(state) = report.get("state") {
+                st.tracker.report_at(state, now);
+            }
+            if let Some(summary) = report_summary(&report)
+                && summary != st.summary
+            {
+                st.summary = summary;
+                st.summary_changed = true; // the status monitor publishes the pane
+            }
         }
         drop(listeners);
         if st.screen.feed(data.as_bytes()) {
@@ -195,7 +203,7 @@ impl PaneSession {
             "space_id": m.space_id, "tab_id": m.tab_id, "parent": m.parent,
             "created_at": m.created_at, "state": st.tracker.state, "since": st.tracker.since,
             "unread": st.unread, "exit_code": st.exit_code, "title": st.screen.title(),
-            "machine": "local", "cols": st.cols, "rows": st.rows,
+            "machine": "local", "cols": st.cols, "rows": st.rows, "summary": st.summary,
         })
     }
 }

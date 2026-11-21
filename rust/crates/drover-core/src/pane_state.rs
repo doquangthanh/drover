@@ -50,6 +50,10 @@ pub struct PaneState {
     pub fg_agent: Option<u32>,
     pub fg_checked_at: f64,
     pub claude_checked_at: f64,
+    /// Display text from OSC 7501 `summary=` (sidebar line; never affects the state).
+    pub summary: String,
+    /// `summary` changed since the status monitor last published the pane.
+    pub summary_changed: bool,
     /// What the person typed here since their last Enter (guards parent notes).
     pub draft: crate::draft::DraftTracker,
 }
@@ -76,6 +80,8 @@ impl PaneState {
             fg_agent: None,
             fg_checked_at: 0.0,
             claude_checked_at: 0.0,
+            summary: String::new(),
+            summary_changed: false,
             draft: Default::default(),
         }
     }

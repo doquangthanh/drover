@@ -30,8 +30,42 @@ unsafe extern "system" {
     fn ReadProcessMemory(process: Handle, address: *const c_void, buf: *mut c_void, size: usize, read: *mut usize) -> i32;
 }
 
+/// Open `pid` for reading and run `f` on (handle, address of its RTL_USER_PROCESS_PARAMETERS). x64 layouts only.
+/// Shared by `process_cwd` and `windows_process_env`.
+#[cfg(target_pointer_width = "64")]
+pub(crate) fn with_process_params<T>(pid: u32, f: impl FnOnce(Handle, usize) -> Option<T>) -> Option<T> {
+    // SAFETY: plain Win32 calls on a handle we own and close; the PEB read is size-checked.
+    unsafe {
+        let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, 0, pid);
+        if process.is_null() {
+            return None;
+        }
+        let out = (|| {
+            let mut info: BasicInformation = std::mem::zeroed();
+            let status = NtQueryInformationProcess(process, PROCESS_BASIC_INFORMATION, (&mut info as *mut BasicInformation).cast(),
+                                                   size_of::<BasicInformation>() as u32, std::ptr::null_mut());
+            if status < 0 || info.peb == 0 {
+                return None;
+            }
+            let params: usize = read(process, info.peb + PEB_PROCESS_PARAMETERS)?;
+            f(process, params)
+        })();
+        CloseHandle(process);
+        out
+    }
+}
+
+/// Copy `len` bytes from the other process at `address` into u16s (full reads only).
+pub(crate) fn read_wide(process: Handle, address: usize, len: usize) -> Option<Vec<u16>> {
+    let mut wide = vec![0u16; len / 2];
+    let mut got = 0usize;
+    // SAFETY: the buffer holds len/2 u16s = len bytes (len is even by the callers); the handle has PROCESS_VM_READ.
+    let ok = unsafe { ReadProcessMemory(process, address as *const c_void, wide.as_mut_ptr().cast(), len, &mut got) };
+    (ok != 0 && got == len).then_some(wide)
+}
+
 /// Copy a `T` out of the other process at `address`.
-unsafe fn read<T>(process: Handle, address: usize) -> Option<T> {
+pub(crate) unsafe fn read<T>(process: Handle, address: usize) -> Option<T> {
     let mut value = std::mem::MaybeUninit::<T>::uninit();
     let mut got = 0usize;
     // SAFETY (caller): `process` has PROCESS_VM_READ; we only accept a full read of size_of::<T>() bytes.
@@ -43,33 +77,14 @@ unsafe fn read<T>(process: Handle, address: usize) -> Option<T> {
 
 #[cfg(target_pointer_width = "64")]
 pub fn process_cwd(pid: u32) -> Option<String> {
-    // SAFETY: plain Win32 calls on a handle we own and close; every remote read is size-checked and the path
-    // length is capped before the buffer is allocated.
-    unsafe {
-        let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, 0, pid);
-        if process.is_null() {
+    with_process_params(pid, |process, params| {
+        // SAFETY: size-checked remote read; the path length is capped before the buffer is allocated.
+        let dir: UnicodeString = unsafe { read(process, params + PARAMS_CURRENT_DIRECTORY)? };
+        if dir.buffer.is_null() || dir.length == 0 || dir.length > MAX_PATH_BYTES {
             return None;
         }
-        let cwd = (|| {
-            let mut info: BasicInformation = std::mem::zeroed();
-            let status = NtQueryInformationProcess(process, PROCESS_BASIC_INFORMATION, (&mut info as *mut BasicInformation).cast(),
-                                                   size_of::<BasicInformation>() as u32, std::ptr::null_mut());
-            if status < 0 || info.peb == 0 {
-                return None;
-            }
-            let params: usize = read(process, info.peb + PEB_PROCESS_PARAMETERS)?;
-            let dir: UnicodeString = read(process, params + PARAMS_CURRENT_DIRECTORY)?;
-            if dir.buffer.is_null() || dir.length == 0 || dir.length > MAX_PATH_BYTES {
-                return None;
-            }
-            let mut wide = vec![0u16; dir.length as usize / 2];
-            let mut got = 0usize;
-            let ok = ReadProcessMemory(process, dir.buffer.cast(), wide.as_mut_ptr().cast(), dir.length as usize, &mut got);
-            (ok != 0 && got == dir.length as usize).then(|| String::from_utf16_lossy(&wide))
-        })();
-        CloseHandle(process);
-        cwd.map(|c| trim_separator(&c))
-    }
+        read_wide(process, dir.buffer as usize, dir.length as usize).map(|w| trim_separator(&String::from_utf16_lossy(&w)))
+    })
 }
 
 #[cfg(not(target_pointer_width = "64"))]

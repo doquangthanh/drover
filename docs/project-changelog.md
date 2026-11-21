@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+## 0.2.5
+Herdr-inspired agent tracking: per-pane Codex resume, wrapper hint, explainable detection, sidebar summaries,
+session backups. drover-web and drover-desktop are tagged v0.2.5 too.
+### Added
+- `DROVER_AGENT=<agent>` names the agent behind a wrapper (`DROVER_AGENT=claude fence -- claude`); read from the
+  process environment (Linux `/proc`, Windows PEB). Panes never inherit it from the daemon.
+- `rules.test` explains its answer: `reason` (OSC 7501 report, matched rule, or fallback), `rule_source`, `rule_path`,
+  `overrides_bundled`.
+- OSC 7501 `summary=<text>` (with or without `state=`): a one-line status shown after the agent's name in the
+  sidebar (pane JSON `summary`, max 120 chars). Display only, never changes the state.
+- Session safety nets: an unreadable `session.json` (or one from a newer format) is copied to `session-backups/`
+  (3 kept) before it is overwritten; saves keep the previous file in `session-snapshots/` at most every 15 minutes
+  (48 kept). Recover by copying one over `session.json` while the daemon is stopped.
+### Fixed
+- Codex panes resume their own conversation (`codex resume <id>`, from `$CODEX_HOME/sessions` by folder) instead of
+  `codex resume --last`. Two Codex panes in one folder keep the default, since the files cannot tell them apart.
+- Restoring a session no longer resumes one conversation twice: a second pane with the same folder and resume command
+  (or one already running) starts fresh.
+- drover-web: a tab shows its most urgent pane (Needs you > done > working), not only the focused one.
+
 ## 0.2.2
 First non-pre-release of the three-repo split: GitHub's "latest" release, so the in-app updater offers it
 (it never offers pre-releases such as `-dev`). drover-web and drover-desktop are tagged v0.2.2 too.

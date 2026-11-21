@@ -95,7 +95,9 @@ pub(crate) fn is_session_var(key: &str) -> bool {
 /// Environment of a new pane: ours (minus another agent session's markers) plus terminal type, pane id and PATH.
 pub fn pane_env(pane_id: &str) -> Vec<(String, String)> {
     let mut env: Vec<(String, String)> = std::env::vars()
-        .filter(|(k, _)| !matches!(k.as_str(), "TERM" | "COLORTERM" | "DR_PANE_ID" | "DROVER" | "PATH") && !is_session_var(k))
+        // DROVER_AGENT (wrapper hint) of a daemon started from an agent pane would mark every new pane as that agent.
+        .filter(|(k, _)| !matches!(k.as_str(), "TERM" | "COLORTERM" | "DR_PANE_ID" | "DROVER" | "DROVER_AGENT" | "PATH")
+            && !is_session_var(k))
         .collect();
     env.push(("TERM".into(), "xterm-256color".into()));
     env.push(("COLORTERM".into(), "truecolor".into()));

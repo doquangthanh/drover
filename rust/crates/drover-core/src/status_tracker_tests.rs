@@ -151,3 +151,16 @@ fn stale_osc_report_is_ignored() {
     assert_eq!(commit(&mut t, None, now, false, true, now - 10.0), None);
     assert_eq!(t.state, "idle");
 }
+
+#[test]
+fn reason_explains_report_rule_and_fallback() {
+    let mut t = StatusTracker::new("idle", T0);
+    assert_eq!(t.reason(Some("permission"), true, 0.0, T0), "rule:permission");
+    assert_eq!(t.reason(None, true, T0 - 0.5, T0), "no_rule_matched:fallback_recent_output_working");
+    assert_eq!(t.reason(None, false, T0 - 60.0, T0), "no_rule_set:fallback_quiet_idle");
+    t.reported = Some("blocked".into());
+    t.reported_at = T0 - 1.0;
+    assert_eq!(t.reason(Some("permission"), true, 0.0, T0), "osc7501_report:blocked");
+    t.reported_at = T0 - 60.0; // stale report: rules decide again
+    assert_eq!(t.reason(Some("permission"), true, 0.0, T0), "rule:permission");
+}
