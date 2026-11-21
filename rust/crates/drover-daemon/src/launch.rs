@@ -27,16 +27,24 @@ pub fn which(name: &str) -> Option<PathBuf> {
     if candidate.components().count() > 1 {
         return candidate.is_file().then(|| candidate.to_path_buf());
     }
-    let exts: Vec<String> = if cfg!(windows) {
-        let pathext = std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".into());
-        std::iter::once(String::new()).chain(pathext.split(';').map(str::to_lowercase)).collect()
-    } else {
-        vec![String::new()]
-    };
+    let pathext = std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".into());
+    let names = candidate_names(name, cfg!(windows), &pathext);
     let path = std::env::var_os("PATH")?;
-    std::env::split_paths(&path).find_map(|dir| {
-        exts.iter().map(|ext| dir.join(format!("{name}{ext}"))).find(|p| p.is_file())
-    })
+    std::env::split_paths(&path).find_map(|dir| names.iter().map(|n| dir.join(n)).find(|p| p.is_file()))
+}
+
+/// File names `which` looks for. On Windows a bare name only gets PATHEXT extensions: npm puts an extensionless sh
+/// shim `claude` next to `claude.cmd`, and CreateProcess cannot start it ("not a valid Win32 application").
+fn candidate_names(name: &str, windows: bool, pathext: &str) -> Vec<String> {
+    if !windows {
+        return vec![name.to_string()];
+    }
+    let with_exts = pathext.split(';').filter(|e| !e.is_empty()).map(|e| format!("{name}{}", e.to_lowercase()));
+    if Path::new(name).extension().is_some() {
+        std::iter::once(name.to_string()).chain(with_exts).collect()
+    } else {
+        with_exts.collect()
+    }
 }
 
 /// On Windows resolve `claude` to `claude.cmd`/`.exe` so ConPTY can start it; elsewhere unchanged.
@@ -137,6 +145,15 @@ pub fn with_subagent_hooks(argv: Vec<String>) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn windows_bare_names_only_match_runnable_extensions() {
+        let pathext = ".COM;.EXE;.BAT;.CMD";
+        // npm's extensionless `claude` sh shim must not win over claude.cmd.
+        assert_eq!(candidate_names("claude", true, pathext), ["claude.com", "claude.exe", "claude.bat", "claude.cmd"]);
+        assert_eq!(candidate_names("pwsh.exe", true, pathext)[0], "pwsh.exe");
+        assert_eq!(candidate_names("claude", false, pathext), ["claude"]);
+    }
 
     #[test]
     fn claude_session_markers_are_dropped_but_user_config_stays() {
