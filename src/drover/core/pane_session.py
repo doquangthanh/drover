@@ -110,14 +110,16 @@ class PaneSession:
         if self.backend:
             self.backend.write(data)
 
-    def resize(self, cols: int, rows: int) -> None:
+    def resize(self, cols: int, rows: int) -> bool:
+        """True when the size changed (viewers need a `state` event to learn it)."""
         cols, rows = max(10, min(cols, 500)), max(3, min(rows, 300))
         if (cols, rows) == (self.cols, self.rows):
-            return
+            return False
         self.cols, self.rows = cols, rows
         self.screen.resize(cols, rows)
         if self.backend:
             self.backend.resize(cols, rows)
+        return True
 
     def kill(self, wait: bool = False) -> None:
         """Terminate the process. Off the event loop by default (ConPTY teardown takes 100+ ms); `wait` for shutdown."""
