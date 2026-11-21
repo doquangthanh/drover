@@ -1,6 +1,14 @@
 # Changelog
 
 ## Unreleased
+
+## 0.2.1-dev
+### Changed
+- Version bump so Linux and Windows get the same newest build. drover-web and drover-desktop are tagged with the same version;
+  `assemble-bundle` joins them. The native window in this release has: whole-interface zoom (Ctrl+Alt+= / - / 0), What's new,
+  Feedback, Rules tester, terminal font setting, Settings file editor, Agents Flow sub-agent lanes, terminal mouse reporting,
+  and a Files list where a second click closes the file.
+
 ### Changed
 - The repo is now drover-core (renamed from `drover`; old URLs redirect). The browser UI, the Tauri window and the GPUI window moved to
   drover-web and drover-desktop. The daemon serves the UI from `DROVER_WEB_DIR`; `dr app` opens `drover-native` or `drover` next to `dr`,
