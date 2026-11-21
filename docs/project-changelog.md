@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+### Fixed
+- A tab named after its pane ("shell") follows the pane when it is auto-renamed on starting an agent; a tab renamed
+  by hand keeps its name.
 
 ## 0.2.5
 Herdr-inspired agent tracking: per-pane Codex resume, wrapper hint, explainable detection, sidebar summaries,

@@ -157,17 +157,24 @@ impl Manager {
     pub fn set_pane_kind(&mut self, pane: &Arc<PaneSession>, kind: &str) {
         let resume = self.rule_set(kind).map(|r| r.resume.clone()).unwrap_or_default();
         let default_name = self.default_name(kind);
-        {
+        let renamed = {
             let mut m = pane.meta.lock().unwrap();
             if m.kind == kind {
                 return;
             }
             let auto = regex::Regex::new(&format!("^{}(-\\d+)?$", regex::escape(&m.kind))).unwrap();
-            if auto.is_match(&m.name) {
-                m.name = default_name;
-            }
+            let renamed = auto.is_match(&m.name).then(|| (m.tab_id.clone(), std::mem::replace(&mut m.name, default_name.clone())));
             m.kind = kind.to_string();
             m.resume = resume;
+            renamed
+        };
+        // A tab is named after its first pane ("shell"); follow the auto-rename unless the tab was renamed by hand.
+        if let Some((tab_id, old_name)) = renamed
+            && let Some(tab) = self.tabs.get_mut(&tab_id)
+            && tab.name == old_name
+        {
+            tab.name = default_name;
+            self.hub.emit("state", Value::Null); // tabs travel in the full state
         }
         self.hub.emit("pane", pane.to_json());
         self.save.notify_one();
