@@ -124,11 +124,12 @@ impl PaneSession {
         }
     }
 
-    pub fn resize(&self, cols: u16, rows: u16) {
+    /// True when the size changed (viewers need a `state` event to learn it).
+    pub fn resize(&self, cols: u16, rows: u16) -> bool {
         let (cols, rows) = (cols.clamp(10, 500), rows.clamp(3, 300));
         let mut st = self.state.lock().unwrap();
         if (cols, rows) == (st.cols, st.rows) {
-            return;
+            return false;
         }
         st.cols = cols;
         st.rows = rows;
@@ -137,6 +138,7 @@ impl PaneSession {
         if let Some(pty) = self.pty.get() {
             pty.resize(cols, rows);
         }
+        true
     }
 
     /// Terminate the process. Off the caller's thread by default (ConPTY teardown is slow); `wait` for shutdown.

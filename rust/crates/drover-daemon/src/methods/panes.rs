@@ -161,7 +161,10 @@ async fn pane_resize(ctx: Arc<Ctx>, p: Value) -> RpcResult {
         return Err(RpcError::new(E_BAD_PARAMS, "cols and rows must be numbers"));
     };
     let pane = ctx.manager.lock().unwrap().get(&need_str(&p, "pane")?)?;
-    pane.resize(cols.clamp(0.0, 65535.0) as u16, rows.clamp(0.0, 65535.0) as u16);
+    // Viewers size their screens from `state`: without an event they keep the old size until something else changes.
+    if pane.resize(cols.clamp(0.0, 65535.0) as u16, rows.clamp(0.0, 65535.0) as u16) {
+        ctx.manager.lock().unwrap().changed();
+    }
     Ok(Value::Null)
 }
 

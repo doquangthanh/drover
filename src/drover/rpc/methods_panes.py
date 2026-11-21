@@ -110,7 +110,8 @@ async def pane_resize(ctx, p: dict) -> None:
     cols, rows = p.get("cols"), p.get("rows")
     if not isinstance(cols, (int, float)) or not isinstance(rows, (int, float)):
         raise RpcError(E_BAD_PARAMS, "cols and rows must be numbers")
-    ctx.manager.get(need(p, "pane")).resize(int(cols), int(rows))
+    if ctx.manager.get(need(p, "pane")).resize(int(cols), int(rows)):
+        ctx.manager._changed()  # viewers size their screens from `state`
 
 
 @registry.method("pane.read", "Plain text of a pane (scrollback + screen)", "pane, lines?")
