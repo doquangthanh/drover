@@ -22,3 +22,6 @@ max_depth = 3
 agents_may_answer_permission_prompts = "ask-user"   # never | ask-user | always
 kill_children_on_parent_exit = true   # helpers stop with the agent that started them (`dr run --outlive-parent` opts out)
 notes = true                          # tell a parent agent when its helper finishes, needs an answer or exits
+
+[session]
+resume_on_start = true            # after a restart, start the previous panes again (agents resume their conversation)

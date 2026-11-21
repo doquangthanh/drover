@@ -2,6 +2,14 @@
 
 ## Unreleased
 ### Fixed
+- After a computer or daemon restart, the previous panes start again on their own (agents with their resume command,
+  shells as new shells in their folder). The native window never offered to resume, so its panes stayed stopped.
+  Turn off with `[session] resume_on_start = false` (the web UI then asks, as before).
+- Windows: a Claude pane started directly (`cmd /c claude.cmd`, npm install) now records its own conversation
+  (`claude --resume <id>`); it fell back to `claude --continue`, so several Claude panes in one folder lost theirs.
+
+## 0.2.6
+### Fixed
 - A tab named after its pane ("shell") follows the pane when it is auto-renamed on starting an agent; a tab renamed
   by hand keeps its name.
 

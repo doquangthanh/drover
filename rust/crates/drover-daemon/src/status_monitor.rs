@@ -133,7 +133,12 @@ fn probe_agent_session(m: &Manager, pane: &Arc<PaneSession>, now: f64) {
 fn claude_resume(pane: &PaneSession) -> Option<String> {
     // Typed in a shell, claude is the agent the foreground probe found; started by drover, the pane's own process.
     let typed = pane.state.lock().unwrap().fg_agent;
-    let pids = [typed, pane.pid()].into_iter().flatten().map(|p| p as i32);
+    // Windows: a pane started as `claude` runs `cmd /c claude.cmd` (npm shim), so Claude itself is a descendant.
+    #[cfg(windows)]
+    let nested = pane.pid().and_then(|p| drover_core::windows_process_tree::descendant_agent(p, &["claude"])).map(|(pid, _)| pid);
+    #[cfg(not(windows))]
+    let nested: Option<u32> = None;
+    let pids = [typed, pane.pid(), nested].into_iter().flatten().map(|p| p as i32);
     let sid = running_session_id(pids)?;
     has_transcript(&sid).then(|| resume_command(&sid))
 }
