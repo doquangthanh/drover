@@ -5,7 +5,9 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
+use drover_core::detection_rules::BUNDLED_RULES;
 use drover_core::status_detector::evaluate;
+use drover_core::status_tracker::now_secs;
 
 use crate::ctx::Ctx;
 use crate::method;
@@ -107,13 +109,19 @@ async fn rules_test(ctx: Arc<Ctx>, p: Value) -> RpcResult {
     let st = pane.state.lock().unwrap();
     let mut lines = st.screen.visible_lines();
     let title = st.screen.title();
-    let (winner, results) = evaluate(m.rule_set(&kind), &title, &lines);
+    let set = m.rule_set(&kind);
+    let (winner, results) = evaluate(set, &title, &lines);
+    let matched = results.iter().find(|r| r.matched).map(|r| r.rule_id.as_str());
+    let reason = st.tracker.reason(matched, set.is_some(), st.last_output_at, now_secs());
+    // A user file replacing a bundled set of the same id: tell, so a stale override is easy to spot.
+    let overrides_bundled = set.is_some_and(|s| s.source == "user" && BUNDLED_RULES.iter().any(|(n, _)| *n == format!("{}.toml", s.id)));
     while lines.last().is_some_and(|l| l.trim().is_empty()) {
         lines.pop();
     }
     let tail = lines[lines.len().saturating_sub(20)..].to_vec();
     Ok(json!({"pane": pane.id(), "kind": kind, "title": title, "state": st.tracker.state, "detected": winner,
-        "screen": tail,
+        "reason": reason, "rule_source": set.map(|s| s.source.as_str()), "rule_path": set.map(|s| s.path.as_str()),
+        "overrides_bundled": overrides_bundled, "screen": tail,
         "results": results.iter().map(|r| json!({"rule_id": r.rule_id, "priority": r.priority, "region": r.region,
             "state": r.state, "matched": r.matched})).collect::<Vec<_>>(),
         "osc7501": st.tracker.reported}))

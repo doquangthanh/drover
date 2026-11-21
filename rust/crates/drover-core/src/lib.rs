@@ -20,5 +20,7 @@ pub mod utf8_stream;
 #[cfg(windows)]
 mod windows_process_cwd;
 #[cfg(windows)]
+pub mod windows_process_env;
+#[cfg(windows)]
 pub mod windows_process_tree;
 pub mod workspace_models;

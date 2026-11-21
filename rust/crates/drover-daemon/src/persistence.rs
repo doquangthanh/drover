@@ -20,7 +20,7 @@ pub fn serialize(m: &Manager) -> Value {
                "space_id": meta.space_id, "tab_id": meta.tab_id, "parent": meta.parent, "resume": meta.resume})
     }).collect();
     panes.extend(m.stopped.iter().cloned());
-    json!({"version": 1, "saved_at": now_secs(),
+    json!({"version": crate::state_store::SESSION_VERSION, "saved_at": now_secs(),
            "spaces": m.spaces.values().map(|s| serde_json::to_value(s).unwrap_or_default()).collect::<Vec<_>>(),
            "tabs": m.tabs.values().map(|t| serde_json::to_value(t).unwrap_or_default()).collect::<Vec<_>>(),
            "panes": panes})
@@ -75,9 +75,14 @@ pub fn load_previous(m: &mut Manager, store: &StateStore) {
 pub fn resume(m: &mut Manager, pane_ids: &[String], use_resume_command: bool) -> Result<Vec<String>, SpawnError> {
     let mut started = vec![];
     let todo: Vec<Value> = m.stopped.iter().filter(|p| p["id"].as_str().is_some_and(|i| pane_ids.iter().any(|x| x == i))).cloned().collect();
+    // (folder, resume command) already running: live panes, then each pane resumed below.
+    let mut taken: Vec<(String, String)> = m.panes.values().map(|p| {
+        let meta = p.meta.lock().unwrap();
+        (meta.cwd.clone(), meta.resume.clone())
+    }).filter(|(_, r)| !r.is_empty()).collect();
     for old in todo {
         let s = |k: &str| old[k].as_str().unwrap_or("").to_string();
-        let mut command = if use_resume_command { s("resume") } else { String::new() };
+        let mut command = if use_resume_command { claim_resume(&mut taken, &s("cwd"), s("resume")) } else { String::new() };
         if command.is_empty() {
             command = s("command");
         }
@@ -98,6 +103,21 @@ pub fn resume(m: &mut Manager, pane_ids: &[String], use_resume_command: bool) ->
     Ok(started)
 }
 
+/// Herdr's duplicate rule: two panes resuming one conversation (`codex resume --last` twice, one id twice) would
+/// type into the same transcript. The first claim of a (folder, command) keeps it; later ones get "" (start fresh).
+fn claim_resume(taken: &mut Vec<(String, String)>, cwd: &str, command: String) -> String {
+    if command.is_empty() {
+        return command;
+    }
+    let key = (cwd.to_string(), command);
+    if taken.contains(&key) {
+        return String::new();
+    }
+    let command = key.1.clone();
+    taken.push(key);
+    command
+}
+
 pub fn discard(m: &mut Manager, pane_ids: Option<&[String]>) {
     let drop: Vec<Value> = m.stopped.iter()
         .filter(|p| pane_ids.is_none_or(|ids| p["id"].as_str().is_some_and(|i| ids.iter().any(|x| x == i))))
@@ -113,4 +133,19 @@ pub fn discard(m: &mut Manager, pane_ids: Option<&[String]>) {
         m.stopped.retain(|p| p["id"] != old["id"]);
     }
     m.changed();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::claim_resume;
+
+    #[test]
+    fn a_conversation_is_resumed_once() {
+        let mut taken = vec![("/w/a".to_string(), "claude --resume X".to_string())]; // a live pane runs X
+        assert_eq!(claim_resume(&mut taken, "/w/a", "claude --resume X".into()), "");
+        assert_eq!(claim_resume(&mut taken, "/w/b", "codex resume --last".into()), "codex resume --last");
+        assert_eq!(claim_resume(&mut taken, "/w/b", "codex resume --last".into()), "");
+        assert_eq!(claim_resume(&mut taken, "/w/c", "codex resume --last".into()), "codex resume --last");
+        assert_eq!(claim_resume(&mut taken, "/w/c", String::new()), "");
+    }
 }

@@ -2,7 +2,7 @@
 //! A Toolhelp snapshot gives the process tree; each descendant's command line (NtQueryInformationProcess) goes
 //! through the same `agent_kind_from_argv` as on Linux. Nearest descendant first: `claude.cmd` -> cmd -> node cli.js.
 
-use crate::foreground_probe::agent_kind_from_argv;
+use crate::foreground_probe::{AGENT_HINT_VAR, process_agent_kind};
 use std::ffi::c_void;
 
 pub(crate) type Handle = *mut c_void;
@@ -132,7 +132,8 @@ pub fn descendant_agent(shell_pid: u32, kinds: &[&str]) -> Option<(u32, String)>
             procs.iter().filter(|p| level.contains(&p.parent) && !seen.contains(&p.pid) && p.pid != 0).collect();
         for child in &children {
             let argv = process_argv(child.pid).unwrap_or_else(|| vec![child.exe.clone()]);
-            if let Some(kind) = agent_kind_from_argv(&argv, kinds) {
+            let hint = crate::windows_process_env::process_env_var(child.pid, AGENT_HINT_VAR);
+            if let Some(kind) = process_agent_kind(hint, &argv, kinds) {
                 return Some((child.pid, kind));
             }
         }

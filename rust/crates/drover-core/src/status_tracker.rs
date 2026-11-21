@@ -49,6 +49,23 @@ impl StatusTracker {
         }
     }
 
+    /// Why `observe` reads the screen the way it does right now (herdr's `agent explain`), for `rules.test`:
+    /// a fresh OSC 7501 report wins, then the first matching rule, else the output-activity fallback. The
+    /// fallback never yields `blocked`: only a rule or the agent itself can say it needs you.
+    pub fn reason(&self, matched_rule: Option<&str>, has_rule_set: bool, last_output_at: f64, now: f64) -> String {
+        if let Some(reported) = &self.reported
+            && now - self.reported_at < REPORT_FRESH_SECONDS
+        {
+            return format!("osc7501_report:{reported}");
+        }
+        if let Some(rule) = matched_rule {
+            return format!("rule:{rule}");
+        }
+        let why = if has_rule_set { "no_rule_matched" } else { "no_rule_set" };
+        let fallback = if now - last_output_at < ACTIVITY_WINDOW { "recent_output_working" } else { "quiet_idle" };
+        format!("{why}:fallback_{fallback}")
+    }
+
     /// Feed one detection. Returns the new public state if it changed.
     pub fn observe(&mut self, detected: Option<&str>, last_output_at: f64, focused: bool, now: f64, allow_done: bool) -> Option<String> {
         if self.state == "exited" || self.state == "stopped" {

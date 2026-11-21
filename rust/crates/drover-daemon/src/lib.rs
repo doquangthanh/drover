@@ -2,6 +2,7 @@
 
 pub mod chat;
 pub mod claude_session;
+pub mod codex_session;
 pub mod ctx;
 pub mod event_hub;
 pub mod fonts;
