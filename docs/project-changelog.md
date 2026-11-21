@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.2.2
+First non-pre-release of the three-repo split: GitHub's "latest" release, so the in-app updater offers it
+(it never offers pre-releases such as `-dev`). drover-web and drover-desktop are tagged v0.2.2 too.
+### Fixed
+- `dr tui`: bright yellow text (pyte `brightbrown`) crashed the pane view with `ColorParseError: 'bright_brown'`; it now maps
+  to Rich `bright_yellow`.
+- `dr tui`: padding/blank cells had a `None` style, so Textual's monochrome filter crashed rendering (`AttributeError: 'NoneType' object has no attribute 'color'`); they now use an empty `Style()`.
+- `dr tui`: clicks never reached the app in a pane, so Claude's "Jump to bottom" (and any clickable TUI) did nothing. When the app turns mouse reporting on (`?1000/1002/1003`, SGR `?1006`), clicks and the wheel are now sent as xterm mouse reports.
+- Test `test_dr_run_without_a_template_is_unchanged` expected POSIX quoting on Windows, where `dr run` uses `list2cmdline`.
+
 ## 0.2.1-dev
 ### Changed
 - Version bump so Linux and Windows get the same newest build. drover-web and drover-desktop are tagged with the same version;

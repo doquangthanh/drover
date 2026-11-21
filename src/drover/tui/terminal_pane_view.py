@@ -12,6 +12,7 @@ from textual.timer import Timer
 from textual.widget import Widget
 
 from drover.tui.terminal_emulator_screen import CellStyle, TerminalEmulatorScreen
+from drover.tui.terminal_mouse_report_bytes import WHEEL_DOWN, WHEEL_UP, button_code, mouse_report
 from drover.tui.textual_key_to_bytes import key_to_bytes
 
 FRAME_SECONDS = 1 / 30  # redraw cap
@@ -21,16 +22,18 @@ SCROLL_KEYS = {"up": 1, "k": 1, "down": -1, "j": -1, "pageup": "page", "ctrl+b":
                "ctrl+f": "-page", "ctrl+u": "half", "ctrl+d": "-half", "g": "top", "home": "top",
                "G": "bottom", "end": "bottom"}
 RESIZE_DEBOUNCE = 0.15
+PLAIN = Style()  # never None: Textual filters (e.g. monochrome) read .color off every segment style
 
 
 def rich_color(name: str) -> str | None:
     """pyte colour name -> Rich colour. Named colours stay ANSI so the terminal's own palette is used."""
     if name == "default":
         return None
-    if name == "brown":  # pyte's word for ANSI yellow
-        return "yellow"
     if name.startswith("bright"):
-        return "bright_" + name[6:]
+        base = name[6:]
+        return "bright_" + ("yellow" if base == "brown" else base)  # pyte says "brown" for ANSI yellow
+    if name == "brown":
+        return "yellow"
     if len(name) == 6 and all(c in "0123456789abcdef" for c in name):
         return "#" + name
     return name
@@ -71,7 +74,7 @@ class TerminalPaneView(Widget, can_focus=True):
     def render_line(self, y: int) -> Strip:
         em = self.emulator
         if y >= em.rows:
-            return Strip.blank(self.size.width)
+            return Strip.blank(self.size.width, PLAIN)
         cx, cy = em.cursor
         show_cursor = self.has_focus and not em.cursor_hidden and y == cy
         segments: list[Segment] = []
@@ -87,9 +90,9 @@ class TerminalPaneView(Widget, can_focus=True):
                 segments.append(Segment(text, rich_style(cell)))
             x += width
         if show_cursor and cx >= x:  # cursor past the last drawn text
-            segments.append(Segment(" " * (cx - x), None))
+            segments.append(Segment(" " * (cx - x), PLAIN))
             segments.append(Segment(" ", rich_style(CellStyle(), cursor=True)))
-        return Strip(segments).adjust_cell_length(self.size.width)
+        return Strip(segments).adjust_cell_length(self.size.width, PLAIN)
 
     def on_resize(self, event: events.Resize) -> None:
         cols, rows = self.size.width, self.size.height  # content box: the event size includes the border
@@ -132,6 +135,35 @@ class TerminalPaneView(Widget, can_focus=True):
             self.emulator.scroll_to_bottom()  # typing jumps back to the live screen
             self._on_input(data)
 
+    def _report_mouse(self, event: events.MouseEvent, code: int | None, pressed: bool) -> bool:
+        """Send the click/wheel to the app when it turned mouse reporting on (Claude's "Jump to bottom"...)."""
+        modes = self.emulator.modes
+        captured = self.app.mouse_captured is self
+        offset = event.get_content_offset_capture(self) if captured else event.get_content_offset(self)
+        if not modes.mouse or code is None or offset is None or self.scroll_mode:
+            return False
+        x = max(0, min(offset.x, self.emulator.cols - 1))  # a captured release may land outside the pane
+        y = max(0, min(offset.y, self.emulator.rows - 1))
+        report = mouse_report(code, x, y, pressed, modes.mouse_sgr)
+        if report:
+            self.emulator.scroll_to_bottom()  # the app's cells are the live screen, not our scrollback
+            self._on_input(report)
+        return True
+
+    def on_mouse_down(self, event: events.MouseDown) -> None:
+        code = button_code(event.button, event.shift, event.meta, event.ctrl)
+        if self._report_mouse(event, code, pressed=True):
+            self.capture_mouse()  # the release then comes back here even over another pane: no stuck button
+            event.stop()
+
+    def on_mouse_up(self, event: events.MouseUp) -> None:
+        code = button_code(event.button, event.shift, event.meta, event.ctrl)
+        forwarded = self._report_mouse(event, code, pressed=False)
+        if self.app.mouse_captured is self:
+            self.release_mouse()
+        if forwarded:
+            event.stop()
+
     def _wheel(self, lines: int) -> None:
         if self.emulator.alt_screen:  # full-screen apps scroll themselves: send arrows (xterm "alternate scroll")
             self._on_input(("\x1bOA" if self.emulator.app_cursor else "\x1b[A") * WHEEL_LINES if lines > 0
@@ -142,11 +174,13 @@ class TerminalPaneView(Widget, can_focus=True):
 
     def on_mouse_scroll_up(self, event: events.MouseScrollUp) -> None:
         event.stop()
-        self._wheel(WHEEL_LINES)
+        if not self._report_mouse(event, WHEEL_UP, pressed=True):
+            self._wheel(WHEEL_LINES)
 
     def on_mouse_scroll_down(self, event: events.MouseScrollDown) -> None:
         event.stop()
-        self._wheel(-WHEEL_LINES)
+        if not self._report_mouse(event, WHEEL_DOWN, pressed=True):
+            self._wheel(-WHEEL_LINES)
 
     def on_paste(self, event: events.Paste) -> None:
         text = event.text
